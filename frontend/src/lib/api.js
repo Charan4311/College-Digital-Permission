@@ -1,0 +1,27 @@
+import axios from 'axios';
+import Cookies from 'js-cookie';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+const api = axios.create({ baseURL: API_BASE });
+
+// Attach JWT token to every request
+api.interceptors.request.use((config) => {
+  const token = Cookies.get('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Redirect to login on 401
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error.response?.status === 401) {
+      Cookies.remove('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
