@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # College Digital Permission & Approval Platform
 
 A role-based, multi-stage digital workflow engine designed for engineering colleges to digitize student permissions, clearance certificates, out-passes, and campus security gate verifications.
@@ -293,6 +292,3 @@ FINAL/
 ├── OFFICIALS_LOGIN_DIRECTORY.md# Complete directory of all CTPO, HOD, and Staff credentials
 └── README.md                   # System documentation & workflows
 ```
-=======
-# College-Digital-permission
->>>>>>> dfe77b41bdef67e2a277e8f1b6158ee9771f804b
