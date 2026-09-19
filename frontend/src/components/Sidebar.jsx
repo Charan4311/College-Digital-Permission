@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   FileText,
   LogOut,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 
 const NAV_CONFIG = {
@@ -46,7 +47,10 @@ const NAV_CONFIG = {
     { label: 'QR Scanner', icon: QrCode, path: '/security/scanner' },
   ],
   STUDENT: [
-    { label: 'My Permissions', icon: FileText, path: '/student/dashboard' },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard' },
+    { label: 'New Permission', icon: FileText, path: '/student/new-permission' },
+    { label: 'My Request', icon: ClipboardList, path: '/student/my-request' },
+    { label: 'My Profile', icon: Users, path: '/student/profile' },
   ],
 };
 
@@ -60,7 +64,7 @@ const ROLE_LABELS = {
   STUDENT: 'Student',
 };
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,25 +74,41 @@ export default function Sidebar() {
     ? user.name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : 'U';
 
+  const handleNavClick = (path) => {
+    navigate(path);
+    onClose();
+  };
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff'
-          }}>
-            <Sparkles size={16} />
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <div className="sidebar-header">
+        <div className="sidebar-logo">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <div style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff'
+            }}>
+              <Sparkles size={16} />
+            </div>
+            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Digital Permission</h1>
           </div>
-          <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Digital Permission</h1>
+          <p style={{ margin: 0, fontSize: '11px' }}>College Approval Platform</p>
         </div>
-        <p style={{ margin: 0, fontSize: '11px' }}>College Approval Platform</p>
+
+        <button
+          type="button"
+          className="sidebar-close"
+          onClick={onClose}
+          aria-label="Close navigation"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -100,7 +120,7 @@ export default function Sidebar() {
             <button
               key={item.path}
               className={`nav-item${isActive ? ' active' : ''}`}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavClick(item.path)}
             >
               <span className="nav-icon" style={{ display: 'flex', alignItems: 'center' }}>
                 <Icon size={18} />

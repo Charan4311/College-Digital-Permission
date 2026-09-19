@@ -140,65 +140,10 @@ exports.resubmitRequest = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    if (!request.status.startsWith('REJECTED')) {
-      return res.status(400).json({ success: false, message: 'Only rejected requests can be resubmitted' });
-    }
-
-    const {
-      reason, outDate, outTime, expectedReturnDate, expectedReturnTime, studentType,
-      startDate, endDate, messAmount, paidStatus,
-      companyName, companyLocation, role, internshipMode,
-      requestDate, documentUrl, documentName, resubmitRemarks
-    } = req.body;
-
-    if (request.requestType === 'OUTPASS') {
-      if (reason) request.reason = reason;
-      if (outDate) request.outDate = new Date(outDate);
-      if (outTime) request.outTime = outTime;
-      if (expectedReturnDate) request.expectedReturnDate = new Date(expectedReturnDate);
-      if (expectedReturnTime) request.expectedReturnTime = expectedReturnTime;
-      if (studentType) request.studentType = studentType;
-    } else if (request.requestType === 'MESS_FEE') {
-      if (reason) request.reason = reason;
-      if (startDate) request.startDate = new Date(startDate);
-      if (endDate) request.endDate = new Date(endDate);
-      if (messAmount !== undefined) request.messAmount = Number(messAmount);
-      if (paidStatus) request.paidStatus = paidStatus;
-    } else if (request.requestType === 'INTERNSHIP') {
-      if (companyName) request.companyName = companyName;
-      if (companyLocation) request.companyLocation = companyLocation;
-      if (role) request.role = role;
-      if (internshipMode) request.internshipMode = internshipMode;
-      if (startDate) request.startDate = new Date(startDate);
-      if (endDate) request.endDate = new Date(endDate);
-      if (companyName || role) {
-        request.reason = `Internship at ${request.companyName || companyName} (${request.role || role})`;
-      }
-    } else if (request.requestType === 'LIBRARY') {
-      if (reason) request.reason = reason;
-      if (requestDate) request.requestDate = new Date(requestDate);
-    }
-
-    if (documentUrl !== undefined) request.documentUrl = documentUrl;
-    if (documentName !== undefined) request.documentName = documentName;
-
-    // Reset status back to PENDING_CTPO for a fresh review cycle
-    request.status = 'PENDING_CTPO';
-    request.currentApproverRole = 'CTPO';
-    request.resubmitCount = (request.resubmitCount || 0) + 1;
-    request.rejectionReason = undefined;
-    request.rejectedByRole = undefined;
-
-    await ApprovalStep.create({
-      requestId: request._id,
-      role: 'STUDENT',
-      approverUserId: req.user.id,
-      decision: 'RESUBMITTED',
-      remarks: resubmitRemarks || 'Request updated and resubmitted for review.'
+    return res.status(403).json({
+      success: false,
+      message: 'Permission resubmission is disabled. Please create a new request instead.'
     });
-
-    await request.save();
-    res.json({ success: true, data: request });
   } catch (e) {
     console.error(e);
     res.status(500).json({ success: false, message: 'Server error during resubmission' });

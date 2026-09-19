@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
   year: { type: Number, default: 4 },
   yearTier: { type: String, default: 'TIER_4TH' },
   studentType: { type: String, enum: ['DAY_SCHOLAR', 'HOSTELER'] },
+  profileImage: { type: String, default: '' },
 
   // HOD authority scoping
   authorityScope: {

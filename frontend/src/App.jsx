@@ -5,6 +5,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 // Pages
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentNewPermissionPage from './pages/StudentNewPermissionPage';
+import StudentMyRequestsPage from './pages/StudentMyRequestsPage';
+import StudentProfilePage from './pages/StudentProfilePage';
 import RequestDetail from './pages/RequestDetail';
 import ApproverDashboard from './pages/ApproverDashboard';
 import SecurityScanner from './pages/SecurityScanner';
@@ -48,8 +51,18 @@ function AppRoutes() {
       <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
 
       {/* Student */}
+      <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
       <Route path="/student/dashboard" element={
         <ProtectedRoute roles={['STUDENT']}><StudentDashboard /></ProtectedRoute>
+      } />
+      <Route path="/student/new-permission" element={
+        <ProtectedRoute roles={['STUDENT']}><StudentNewPermissionPage /></ProtectedRoute>
+      } />
+      <Route path="/student/my-request" element={
+        <ProtectedRoute roles={['STUDENT']}><StudentMyRequestsPage /></ProtectedRoute>
+      } />
+      <Route path="/student/profile" element={
+        <ProtectedRoute roles={['STUDENT']}><StudentProfilePage /></ProtectedRoute>
       } />
       <Route path="/student/request/:id" element={
         <ProtectedRoute roles={['STUDENT']}><RequestDetail /></ProtectedRoute>

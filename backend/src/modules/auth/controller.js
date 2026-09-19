@@ -100,3 +100,99 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const account = await User.findById(req.user.id);
+    if (!account || !account.isActive) {
+      return res.status(401).json({ success: false, message: 'Account disabled or not found' });
+    }
+
+    const { name, studentType, year, yearTier } = req.body;
+    if (name !== undefined && !String(name).trim()) {
+      return res.status(400).json({ success: false, message: 'Name is required' });
+    }
+
+    if (name !== undefined) account.name = String(name).trim();
+    if (studentType !== undefined) {
+      const normalized = String(studentType).toUpperCase();
+      if (!['DAY_SCHOLAR', 'HOSTELER'].includes(normalized)) {
+        return res.status(400).json({ success: false, message: 'Invalid student type' });
+      }
+      account.studentType = normalized;
+    }
+    if (year !== undefined) account.year = Number(year);
+    if (yearTier !== undefined) account.yearTier = String(yearTier);
+
+    await account.save();
+
+    const updated = await User.findById(account._id)
+      .select('-passwordHash')
+      .populate('branchId', 'name code');
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Current password, new password, and confirm password are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'New password and confirm password do not match' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long' });
+    }
+
+    const account = await User.findById(req.user.id);
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, account.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    account.passwordHash = await bcrypt.hash(newPassword, 10);
+    await account.save();
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    const account = await User.findByIdAndUpdate(
+      req.user.id,
+      { profileImage: fileUrl },
+      { new: true }
+    ).select('-passwordHash').populate('branchId', 'name code');
+
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, data: account, fileUrl });
+  } catch (error) {
+    console.error('Upload profile image error:', error);
+    res.status(500).json({ success: false, message: 'Image upload failed' });
+  }
+};
