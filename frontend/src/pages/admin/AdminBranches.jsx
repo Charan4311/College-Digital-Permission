@@ -46,7 +46,7 @@ export default function AdminBranches() {
         <p className="page-subtitle">Manage department branches</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-[24px]">
         {/* Create Form */}
         <div className="card" style={{ height: 'fit-content' }}>
           <div className="card-title" style={{ marginBottom: 20 }}>Add Branch</div>

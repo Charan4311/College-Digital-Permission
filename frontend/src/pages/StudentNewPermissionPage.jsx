@@ -91,6 +91,60 @@ const getInitialFormState = (studentType = 'DAY_SCHOLAR') => ({
   requestDate: new Date().toISOString().split('T')[0]
 });
 
+const getPermissionFormState = (tab, studentType = 'DAY_SCHOLAR') => ({
+  ...getInitialFormState(studentType),
+  requestType: tab,
+  studentType,
+  reason: '',
+  documentUrl: '',
+  documentName: '',
+  emergencyContact: '',
+  outDate: new Date().toISOString().split('T')[0],
+  outTime: '17:00',
+  expectedReturnDate: new Date().toISOString().split('T')[0],
+  expectedReturnTime: '20:00',
+  startDate: new Date().toISOString().split('T')[0],
+  endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  messAmount: '',
+  paidStatus: 'Paid',
+  companyName: '',
+  companyLocation: '',
+  role: '',
+  internshipMode: 'Offline',
+  requestDate: new Date().toISOString().split('T')[0]
+});
+
+const PERMISSION_META = {
+  OUTPASS: {
+    title: 'Apply for Campus Out-Pass',
+    description: 'Request permission to leave campus for personal or official purposes',
+    icon: GraduationCap,
+    chips: ['Easy Process', 'Track Status', 'Get Notified'],
+    stepLabels: ['Basic Details', 'Out-Pass Details', 'Additional Info', 'Review & Submit']
+  },
+  MESS_FEE: {
+    title: 'Apply for Mess Fee Permission',
+    description: 'Submit your mess fee clearance, refund, or related request.',
+    icon: Receipt,
+    chips: ['Clear Details', 'Document Check', 'Fast Approval'],
+    stepLabels: ['Basic Details', 'Hostel Staying Period', 'Payment Details', 'Review & Submit']
+  },
+  INTERNSHIP: {
+    title: 'Apply for Internship Permission',
+    description: 'Submit your internship details and request approval.',
+    icon: Briefcase,
+    chips: ['Verify Details', 'Document Proof', 'Approval Tracking'],
+    stepLabels: ['Company Info', 'Role & Mode', 'Duration', 'Review & Submit']
+  },
+  LIBRARY: {
+    title: 'Apply for Library Permission',
+    description: 'Request permission for library access and related requirements.',
+    icon: BookOpen,
+    chips: ['Access Request', 'Purpose Check', 'Status Tracking'],
+    stepLabels: ['Basic Details', 'Access Details', 'Review & Submit']
+  }
+};
+
 export default function StudentNewPermissionPage() {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
@@ -98,8 +152,8 @@ export default function StudentNewPermissionPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('OUTPASS');
-
   const [form, setForm] = useState(() => getInitialFormState(user?.studentType || 'DAY_SCHOLAR'));
+  const activePermission = PERMISSION_META[activeTab] || PERMISSION_META.OUTPASS;
 
   useEffect(() => {
     if (user?.studentType) {
@@ -111,21 +165,13 @@ export default function StudentNewPermissionPage() {
     setActiveTab(tab);
     setError('');
     setSuccess('');
-    setForm(f => ({
-      ...f,
-      requestType: tab,
-      reason: tab === 'INTERNSHIP' ? (f.companyName ? `Internship at ${f.companyName}` : '') : ''
-    }));
+    setForm(getPermissionFormState(tab, form.studentType || user?.studentType || 'DAY_SCHOLAR'));
   };
 
   const handleReset = () => {
     setError('');
     setSuccess('');
-    setForm({
-      ...getInitialFormState(user?.studentType || form.studentType || 'DAY_SCHOLAR'),
-      requestType: activeTab,
-      studentType: form.studentType || user?.studentType || 'DAY_SCHOLAR'
-    });
+    setForm(getPermissionFormState(activeTab, form.studentType || user?.studentType || 'DAY_SCHOLAR'));
   };
 
   const handleFileUpload = async (e) => {
@@ -164,8 +210,22 @@ export default function StudentNewPermissionPage() {
     setError('');
     setSuccess('');
 
+    if (activeTab === 'MESS_FEE' && (!form.documentUrl || !form.documentName)) {
+      setError('Please upload the required mess fee proof document.');
+      return;
+    }
+
+    if (activeTab === 'INTERNSHIP' && (!form.documentUrl || !form.documentName)) {
+      setError('Please upload the required internship proof document.');
+      return;
+    }
+
     let dateError = '';
     if (activeTab === 'OUTPASS') {
+      if (!/^\d{10}$/.test(form.emergencyContact)) {
+        setError('Phone number must be exactly 10 digits.');
+        return;
+      }
       dateError = validateLeaveDateRange(form.outDate, form.expectedReturnDate);
     } else if (activeTab === 'LIBRARY') {
       dateError = validateLeaveDateRange(form.requestDate, form.requestDate);
@@ -190,16 +250,7 @@ export default function StudentNewPermissionPage() {
         LIBRARY: 'Library Permission'
       };
       setSuccess(`${tabLabels[activeTab]} request submitted successfully! Tracking approval progress.`);
-      setForm(f => ({
-        ...f,
-        reason: '',
-        documentUrl: '',
-        documentName: '',
-        companyName: '',
-        companyLocation: '',
-        role: '',
-        messAmount: ''
-      }));
+      setForm(getPermissionFormState(activeTab, form.studentType || user?.studentType || 'DAY_SCHOLAR'));
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to submit request');
     } finally {
@@ -209,377 +260,338 @@ export default function StudentNewPermissionPage() {
 
   return (
     <DashboardLayout>
-      <div className="page-header" style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 0 32px' }}>
+        <div style={{ marginBottom: '22px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 18px rgba(109, 40, 217, 0.12)' }}>
+                <GraduationCap size={22} color="#7C3AED" />
+              </div>
+              <div>
+                <h1 style={{ margin: 0, fontSize: '26px', lineHeight: 1.2, fontWeight: 800, letterSpacing: '-0.03em', color: '#1f2937' }}>
+                  Digital Permissions & Clearance Hub
+                </h1>
+                <div style={{ marginTop: '4px', fontSize: '15px', color: '#475569', fontWeight: 500 }}>
+                  Logged in as <strong style={{ color: '#0f172a' }}>{user?.name}</strong> ({user?.rollNo || user?.username})
+                </div>
+              </div>
+            </div>
+
+            {/* Simple Requests card removed */}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[8px]" style={{ marginBottom: '20px', padding: '6px', background: '#f2f5fa', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+          {[
+            { key: 'OUTPASS', label: 'Out-Pass', icon: GraduationCap, color: '#7C3AED', activeBg: '#6D28D9' },
+            { key: 'MESS_FEE', label: 'Mess Fee', icon: Receipt, color: '#7C3AED', activeBg: '#6D28D9' },
+            { key: 'INTERNSHIP', label: 'Internship', icon: Briefcase, color: '#0f172a', activeBg: '#6D28D9' },
+            { key: 'LIBRARY', label: 'Library', icon: BookOpen, color: '#0f172a', activeBg: '#6D28D9' }
+          ].map(({ key, label, icon: Icon, color, activeBg }) => {
+            const isActive = activeTab === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleTabChange(key)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 10px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: isActive ? activeBg : '#eef2ff',
+                  color: isActive ? '#fff' : '#475569',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  boxShadow: isActive ? '0 6px 12px rgba(109, 40, 217, 0.18)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Icon size={15} />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', alignItems: 'start', width: '100%' }}>
           <div>
-            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <GraduationCap size={28} color="var(--accent)" />
-              <span>Digital Permissions & Clearance Hub</span>
-            </h1>
-            <p className="page-subtitle">
-              Logged in as <strong>{user?.name}</strong> ({user?.rollNo || user?.username})
-            </p>
-          </div>
-        </div>
-      </div>
+            {/* Banner and timeline removed */}
 
-      <div className="student-form-card card">
-        <div className="student-form-tabs" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-          gap: '6px',
-          marginBottom: '20px',
-          padding: '4px',
-          background: '#f8fafc',
-          borderRadius: '14px',
-          border: '1px solid #e2e8f0'
-        }}>
-          <button type="button" className="student-form-tab" onClick={() => handleTabChange('OUTPASS')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 8px', borderRadius: '10px', border: 'none', background: activeTab === 'OUTPASS' ? '#ffffff' : 'transparent', color: activeTab === 'OUTPASS' ? '#2563eb' : '#475569', fontWeight: activeTab === 'OUTPASS' ? 700 : 600, fontSize: '12px', cursor: 'pointer', boxShadow: activeTab === 'OUTPASS' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s ease' }}>
-            <GraduationCap size={14} />
-            <span>Out-Pass</span>
-          </button>
-          <button type="button" className="student-form-tab" onClick={() => handleTabChange('MESS_FEE')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 8px', borderRadius: '10px', border: 'none', background: activeTab === 'MESS_FEE' ? '#ffffff' : 'transparent', color: activeTab === 'MESS_FEE' ? '#059669' : '#475569', fontWeight: activeTab === 'MESS_FEE' ? 700 : 600, fontSize: '12px', cursor: 'pointer', boxShadow: activeTab === 'MESS_FEE' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s ease' }}>
-            <Receipt size={14} />
-            <span>Mess Fee</span>
-          </button>
-          <button type="button" className="student-form-tab" onClick={() => handleTabChange('INTERNSHIP')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 8px', borderRadius: '10px', border: 'none', background: activeTab === 'INTERNSHIP' ? '#ffffff' : 'transparent', color: activeTab === 'INTERNSHIP' ? '#2563eb' : '#475569', fontWeight: activeTab === 'INTERNSHIP' ? 700 : 600, fontSize: '12px', cursor: 'pointer', boxShadow: activeTab === 'INTERNSHIP' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s ease' }}>
-            <Briefcase size={14} />
-            <span>Internship</span>
-          </button>
-          <button type="button" className="student-form-tab" onClick={() => handleTabChange('LIBRARY')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 8px', borderRadius: '10px', border: 'none', background: activeTab === 'LIBRARY' ? '#ffffff' : 'transparent', color: activeTab === 'LIBRARY' ? '#d97706' : '#475569', fontWeight: activeTab === 'LIBRARY' ? 700 : 600, fontSize: '12px', cursor: 'pointer', boxShadow: activeTab === 'LIBRARY' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s ease' }}>
-            <BookOpen size={14} />
-            <span>Library</span>
-          </button>
-        </div>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '20px', boxShadow: '0 10px 24px rgba(109, 40, 217, 0.04)' }}>
+              {error && <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderRadius: '10px', padding: '10px 12px' }}><AlertCircle size={16} /><span>{error}</span></div>}
+              {success && <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderRadius: '10px', padding: '10px 12px' }}><CheckCircle2 size={16} /><span>{success}</span></div>}
 
-        <div className="student-form-header card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '18px', paddingTop: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <div className="student-form-icon" style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(37, 99, 235, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
-              <PlusCircle size={20} />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div className="card-title" style={{ fontSize: '18px' }}>
-                {activeTab === 'OUTPASS' && 'Apply for Campus Out-Pass'}
-                {activeTab === 'MESS_FEE' && 'Submit Mess Fee Clearance'}
-                {activeTab === 'INTERNSHIP' && 'Request Internship Permission'}
-                {activeTab === 'LIBRARY' && 'Request Library Access / Clearance'}
-              </div>
-              <div className="card-subtitle" style={{ fontSize: '12px', marginTop: '2px' }}>
-                {activeTab === 'OUTPASS' && 'Request permission to leave campus for personal or official purposes'}
-                {activeTab === 'MESS_FEE' && 'Submit your mess fee clearance and verification details'}
-                {activeTab === 'INTERNSHIP' && 'Request approval for your internship engagement and duration'}
-                {activeTab === 'LIBRARY' && 'Request reading room and library access with official clearance'}
-              </div>
-            </div>
-          </div>
-          <div className="student-form-status" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #dbeafe', color: '#1d4ed8', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-            <ShieldCheck size={14} />
-            <span>
-              {activeTab === 'OUTPASS' && 'Reviewed by Branch CTPO, HOD & Hostel In-charge'}
-              {activeTab === 'MESS_FEE' && 'Determines required approval flow'}
-              {activeTab === 'INTERNSHIP' && 'Multi-tier verification in progress'}
-              {activeTab === 'LIBRARY' && 'Fast-track CTPO verification'}
-            </span>
-          </div>
-        </div>
+              <form onSubmit={handleSubmit} className="student-form">
+                {activeTab === 'OUTPASS' && (
+                  <>
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                        <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#f3e8ff', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
+                        <div>
+                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Student Category (Out-Pass Route)</div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>Select your category to proceed</div>
+                        </div>
+                      </div>
 
-        {error && <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderRadius: '10px', padding: '10px 12px' }}><AlertCircle size={16} /><span>{error}</span></div>}
-        {success && <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderRadius: '10px', padding: '10px 12px' }}><CheckCircle2 size={16} /><span>{success}</span></div>}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                        <div onClick={() => setForm(f => ({ ...f, studentType: 'DAY_SCHOLAR' }))} style={{ cursor: 'pointer', borderRadius: '12px', padding: '14px 16px', border: form.studentType === 'DAY_SCHOLAR' ? '2px solid #6D28D9' : '1px solid #e2e8f0', background: form.studentType === 'DAY_SCHOLAR' ? '#f3e8ff' : '#f8fafc', boxShadow: form.studentType === 'DAY_SCHOLAR' ? '0 8px 18px rgba(109, 40, 217, 0.08)' : 'none' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><GraduationCap size={18} color="#6D28D9" /><strong style={{ fontSize: '14px', color: '#0f172a' }}>Day Scholar</strong></div>
+                            {form.studentType === 'DAY_SCHOLAR' && <CheckCircle2 size={16} color="#6D28D9" />}
+                          </div>
+                          {/* Workflow text removed */}
+                        </div>
 
-        <form onSubmit={handleSubmit} className="student-form">
-          {activeTab === 'OUTPASS' && (
-            <>
-              <div className="student-form-section" style={{ border: '1px solid var(--border)', borderRadius: '18px', padding: '18px 18px 16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div className="student-form-section-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div className="student-form-step" style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontWeight: 700, fontSize: '12px' }}>1</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Student Category (Out-Pass Route)</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Select your category to proceed</div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div onClick={() => setForm(f => ({ ...f, studentType: 'DAY_SCHOLAR' }))} style={{ cursor: 'pointer', borderRadius: '10px', padding: '12px 14px', border: form.studentType === 'DAY_SCHOLAR' ? '2px solid #2563eb' : '1px solid #e2e8f0', background: form.studentType === 'DAY_SCHOLAR' ? 'rgba(37, 99, 235, 0.04)' : '#f8fafc', transition: 'all 0.2s ease' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><GraduationCap size={18} color="#2563eb" /><strong style={{ fontSize: '13px', color: '#0f172a' }}>Day Scholar</strong></div>
-                      {form.studentType === 'DAY_SCHOLAR' && <CheckCircle2 size={16} color="#2563eb" />}
+                        <div onClick={() => setForm(f => ({ ...f, studentType: 'HOSTELER' }))} style={{ cursor: 'pointer', borderRadius: '12px', padding: '14px 16px', border: form.studentType === 'HOSTELER' ? '2px solid #6D28D9' : '1px solid #e2e8f0', background: form.studentType === 'HOSTELER' ? '#f3e8ff' : '#f8fafc', boxShadow: form.studentType === 'HOSTELER' ? '0 8px 18px rgba(109, 40, 217, 0.08)' : 'none' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Home size={18} color="#6D28D9" /><strong style={{ fontSize: '14px', color: '#0f172a' }}>Hosteler</strong></div>
+                            {form.studentType === 'HOSTELER' && <CheckCircle2 size={16} color="#6D28D9" />}
+                          </div>
+                          {/* Workflow text removed */}
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>2-Step: CTPO → HOD → Gate Pass</div>
-                  </div>
-                  <div onClick={() => setForm(f => ({ ...f, studentType: 'HOSTELER' }))} style={{ cursor: 'pointer', borderRadius: '10px', padding: '12px 14px', border: form.studentType === 'HOSTELER' ? '2px solid #7c3aed' : '1px solid #e2e8f0', background: form.studentType === 'HOSTELER' ? 'rgba(124, 58, 237, 0.04)' : '#f8fafc', transition: 'all 0.2s ease' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Home size={18} color="#7c3aed" /><strong style={{ fontSize: '13px', color: '#0f172a' }}>Hosteler</strong></div>
-                      {form.studentType === 'HOSTELER' && <CheckCircle2 size={16} color="#7c3aed" />}
+
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                        <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#f3e8ff', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>2</div>
+                        <div>
+                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Reason for Leaving Campus</div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>Clearly mention the reason for your out-pass request</div>
+                        </div>
+                      </div>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><FileText size={14} color="#6D28D9" /> Reason for Leaving Campus</label>
+                      <textarea required rows={3} className="form-input" placeholder="Explain the specific reason you need to leave campus..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '76px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-[8px] mt-[12px]">
+                        {/* Quick reasons removed */}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>3-Step: CTPO → HOD → Warden</div>
-                  </div>
-                </div>
-              </div>
 
-              <div className="student-form-section" style={{ border: '1px solid var(--border)', borderRadius: '18px', padding: '18px 18px 16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div className="student-form-section-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div className="student-form-step" style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontWeight: 700, fontSize: '12px' }}>2</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Reason for Leaving Campus</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Clearly mention the reason for your out-pass request</div>
-                  </div>
-                </div>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><FileText size={14} color="#2563eb" /><span>Reason for Leaving Campus</span></label>
-                <textarea required rows={3} className="form-input" placeholder="Explain the specific reason you need to leave campus..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '72px' }} />
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-                  {OUTPASS_REASONS.map(preset => (
-                    <button key={preset} type="button" onClick={() => setForm(f => ({ ...f, reason: preset }))} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #dfe7f1', color: '#475569', cursor: 'pointer' }}>+ {preset}</button>
-                  ))}
-                </div>
-              </div>
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                        <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#f3e8ff', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>3</div>
+                        <div>
+                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Out-Pass Details</div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>Select your expected out and return date</div>
+                        </div>
+                      </div>
 
-              <div className="student-form-section" style={{ border: '1px solid var(--border)', borderRadius: '18px', padding: '18px 18px 16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div className="student-form-section-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div className="student-form-step" style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontWeight: 700, fontSize: '12px' }}>3</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Out-Pass Details</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Select your expected out and return date & time</div>
-                  </div>
-                </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                        <div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Out Date</label>
+                          <input type="date" required className="form-input" min={getTodayDateString()} value={form.outDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.expectedReturnDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, outDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Clock size={13} color="#6D28D9" /> Out Time</label>
+                          <input type="time" required className="form-input" value={form.outTime} onChange={e => setForm(f => ({ ...f, outTime: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Return Date</label>
+                          <input type="date" required className="form-input" min={form.outDate || getTodayDateString()} value={form.expectedReturnDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.outDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, expectedReturnDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="form-grid" style={{ marginBottom: '14px' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color="#2563eb" /><span>Out Date</span></label>
-                    <input type="date" required className="form-input" min={getTodayDateString()} value={form.outDate} onChange={e => {
-                      const value = e.target.value;
-                      const validationError = validateLeaveDateRange(value, form.expectedReturnDate);
-                      if (validationError) { setError(validationError); return; }
-                      setError('');
-                      setForm(f => ({ ...f, outDate: value }));
-                    }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={13} color="#2563eb" /><span>Out Time</span></label>
-                    <input type="time" required className="form-input" value={form.outTime} onChange={e => setForm(f => ({ ...f, outTime: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} />
-                  </div>
-                </div>
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                        <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#f3e8ff', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>4</div>
+                        <div>
+                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Emergency Contact</div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>Provide parent/guardian contact number for emergency communication</div>
+                        </div>
+                      </div>
 
-                <div className="form-grid" style={{ marginBottom: 0 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color="#2563eb" /><span>Return Date</span></label>
-                    <input type="date" required className="form-input" min={form.outDate || getTodayDateString()} value={form.expectedReturnDate} onChange={e => {
-                      const value = e.target.value;
-                      const validationError = validateLeaveDateRange(form.outDate, value);
-                      if (validationError) { setError(validationError); return; }
-                      setError('');
-                      setForm(f => ({ ...f, expectedReturnDate: value }));
-                    }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={13} color="#2563eb" /><span>Return Time</span></label>
-                    <input type="time" required className="form-input" value={form.expectedReturnTime} onChange={e => setForm(f => ({ ...f, expectedReturnTime: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="student-form-section" style={{ border: '1px solid var(--border)', borderRadius: '18px', padding: '18px 18px 16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div className="student-form-section-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div className="student-form-step" style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontWeight: 700, fontSize: '12px' }}>4</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Emergency Contact</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Provide parent/guardian contact number for emergency communication</div>
-                  </div>
-                </div>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><Phone size={13} color="#2563eb" /><span>Emergency Contact / Parent Phone</span></label>
-                <input type="tel" required className="form-input" placeholder="e.g. 9392393340" value={form.emergencyContact} onChange={e => setForm(f => ({ ...f, emergencyContact: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} />
-              </div>
-            </>
-          )}
-
-          {activeTab === 'MESS_FEE' && (
-            <>
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(5, 150, 105, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669', fontWeight: 700, fontSize: '12px' }}>1</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Clearance Purpose</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Provide the mess fee clearance reason</div>
-                  </div>
-                </div>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><Receipt size={14} color="#059669" /><span>Clearance Reason / Purpose</span></label>
-                <textarea required rows={2} className="form-input" placeholder="e.g. Mess Fee Settlement for Fall Semester 2026..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '70px' }} />
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-                  {MESS_REASONS.map(preset => (
-                    <button key={preset} type="button" onClick={() => setForm(f => ({ ...f, reason: preset }))} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #dfe7f1', color: '#475569', cursor: 'pointer' }}>+ {preset}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(5, 150, 105, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669', fontWeight: 700, fontSize: '12px' }}>2</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Period Details</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Select the relevant clearance period</div>
-                  </div>
-                </div>
-                <div className="form-grid" style={{ marginBottom: 0 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color="#059669" /><span>Period Start Date</span></label><input type="date" required className="form-input" min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color="#059669" /><span>Period End Date</span></label><input type="date" required className="form-input" min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                </div>
-              </div>
-
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(5, 150, 105, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669', fontWeight: 700, fontSize: '12px' }}>3</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Payment Details</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Enter the amount and payment status</div>
-                  </div>
-                </div>
-                <div className="form-grid" style={{ marginBottom: 0 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><DollarSign size={13} color="#059669" /><span>Mess Fee Amount (₹)</span></label><input type="number" required min="0" step="1" placeholder="e.g. 5200" className="form-input" value={form.messAmount} onChange={e => setForm(f => ({ ...f, messAmount: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={13} color="#059669" /><span>Payment Status</span></label><select className="form-input" value={form.paidStatus} onChange={e => setForm(f => ({ ...f, paidStatus: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }}><option value="Paid">Paid (Full Payment Done)</option><option value="Partially Paid">Partially Paid</option><option value="Not Paid">Not Paid (Pending Verification)</option></select></div>
-                </div>
-              </div>
-
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff' }}>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><UploadCloud size={14} color="#059669" /><span>Payment Proof / Receipt (Optional)</span></span><span style={{ fontSize: '11px', color: '#64748b' }}>PDF, PNG, JPG (max 10MB)</span></label>
-                {form.documentUrl ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}><Check size={16} color="#059669" /><span style={{ fontSize: '13px', fontWeight: 600, color: '#065f46', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form.documentName || 'Attached Document'}</span></div>
-                    <button type="button" onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }} title="Remove file"><Trash2 size={14} /></button>
-                  </div>
-                ) : (
-                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '10px', border: '2px dashed #dfe7f1', background: '#f8fafc', cursor: uploadingDoc ? 'wait' : 'pointer', transition: 'border-color 0.2s' }}>
-                    <input type="file" accept=".pdf,.png,.jpg,.jpeg" style={{ display: 'none' }} disabled={uploadingDoc} onChange={handleFileUpload} />
-                    <UploadCloud size={22} color={uploadingDoc ? '#059669' : '#64748b'} />
-                    <span style={{ fontSize: '12px', marginTop: '6px', color: '#475569' }}>{uploadingDoc ? 'Uploading receipt...' : 'Click to attach payment receipt or bank challan'}</span>
-                  </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Phone size={13} color="#6D28D9" /> Emergency Contact / Parent Phone</label>
+                      <input type="tel" required className="form-input" placeholder="e.g. 9392393340" value={form.emergencyContact} onChange={e => setForm(f => ({ ...f, emergencyContact: e.target.value.replace(/\D/g, '').slice(0, 10) }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                    </div>
+                  </>
                 )}
-              </div>
-            </>
-          )}
 
-          {activeTab === 'INTERNSHIP' && (
-            <>
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontWeight: 700, fontSize: '12px' }}>1</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Company Information</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Enter the internship details</div>
-                  </div>
-                </div>
-                <div className="form-grid" style={{ marginBottom: 0 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Building size={13} color="#2563eb" /><span>Company Name</span></label><input type="text" required placeholder="e.g. Google, TCS, Infosys" className="form-input" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={13} color="#2563eb" /><span>Company Location</span></label><input type="text" required placeholder="e.g. Hyderabad, Bangalore, Remote" className="form-input" value={form.companyLocation} onChange={e => setForm(f => ({ ...f, companyLocation: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                </div>
-              </div>
+                {activeTab === 'MESS_FEE' && (
+                  <>
+                    {['Clearance Purpose', 'Hostel Staying Period', 'Payment Details'].map((section, sectionIndex) => (
+                      <div key={section} style={{ marginBottom: '18px', padding: '16px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>{sectionIndex + 1}</div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{section}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>
+                              {sectionIndex === 0 && 'Provide the mess fee clearance reason'}
+                              {sectionIndex === 1 && 'Select the relevant clearance period'}
+                              {sectionIndex === 2 && 'Enter the amount and payment status'}
+                            </div>
+                          </div>
+                        </div>
 
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontWeight: 700, fontSize: '12px' }}>2</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Role & Mode</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Specify the internship role and mode</div>
-                  </div>
-                </div>
-                <div className="form-grid" style={{ marginBottom: 0 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Briefcase size={13} color="#2563eb" /><span>Internship Role / Position</span></label><input type="text" required placeholder="e.g. Software Engineer Intern" className="form-input" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Laptop size={13} color="#2563eb" /><span>Internship Mode</span></label><select className="form-input" value={form.internshipMode} onChange={e => setForm(f => ({ ...f, internshipMode: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }}><option value="Offline">Offline (Onsite)</option><option value="Online">Online (Work from Home)</option><option value="Hybrid">Hybrid</option></select></div>
-                </div>
-              </div>
+                        {sectionIndex === 0 && (
+                          <>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Receipt size={14} color="#059669" /> Clearance Reason / Purpose</label>
+                            <textarea required rows={2} className="form-input" placeholder="e.g. Mess Fee Settlement for Fall Semester 2026..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '70px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                            {/* Quick reasons removed */}
+                          </>
+                        )}
 
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontWeight: 700, fontSize: '12px' }}>3</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Internship Duration</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Select the internship start and end dates</div>
-                  </div>
-                </div>
-                <div className="form-grid" style={{ marginBottom: 0 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color="#2563eb" /><span>Internship Start Date</span></label><input type="date" required className="form-input" min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                  <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color="#2563eb" /><span>Internship End Date</span></label><input type="date" required className="form-input" min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} /></div>
-                </div>
-              </div>
+                        {sectionIndex === 1 && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                            <div>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#059669" /> Joining Date</label>
+                              <input type="date" required className="form-input" min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                            </div>
+                            <div>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#059669" /> Vacating Date</label>
+                              <input type="date" required className="form-input" min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                            </div>
+                          </div>
+                        )}
 
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff' }}>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><UploadCloud size={14} color="#2563eb" /><span>Offer Letter / Selection Email (Optional)</span></span><span style={{ fontSize: '11px', color: '#64748b' }}>PDF, PNG, JPG (max 10MB)</span></label>
-                {form.documentUrl ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}><Check size={16} color="#2563eb" /><span style={{ fontSize: '13px', fontWeight: 600, color: '#1e40af', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form.documentName || 'Attached Offer Letter'}</span></div>
-                    <button type="button" onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }} title="Remove file"><Trash2 size={14} /></button>
-                  </div>
-                ) : (
-                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '10px', border: '2px dashed #dfe7f1', background: '#f8fafc', cursor: uploadingDoc ? 'wait' : 'pointer', transition: 'border-color 0.2s' }}>
-                    <input type="file" accept=".pdf,.png,.jpg,.jpeg" style={{ display: 'none' }} disabled={uploadingDoc} onChange={handleFileUpload} />
-                    <UploadCloud size={22} color={uploadingDoc ? '#2563eb' : '#64748b'} />
-                    <span style={{ fontSize: '12px', marginTop: '6px', color: '#475569' }}>{uploadingDoc ? 'Uploading document...' : 'Click to attach internship offer letter or email'}</span>
-                  </label>
+                        {sectionIndex === 2 && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                            <div>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><DollarSign size={13} color="#059669" /> Mess Fee Amount (₹)</label>
+                              <input type="number" required min="0" step="1" placeholder="e.g. 5200" className="form-input" value={form.messAmount} onChange={e => setForm(f => ({ ...f, messAmount: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                            </div>
+                            <div>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><CheckCircle2 size={13} color="#059669" /> Payment Status</label>
+                              <select className="form-input" value={form.paidStatus} onChange={e => setForm(f => ({ ...f, paidStatus: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }}><option value="Paid">Paid (Full Payment Done)</option><option value="Partially Paid">Partially Paid</option><option value="Not Paid">Not Paid (Pending Verification)</option></select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    <div style={{ marginBottom: '18px', padding: '16px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><UploadCloud size={14} color="#059669" /> Payment Proof / Receipt *</span>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>PDF, PNG, JPG (max 10MB)</span>
+                      </label>
+
+                      {form.documentUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}><Check size={16} color="#059669" /><span style={{ fontSize: '13px', fontWeight: 600, color: '#065f46', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form.documentName || 'Attached Document'}</span></div>
+                          <button type="button" onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }} title="Remove file"><Trash2 size={14} /></button>
+                        </div>
+                      ) : (
+                        <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '10px', border: '2px dashed #dfe7f1', background: '#f8fafc', cursor: uploadingDoc ? 'wait' : 'pointer', transition: 'border-color 0.2s' }}>
+                          <input type="file" accept=".pdf,.png,.jpg,.jpeg" style={{ display: 'none' }} disabled={uploadingDoc} onChange={handleFileUpload} />
+                          <UploadCloud size={22} color={uploadingDoc ? '#059669' : '#64748b'} />
+                          <span style={{ fontSize: '12px', marginTop: '6px', color: '#475569' }}>{uploadingDoc ? 'Uploading receipt...' : 'Click to attach any proof'}</span>
+                        </label>
+                      )}
+                    </div>
+                  </>
                 )}
-              </div>
-            </>
-          )}
 
-          {activeTab === 'LIBRARY' && (
-            <>
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#fff9eb', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <BookOpen size={18} color="#d97706" />
-                  <div style={{ fontSize: '12px', color: '#92400e' }}>Single-stage approval verified directly by your <strong>Year CTPO</strong>. No HOD or warden sign-off required.</div>
-                </div>
-              </div>
+                {activeTab === 'INTERNSHIP' && (
+                  <>
+                    {[
+                      { title: 'Company Information', body: (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Building size={13} color="#6D28D9" /> Company Name</label><input type="text" required placeholder="e.g. Google, TCS, Infosys" className="form-input" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><MapPin size={13} color="#6D28D9" /> Company Location</label><input type="text" required placeholder="e.g. Hyderabad, Bangalore, Remote" className="form-input" value={form.companyLocation} onChange={e => setForm(f => ({ ...f, companyLocation: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
+                        </div>
+                      ) },
+                      { title: 'Role & Mode', body: (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Briefcase size={13} color="#6D28D9" /> Role</label><input type="text" required placeholder="e.g. Software Engineer Intern" className="form-input" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Laptop size={13} color="#6D28D9" /> Internship Mode</label><select className="form-input" value={form.internshipMode} onChange={e => setForm(f => ({ ...f, internshipMode: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }}><option value="Offline">Offline (Onsite)</option><option value="Online">Online (Work from Home)</option><option value="Hybrid">Hybrid</option></select></div>
+                        </div>
+                      ) },
+                      { title: 'Internship Duration', body: (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Internship Start Date</label><input type="date" required className="form-input" min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Internship End Date</label><input type="date" required className="form-input" min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
+                        </div>
+                      ) }
+                    ].map(({ title, body }, idx) => (
+                      <div key={title} style={{ marginBottom: '18px', padding: '16px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: '#f3e8ff', color: '#6D28D9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>{idx + 1}</div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{title}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>{idx === 0 ? 'Enter the internship details' : idx === 1 ? 'Specify the internship role and mode' : 'Select the internship start and end dates'}</div>
+                          </div>
+                        </div>
+                        {body}
+                      </div>
+                    ))}
 
-              <div style={{ border: '1px solid #dfe7f1', borderRadius: '14px', padding: '16px', background: '#ffffff', marginBottom: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(217, 119, 6, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706', fontWeight: 700, fontSize: '12px' }}>1</div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Library Access Details</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Provide your access information and purpose</div>
-                  </div>
-                </div>
-                <div className="form-grid" style={{ marginBottom: '14px' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={13} color="#d97706" /><span>Student Roll Number</span></label>
-                    <input type="text" disabled className="form-input" value={user?.rollNo || user?.username || ''} style={{ background: '#f8fafc', cursor: 'not-allowed', borderRadius: '10px', padding: '10px 12px', height: '44px' }} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color="#d97706" /><span>Access / Clearance Date</span></label>
-                    <input type="date" required className="form-input" min={getTodayDateString()} value={form.requestDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, requestDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px' }} />
-                  </div>
-                </div>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><FileText size={14} color="#d97706" /><span>Purpose / Access Details</span></label>
-                <textarea required rows={2} className="form-input" placeholder="Specify books to borrow, reading hall hours, or no-dues requirement..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '70px' }} />
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-                  {LIBRARY_REASONS.map(preset => (
-                    <button key={preset} type="button" onClick={() => setForm(f => ({ ...f, reason: preset }))} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #dfe7f1', color: '#475569', cursor: 'pointer' }}>+ {preset}</button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+                    <div style={{ marginBottom: '18px', padding: '16px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><UploadCloud size={14} color="#6D28D9" /> Offer Letter / Selection Email *</span>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>PDF, PNG, JPG (max 10MB)</span>
+                      </label>
 
-          <div className="student-workflow-box" style={{ background: '#f8fafc', border: '1px solid #dfe7f1', borderRadius: '12px', padding: '10px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', marginBottom: '16px' }}>
-            <Sparkles size={14} color="#2563eb" />
-            <div>
-              <strong>Workflow: </strong>
-              {activeTab === 'OUTPASS' && (form.studentType === 'HOSTELER' ? 'CTPO ➔ HOD ➔ Hostel Warden ➔ QR Gate Pass' : 'CTPO ➔ HOD ➔ QR Gate Pass (Warden skipped for Day Scholar)')}
-              {activeTab === 'MESS_FEE' && 'CTPO ➔ HOD ➔ Cleared (Downloadable Confirmation Slip)'}
-              {activeTab === 'INTERNSHIP' && 'CTPO ➔ HOD ➔ Placement Officer ➔ Approved (Downloadable Approval Letter)'}
-              {activeTab === 'LIBRARY' && 'CTPO ➔ Approved (Downloadable Library Pass - 1 Step)'}
+                      {form.documentUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: '#f3e8ff', border: '1px solid #e9d5ff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}><Check size={16} color="#6D28D9" /><span style={{ fontSize: '13px', fontWeight: 600, color: '#1e40af', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form.documentName || 'Attached Offer Letter'}</span></div>
+                          <button type="button" onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }} title="Remove file"><Trash2 size={14} /></button>
+                        </div>
+                      ) : (
+                        <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '10px', border: '2px dashed #dfe7f1', background: '#f8fafc', cursor: uploadingDoc ? 'wait' : 'pointer', transition: 'border-color 0.2s' }}>
+                          <input type="file" accept=".pdf,.png,.jpg,.jpeg" style={{ display: 'none' }} disabled={uploadingDoc} onChange={handleFileUpload} />
+                          <UploadCloud size={22} color={uploadingDoc ? '#6D28D9' : '#64748b'} />
+                          <span style={{ fontSize: '12px', marginTop: '6px', color: '#475569' }}>{uploadingDoc ? 'Uploading document...' : 'Click to attach internship offer letter or email'}</span>
+                        </label>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'LIBRARY' && (
+                  <>
+                    {/* Library workflow info removed */}
+
+                    <div style={{ marginBottom: '18px', padding: '16px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>Library Access Details</div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>Provide your access information and purpose</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px] mb-[14px]">
+                        <div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><User size={13} color="#d97706" /> Student Roll Number</label>
+                          <input type="text" disabled className="form-input" value={user?.rollNo || user?.username || ''} style={{ background: '#f8fafc', cursor: 'not-allowed', borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', width: '100%' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#d97706" /> Access / Clearance Date</label>
+                          <input type="date" required className="form-input" min={getTodayDateString()} value={form.requestDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, requestDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                        </div>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><FileText size={14} color="#d97706" /> Purpose</label>
+                      <textarea required rows={2} className="form-input" placeholder="Specify books to borrow, reading hall hours, or no-dues requirement..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '70px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                      {/* Quick reasons removed */}
+                    </div>
+                  </>
+                )}
+
+                {/* Final workflow summary removed */}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button type="button" onClick={handleReset} style={{ minWidth: '110px', padding: '12px 18px', borderRadius: '10px', minHeight: '46px', fontSize: '14px', border: '1px solid #dfe7f1', background: '#fff', color: '#334155', cursor: 'pointer' }}>
+                    Reset
+                  </button>
+                  <button type="submit" disabled={submitting || uploadingDoc} style={{ minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 18px', borderRadius: '10px', minHeight: '46px', fontSize: '14px', background: 'linear-gradient(135deg, #6D28D9 0%, #2563eb 100%)', color: '#fff', border: 'none', cursor: submitting || uploadingDoc ? 'not-allowed' : 'pointer', opacity: submitting || uploadingDoc ? 0.8 : 1 }}>
+                    {submitting ? (
+                      <><span style={{ width: 15, height: 15, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)', borderTopColor: '#fff', display: 'inline-block', animation: 'spin 1s linear infinite' }} /> <span>Submitting Request...</span></>
+                    ) : (
+                      <><Sparkles size={16} /><span>{activeTab === 'OUTPASS' && 'Submit Out-Pass Request'}{activeTab === 'MESS_FEE' && 'Submit Mess Fee Clearance'}{activeTab === 'INTERNSHIP' && 'Submit Internship Permission'}{activeTab === 'LIBRARY' && 'Submit Library Request'}</span></>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
 
-          <div className="student-form-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
-            <button type="button" onClick={handleReset} className="btn btn-ghost" style={{ minWidth: '110px', padding: '12px 18px', borderRadius: '10px', minHeight: '46px', fontSize: '14px', borderColor: '#dfe7f1' }}>
-              Reset
-            </button>
-            <button type="submit" disabled={submitting || uploadingDoc} className="btn btn-primary" style={{ minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 18px', borderRadius: '10px', minHeight: '46px', fontSize: '14px' }}>
-              {submitting ? (
-                <><span className="spinner" style={{ width: 15, height: 15 }} /><span>Submitting Request...</span></>
-              ) : (
-                <><Sparkles size={16} /><span>{activeTab === 'OUTPASS' && 'Submit Out-Pass Request'}{activeTab === 'MESS_FEE' && 'Submit Mess Fee Clearance'}{activeTab === 'INTERNSHIP' && 'Submit Internship Permission'}{activeTab === 'LIBRARY' && 'Submit Library Request'}</span></>
-              )}
-            </button>
-          </div>
-        </form>
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: '18px' }} />
+        </div>
       </div>
     </DashboardLayout>
   );

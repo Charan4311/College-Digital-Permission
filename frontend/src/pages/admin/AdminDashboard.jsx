@@ -32,7 +32,7 @@ const STATUS_COLORS = {
   PENDING_CTPO: '#f59e0b',
   PENDING_HOD: '#f59e0b',
   PENDING_HOSTEL_INCHARGE: '#f59e0b',
-  ISSUED: '#3b82f6',
+  ISSUED: 'var(--purple)',
   USED: '#10b981',
   REJECTED_CTPO: '#ef4444',
   REJECTED_HOD: '#ef4444',
@@ -119,11 +119,11 @@ export default function AdminDashboard() {
           <div className="stat-value" style={{ color: 'var(--yellow)' }}>{pendingTotal}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ color: '#3b82f6' }}>
+          <div className="stat-icon" style={{ color: '#2563eb' }}>
             <QrCode size={24} />
           </div>
           <div className="stat-label">Active Passes Issued</div>
-          <div className="stat-value" style={{ color: '#3b82f6' }}>{issuedCount}</div>
+          <div className="stat-value" style={{ color: '#2563eb' }}>{issuedCount}</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ color: 'var(--green)' }}>
@@ -141,7 +141,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px]">
         {/* Stage bar chart */}
         <div className="card">
           <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>

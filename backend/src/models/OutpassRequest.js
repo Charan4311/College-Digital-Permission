@@ -51,6 +51,7 @@ const outpassRequestSchema = new mongoose.Schema({
   // Document Attachment (Mess Receipt, Internship Offer Letter, etc.)
   documentUrl: { type: String },
   documentName: { type: String },
+  documentFileId: { type: String, index: true },
 
   // Status Lifecycle
   status: {

@@ -31,10 +31,10 @@ import {
 } from 'lucide-react';
 
 const ROLE_LABELS = {
-  CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#3b82f6', desc: 'Department-level review for out-pass, mess, internship & library requests' },
+  CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#7C3AED', desc: 'Department-level review for out-pass, mess, internship & library requests' },
   HOD: { name: 'HOD Approval Console', pendingStatus: 'PENDING_HOD', color: '#8b5cf6', desc: 'Head of Department authorization for permissions & clearances' },
   HOSTEL_INCHARGE: { name: 'Hostel In-charge Console', pendingStatus: 'PENDING_HOSTEL_INCHARGE', color: '#10b981', desc: 'Final gate permission clearance for hosteler students' },
-  PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#2563eb', desc: 'Final institutional authorization for student internships' },
+  PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#6D28D9', desc: 'Final institutional authorization for student internships' },
 };
 
 export default function ApproverDashboard() {
@@ -164,7 +164,7 @@ export default function ApproverDashboard() {
   const getBadgeTypeColor = (type) => {
     switch (type) {
       case 'MESS_FEE': return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
-      case 'INTERNSHIP': return { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' };
+      case 'INTERNSHIP': return { bg: '#f3e8ff', text: '#6D28D9', border: '#e9d5ff' };
       case 'LIBRARY': return { bg: '#fef3c7', text: '#d97706', border: '#fde68a' };
       default: return { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' };
     }
@@ -249,7 +249,7 @@ export default function ApproverDashboard() {
                     background: '#ffffff',
                     border: '1px solid #cbd5e1',
                     borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 12px rgba(109, 40, 217, 0.08)',
                     color: '#0f172a'
                   }}
                 />
@@ -431,7 +431,7 @@ export default function ApproverDashboard() {
                         <td>
                           {req.documentUrl ? (
                             <a
-                              href={req.documentUrl}
+                              href={buildFileUrl(req.documentUrl)}
                               target="_blank"
                               rel="noreferrer"
                               style={{

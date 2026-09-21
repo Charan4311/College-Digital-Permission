@@ -70,7 +70,7 @@ export default function AdminUsers() {
         <p className="page-subtitle">Create and manage CTPO, HOD, Hostel In-charge, and Security accounts</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-[24px]">
         {/* Create Form */}
         <div className="card" style={{ height: 'fit-content' }}>
           <div className="card-title" style={{ marginBottom: 20 }}>Create Staff Account</div>

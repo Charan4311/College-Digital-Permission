@@ -244,7 +244,7 @@ export default function SecurityScanner() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '24px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px]">
         {/* Left Column: Scanner + Active Passes Queue */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Scanner Card */}

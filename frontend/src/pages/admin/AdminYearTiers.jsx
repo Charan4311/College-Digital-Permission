@@ -50,7 +50,7 @@ export default function AdminYearTiers() {
         <span>Year tiers group academic years for HOD authority. Example: TIER_JUNIOR covers years 1 and 2, TIER_SENIOR covers years 3 and 4.</span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-[24px]">
         {/* Create Form */}
         <div className="card" style={{ height: 'fit-content' }}>
           <div className="card-title" style={{ marginBottom: 20 }}>Add Year Tier</div>

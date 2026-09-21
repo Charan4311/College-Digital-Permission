@@ -47,7 +47,7 @@ const NAV_CONFIG = {
     { label: 'QR Scanner', icon: QrCode, path: '/security/scanner' },
   ],
   STUDENT: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard' },
+    { label: 'Overview', icon: LayoutDashboard, path: '/student/dashboard' },
     { label: 'New Permission', icon: FileText, path: '/student/new-permission' },
     { label: 'My Request', icon: ClipboardList, path: '/student/my-request' },
     { label: 'My Profile', icon: Users, path: '/student/profile' },
@@ -79,26 +79,21 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     onClose();
   };
 
+  const roleLabel = ROLE_LABELS[user?.role] || user?.role || 'Student';
+  const studentMeta = user?.rollNo || user?.username || 'Student';
+  const departmentMeta = user?.branch || user?.department || 'Department';
+
   return (
     <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff'
-            }}>
-              <Sparkles size={16} />
-            </div>
-            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Digital Permission</h1>
+          <div className="sidebar-brand-mark">
+            <Sparkles size={16} />
           </div>
-          <p style={{ margin: 0, fontSize: '11px' }}>College Approval Platform</p>
+          <div className="sidebar-brand-copy">
+            <h1>Digital Permission</h1>
+            <p>College Approval Platform</p>
+          </div>
         </div>
 
         <button
@@ -111,7 +106,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         </button>
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Student navigation">
         <div className="nav-section-label">Navigation</div>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -122,24 +117,31 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
               className={`nav-item${isActive ? ' active' : ''}`}
               onClick={() => handleNavClick(item.path)}
             >
-              <span className="nav-icon" style={{ display: 'flex', alignItems: 'center' }}>
+              <span className="nav-icon">
                 <Icon size={18} />
               </span>
-              <span>{item.label}</span>
+              <span className="nav-label">{item.label}</span>
             </button>
           );
         })}
       </nav>
 
-      <div className="sidebar-user">
-        <div className="sidebar-avatar">{initials}</div>
-        <div className="sidebar-user-info">
-          <div className="sidebar-user-name" title={user?.name}>{user?.name || 'User'}</div>
-          <div className="sidebar-user-role">{ROLE_LABELS[user?.role] || user?.role}</div>
+      <div className="sidebar-user-panel">
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">{initials}</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name" title={user?.name}>{user?.name || 'User'}</div>
+            <div className="sidebar-user-role">{roleLabel}</div>
+            <div className="sidebar-user-meta">
+              <span>{studentMeta}</span>
+              <span className="sidebar-user-dot">•</span>
+              <span>{departmentMeta}</span>
+            </div>
+          </div>
+          <button className="sidebar-logout" onClick={logout} title="Logout" aria-label="Logout">
+            <LogOut size={16} />
+          </button>
         </div>
-        <button className="sidebar-logout" onClick={logout} title="Logout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <LogOut size={16} />
-        </button>
       </div>
     </aside>
   );

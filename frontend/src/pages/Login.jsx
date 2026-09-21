@@ -45,8 +45,8 @@ export default function Login() {
   };
 
   return (
-    <div className="login-page" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#f8fafc' }}>
-      <div className="login-card" style={{ maxWidth: '440px', width: '100%', background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', padding: '36px' }}>
+    <div className="login-page" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#faf5ff' }}>
+      <div className="login-card" style={{ maxWidth: '440px', width: '100%', background: '#ffffff', borderRadius: '16px', border: '1px solid #e9d5ff', boxShadow: '0 4px 20px rgba(124, 58, 237, 0.08)', padding: '36px' }}>
         <div className="login-logo" style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{
             display: 'inline-flex',
@@ -55,8 +55,8 @@ export default function Login() {
             width: '52px',
             height: '52px',
             borderRadius: '14px',
-            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-            boxShadow: '0 8px 24px rgba(59,130,246,0.25)',
+            background: 'linear-gradient(135deg, #7c3aed, #9333ea)',
+            boxShadow: '0 8px 24px rgba(124, 58, 237, 0.25)',
             marginBottom: '16px',
             color: '#fff'
           }}>

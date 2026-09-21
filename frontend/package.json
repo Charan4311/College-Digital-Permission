@@ -11,15 +11,14 @@
   },
   "dependencies": {
     "axios": "^1.20.0",
-    "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "js-cookie": "^3.0.8",
     "lucide-react": "^1.46.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-icons": "^5.7.0",
     "react-router-dom": "^7.18.4",
-    "recharts": "^3.10.1",
-    "tailwind-merge": "^3.7.0"
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
@@ -28,7 +27,7 @@
     "autoprefixer": "^10.6.1",
     "oxlint": "^1.81.0",
     "postcss": "^8.5.28",
-    "tailwindcss": "^3.4.19",
+    "tailwindcss": "^3.4.17",
     "vite": "^8.3.0"
   }
 }

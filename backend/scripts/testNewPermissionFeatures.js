@@ -109,6 +109,12 @@ async function runTests() {
     console.log(`✓ CTPO approved internship. Next status: ${ctpoInternApprove.data.status}`);
     if (ctpoInternApprove.data.status !== 'PENDING_HOD') throw new Error('Expected status PENDING_HOD');
 
+    // Placement Officer should not see the request before HOD approval
+    const poAllBeforeHod = await req('/outpass/all/for-me', { token: placementToken });
+    const inPoAllBeforeHod = poAllBeforeHod.data.find(r => r._id.toString() === internReqId.toString());
+    if (inPoAllBeforeHod) throw new Error('Internship request incorrectly visible to Placement Officer before HOD approval');
+    console.log('✓ Placement Officer cannot see internship before HOD approval.');
+
     // HOD Approves
     const hodInternApprove = await req(`/outpass/${internReqId}/approve`, {
       method: 'POST',
@@ -118,11 +124,11 @@ async function runTests() {
     console.log(`✓ HOD approved internship. Next status: ${hodInternApprove.data.status}`);
     if (hodInternApprove.data.status !== 'PENDING_PLACEMENT_OFFICER') throw new Error('Expected status PENDING_PLACEMENT_OFFICER');
 
-    // Check Placement Officer Queue
+    // Placement Officer should see it only after HOD approval
     const poQueue = await req('/outpass/pending/for-me', { token: placementToken });
     const inPoQueue = poQueue.data.find(r => r._id.toString() === internReqId.toString());
     if (!inPoQueue) throw new Error('Internship request not found in Placement Officer queue');
-    console.log(`✓ Verified request appears in Placement Officer pending queue!`);
+    console.log(`✓ Verified request appears in Placement Officer pending queue after HOD approval!`);
 
     // Placement Officer Approves
     const poInternApprove = await req(`/outpass/${internReqId}/approve`, {

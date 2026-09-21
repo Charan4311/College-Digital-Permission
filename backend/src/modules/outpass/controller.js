@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+const { GridFSBucket, ObjectId } = require('mongodb');
 const OutpassRequest = require('../../models/OutpassRequest');
 const Student = require('../../models/Student');
 const User = require('../../models/User');
@@ -9,15 +11,37 @@ const QRCode = require('qrcode');
 
 // ─── FILE UPLOAD: Upload supporting documents ──────────────────────────────
 
-exports.uploadDocument = (req, res) => {
+exports.uploadDocument = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    const fileUrl = `/uploads/${req.file.filename}`;
+
+    const db = mongoose.connection.db;
+    if (!db) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+    const uploadStream = bucket.openUploadStream(req.file.originalname, {
+      contentType: req.file.mimetype,
+      metadata: { uploadedBy: req.user.id, kind: 'document' }
+    });
+
+    uploadStream.end(req.file.buffer);
+
+    await new Promise((resolve, reject) => {
+      uploadStream.on('finish', resolve);
+      uploadStream.on('error', reject);
+    });
+
+    const fileId = uploadStream.id.toString();
+    const fileUrl = `/uploads/${fileId}`;
     res.json({
       success: true,
       data: {
+        fileId,
+        proofFileId: fileId,
         fileUrl,
         fileName: req.file.originalname
       }
@@ -25,6 +49,78 @@ exports.uploadDocument = (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ success: false, message: 'File upload failed' });
+  }
+};
+
+exports.getProofFile = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    if (!ObjectId.isValid(fileId)) {
+      return res.status(400).json({ success: false, message: 'Invalid proof file id' });
+    }
+
+    const db = mongoose.connection.db;
+    if (!db) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const request = await OutpassRequest.findOne({
+      $or: [
+        { documentFileId: fileId },
+        { documentUrl: { $regex: new RegExp(`/uploads/${fileId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), $options: 'i' } }
+      ]
+    }).populate('studentId', 'name role branchId year yearTier studentType').populate('branchId', 'name code');
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Proof file not found for any request' });
+    }
+
+    const requestStudentId = request.studentId?._id?.toString();
+    const isOwner = req.user.role === 'STUDENT' && requestStudentId === req.user.id;
+
+    let isAuthorized = isOwner;
+    if (!isAuthorized) {
+      const actingUser = await User.findById(req.user.id).lean();
+      if (!actingUser) {
+        return res.status(401).json({ success: false, message: 'Authenticated user not found' });
+      }
+
+      if (req.user.role === 'ADMIN') {
+        isAuthorized = true;
+      } else if (req.user.role === 'CTPO') {
+        isAuthorized = !!request.branchId && actingUser.branchId && request.branchId.toString() === actingUser.branchId.toString() &&
+          (!actingUser.assignedYear || !request.year || request.year === actingUser.assignedYear);
+      } else if (req.user.role === 'HOD') {
+        isAuthorized = (!actingUser.authorityScope?.yearTier || request.yearTier === actingUser.authorityScope.yearTier) &&
+          (!actingUser.authorityScope?.studentType || request.studentType === actingUser.authorityScope.studentType);
+      } else if (req.user.role === 'HOSTEL_INCHARGE') {
+        isAuthorized = request.studentType === 'HOSTELER';
+      } else if (req.user.role === 'PLACEMENT_OFFICER') {
+        isAuthorized = request.requestType === 'INTERNSHIP';
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: 'Access denied: you are not allowed to view this proof' });
+    }
+
+    const file = await db.collection('uploads.files').findOne({ _id: new ObjectId(fileId) });
+    if (!file) {
+      return res.status(404).json({ success: false, message: 'Proof file not found in GridFS' });
+    }
+
+    res.setHeader('Content-Type', file.contentType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${file.filename}"`);
+
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+    const stream = bucket.openDownloadStream(new ObjectId(fileId));
+    stream.on('error', () => {
+      res.status(404).json({ success: false, message: 'Proof file not found' });
+    });
+    stream.pipe(res);
+  } catch (e) {
+    console.error('Get proof file error:', e);
+    res.status(500).json({ success: false, message: 'Error fetching proof file' });
   }
 };
 
@@ -56,6 +152,8 @@ exports.createRequest = async (req, res) => {
     }
 
     const referenceId = 'PERM-' + new Date().getFullYear() + '-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+    const documentUrl = req.body.documentUrl || null;
+    const documentFileId = req.body.documentFileId || (typeof documentUrl === 'string' ? documentUrl.split('/').filter(Boolean).pop() : null);
 
     const baseData = {
       referenceId,
@@ -68,8 +166,9 @@ exports.createRequest = async (req, res) => {
       studentType,
       status: 'PENDING_CTPO',
       currentApproverRole: 'CTPO',
-      documentUrl: req.body.documentUrl || null,
-      documentName: req.body.documentName || null
+      documentUrl,
+      documentName: req.body.documentName || null,
+      documentFileId: documentFileId || null
     };
 
     if (requestType === 'OUTPASS') {
@@ -89,6 +188,9 @@ exports.createRequest = async (req, res) => {
       if (!reason || !startDate || !endDate || messAmount === undefined || !paidStatus) {
         return res.status(400).json({ success: false, message: 'Reason, start date, end date, mess amount, and paid status are required' });
       }
+      if (!req.body.documentUrl || !req.body.documentName) {
+        return res.status(400).json({ success: false, message: 'Please upload the required mess fee proof document.' });
+      }
       Object.assign(baseData, {
         reason,
         startDate: new Date(startDate),
@@ -100,6 +202,9 @@ exports.createRequest = async (req, res) => {
       const { companyName, companyLocation, role, internshipMode, startDate, endDate } = req.body;
       if (!companyName || !companyLocation || !role || !internshipMode || !startDate || !endDate) {
         return res.status(400).json({ success: false, message: 'All internship fields (Company, Location, Role, Mode, Dates) are required' });
+      }
+      if (!req.body.documentUrl || !req.body.documentName) {
+        return res.status(400).json({ success: false, message: 'Please upload the required internship proof document.' });
       }
       Object.assign(baseData, {
         companyName,
@@ -220,7 +325,11 @@ exports.getPendingForMe = async (req, res) => {
       filter = { status: 'PENDING_HOSTEL_INCHARGE' };
 
     } else if (role === 'PLACEMENT_OFFICER') {
-      filter = { requestType: 'INTERNSHIP', status: 'PENDING_PLACEMENT_OFFICER' };
+      // Placement Officer must only receive Internship requests that have already passed CTPO + HOD review.
+      filter = {
+        requestType: 'INTERNSHIP',
+        status: 'PENDING_PLACEMENT_OFFICER'
+      };
 
     } else {
       return res.status(403).json({ success: false, message: 'Role cannot have pending requests' });
@@ -267,7 +376,13 @@ exports.getAllForMe = async (req, res) => {
       filter = { studentType: 'HOSTELER' };
 
     } else if (role === 'PLACEMENT_OFFICER') {
-      filter = { requestType: 'INTERNSHIP' };
+      // Placement Officer should only see Internship requests that have already cleared CTPO and HOD approval.
+      filter = {
+        requestType: 'INTERNSHIP',
+        status: {
+          $in: ['PENDING_PLACEMENT_OFFICER', 'APPROVED', 'REJECTED_PLACEMENT_OFFICER']
+        }
+      };
     }
 
     const requests = await OutpassRequest.find(filter)

@@ -19,8 +19,9 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const res = await api.get('/me');
-      setUser(res.data.data);
-      return res.data.data;
+      const nextUser = res.data.data;
+      setUser(nextUser ? { ...nextUser, profileImage: nextUser.profileImage || '' } : null);
+      return nextUser;
     } catch (error) {
       Cookies.remove('token');
       setUser(null);
@@ -28,6 +29,14 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateUser = (updater) => {
+    setUser((currentUser) => {
+      if (!currentUser) return currentUser;
+      const nextUser = typeof updater === 'function' ? updater(currentUser) : updater;
+      return nextUser ? { ...nextUser, profileImage: nextUser.profileImage || '' } : null;
+    });
   };
 
   useEffect(() => {
@@ -52,7 +61,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser, updateUser }}>
       {!loading && children}
     </AuthContext.Provider>
   );

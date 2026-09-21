@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
+const { GridFSBucket, ObjectId } = require('mongodb');
 const User = require('../../models/User');
 
 exports.login = async (req, res) => {
@@ -179,7 +181,25 @@ exports.uploadProfileImage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const db = mongoose.connection.db;
+    if (!db) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+    const uploadStream = bucket.openUploadStream(req.file.originalname, {
+      contentType: req.file.mimetype,
+      metadata: { uploadedBy: req.user.id, kind: 'profile-image' }
+    });
+
+    uploadStream.end(req.file.buffer);
+
+    await new Promise((resolve, reject) => {
+      uploadStream.on('finish', resolve);
+      uploadStream.on('error', reject);
+    });
+
+    const fileUrl = `/uploads/${uploadStream.id.toString()}`;
     const account = await User.findByIdAndUpdate(
       req.user.id,
       { profileImage: fileUrl },
@@ -194,5 +214,33 @@ exports.uploadProfileImage = async (req, res) => {
   } catch (error) {
     console.error('Upload profile image error:', error);
     res.status(500).json({ success: false, message: 'Image upload failed' });
+  }
+};
+
+exports.deleteProfileImage = async (req, res) => {
+  try {
+    const account = await User.findById(req.user.id);
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (account.profileImage) {
+      const fileId = account.profileImage.split('/').pop();
+      if (fileId && ObjectId.isValid(fileId)) {
+        const db = mongoose.connection.db;
+        if (db) {
+          const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+          await bucket.delete(new ObjectId(fileId));
+        }
+      }
+    }
+
+    account.profileImage = '';
+    await account.save();
+
+    res.json({ success: true, message: 'Profile image deleted successfully' });
+  } catch (error) {
+    console.error('Delete profile image error:', error);
+    res.status(500).json({ success: false, message: 'Profile image deletion failed' });
   }
 };

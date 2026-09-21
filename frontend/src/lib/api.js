@@ -2,8 +2,17 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
 
 const api = axios.create({ baseURL: API_BASE });
+
+export const buildFileUrl = (value) => {
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value) || /^data:/i.test(value)) return value;
+  if (value.startsWith('/')) return `${API_ORIGIN}${value}`;
+  if (value.startsWith('uploads/')) return `${API_ORIGIN}/${value}`;
+  return value;
+};
 
 // Attach JWT token to every request
 api.interceptors.request.use((config) => {
