@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import StatusBadge from '../components/StatusBadge';
 import api from '../lib/api';
+
 import {
   ArrowLeft,
   QrCode,
@@ -33,6 +34,66 @@ import {
   X,
   Phone
 } from 'lucide-react';
+
+const RECENT_ACTIVITY_STORAGE_PREFIX = 'ctpo_recent_activity_';
+
+function getRecentActivityStorageKey(user) {
+  const userKey =
+    user?._id ||
+    user?.id ||
+    user?.username ||
+    user?.email ||
+    user?.role ||
+    'current-user';
+
+  return `${RECENT_ACTIVITY_STORAGE_PREFIX}${String(userKey)}`;
+}
+
+function saveRecentActivity(user, request, type) {
+  if (!request) return;
+
+  try {
+    const key = getRecentActivityStorageKey(user);
+    const raw = localStorage.getItem(key);
+    const current = raw ? JSON.parse(raw) : [];
+    const activities = Array.isArray(current) ? current : [];
+
+    const activityRequest = {
+      _id: request._id,
+      requestType: request.requestType || request.permissionType || 'OUTPASS',
+      studentId: {
+        _id: request.studentId?._id,
+        name: request.studentId?.name || request.studentName || 'Student'
+      }
+    };
+
+    const activity = {
+      id: `${request._id || Date.now()}-${type}-${Date.now()}`,
+      request: activityRequest,
+      type,
+      timestamp: new Date().toISOString()
+    };
+
+    const withoutDuplicate = activities.filter(
+      item =>
+        !(
+          item.request?._id === request._id &&
+          item.type === type
+        )
+    );
+
+    localStorage.setItem(
+      key,
+      JSON.stringify([activity, ...withoutDuplicate].slice(0, 5))
+    );
+
+    // Dashboard may still be mounted in the same browser tab.
+    // Trigger a custom event so Recent Activity refreshes immediately.
+    window.dispatchEvent(new Event('ctpo-recent-activity-updated'));
+  } catch (error) {
+    console.error('Unable to save recent activity:', error);
+  }
+}
 
 const ROLE_STEP_LABELS = {
   CTPO: 'CTPO Verification',
@@ -133,6 +194,12 @@ export default function RequestDetail() {
   const [qrImage, setQrImage] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
 
+  // CTPO Approval / Rejection State
+  const [ctpoRemarks, setCtpoRemarks] = useState('');
+  const [ctpoActionLoading, setCtpoActionLoading] = useState(false);
+  const [ctpoActionMessage, setCtpoActionMessage] = useState('');
+  const [ctpoActionError, setCtpoActionError] = useState('');
+
   // Edit & Resubmit Modal State
   const [resubmitModalOpen, setResubmitModalOpen] = useState(false);
   const [resubmitForm, setResubmitForm] = useState({});
@@ -166,6 +233,10 @@ export default function RequestDetail() {
       setQrLoading(false);
     }
   }, [id]);
+
+  // API response contains the actual request inside data.request.
+  // Keep one safe reference for the rest of this component.
+ const request = data?.request || data;
 
   useEffect(() => {
     fetchData();
@@ -202,6 +273,43 @@ export default function RequestDetail() {
     });
     setResubmitError('');
     setResubmitModalOpen(true);
+  };
+
+  // Open the uploaded document through the backend API.
+  // The backend now serves files stored in MongoDB Atlas through:
+  // GET /api/outpass/files/:id
+  const handleOpenDocument = async () => {
+    if (!request?._id) {
+      alert('Document request ID is missing.');
+      return;
+    }
+
+    try {
+      const response = await api.get(`/outpass/files/${request._id}`, {
+        responseType: 'blob'
+      });
+
+      const contentType = response.headers['content-type'] || 'application/pdf';
+      const blob = new Blob([response.data], { type: contentType });
+      const fileUrl = window.URL.createObjectURL(blob);
+
+      // Open the document in a new browser tab.
+      const newTab = window.open(fileUrl, '_blank', 'noopener,noreferrer');
+
+      if (!newTab) {
+        // Browser blocked the new tab; fall back to the current tab.
+        window.location.href = fileUrl;
+      }
+
+      // Give the new tab time to load before releasing the object URL.
+      setTimeout(() => window.URL.revokeObjectURL(fileUrl), 60 * 1000);
+    } catch (err) {
+      console.error('Failed to open document:', err);
+      alert(
+        err.response?.data?.message ||
+        'Unable to open the uploaded document. Please try again.'
+      );
+    }
   };
 
   const handleFileUpload = async (e) => {
@@ -241,6 +349,94 @@ export default function RequestDetail() {
     }
   };
 
+  // =========================================================
+  // CTPO APPROVE / REJECT
+  // =========================================================
+
+  const isCtpoPending =
+    user?.role === 'CTPO' &&
+    request?.status === 'PENDING_CTPO';
+
+  const handleCtpoApprove = async () => {
+    if (!id) {
+      setCtpoActionError('Request ID not found.');
+      return;
+    }
+
+    try {
+      setCtpoActionLoading(true);
+      setCtpoActionMessage('');
+      setCtpoActionError('');
+
+      // Save the CTPO action before the request changes to the next
+      // workflow status (for example PENDING_HOD).
+      const requestBeforeApproval = request;
+
+      await api.post(`/outpass/${id}/approve`, {
+        remarks: ctpoRemarks.trim() || 'Approved by CTPO'
+      });
+
+      saveRecentActivity(user, requestBeforeApproval, 'APPROVED');
+
+      setCtpoActionMessage('Request approved successfully.');
+      await fetchData();
+
+      setTimeout(() => {
+        navigate('/ctpo/pending');
+      }, 700);
+    } catch (error) {
+      console.error('CTPO approve error:', error);
+      setCtpoActionError(
+        error?.response?.data?.message ||
+        'Unable to approve this request.'
+      );
+    } finally {
+      setCtpoActionLoading(false);
+    }
+  };
+
+  const handleCtpoReject = async () => {
+    if (!id) {
+      setCtpoActionError('Request ID not found.');
+      return;
+    }
+
+    if (!ctpoRemarks.trim()) {
+      setCtpoActionError('Please enter remarks/reason before rejecting.');
+      return;
+    }
+
+    try {
+      setCtpoActionLoading(true);
+      setCtpoActionMessage('');
+      setCtpoActionError('');
+
+      // Save the CTPO action before the request changes to REJECTED.
+      const requestBeforeRejection = request;
+
+      await api.post(`/outpass/${id}/reject`, {
+        remarks: ctpoRemarks.trim()
+      });
+
+      saveRecentActivity(user, requestBeforeRejection, 'REJECTED');
+
+      setCtpoActionMessage('Request rejected successfully.');
+      await fetchData();
+
+      setTimeout(() => {
+        navigate('/ctpo/pending');
+      }, 700);
+    } catch (error) {
+      console.error('CTPO reject error:', error);
+      setCtpoActionError(
+        error?.response?.data?.message ||
+        'Unable to reject this request.'
+      );
+    } finally {
+      setCtpoActionLoading(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -260,7 +456,7 @@ export default function RequestDetail() {
     </DashboardLayout>
   );
 
-  const { request, approvalSteps } = data;
+  const { approvalSteps } = data;
   const reqType = request.requestType || 'OUTPASS';
   const isOwner = user?.role === 'STUDENT' && (request.studentId?._id === user?.id || request.studentId === user?.id);
   const isApprovedOrIssued = request.status === 'APPROVED' || request.status === 'ISSUED' || request.status === 'USED';
@@ -416,16 +612,16 @@ export default function RequestDetail() {
               )}
 
               {/* Attached Document Row */}
-              {request.documentUrl && (
+              {(request.documentUrl || request.documentName) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
                   <span style={{ minWidth: 150, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Paperclip size={14} color="var(--accent)" />
                     <span>Attached Document</span>
                   </span>
-                  <a
-                    href={request.documentUrl}
-                    target="_blank"
-                    rel="noreferrer"
+
+                  <button
+                    type="button"
+                    onClick={handleOpenDocument}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -435,12 +631,16 @@ export default function RequestDetail() {
                       color: 'var(--accent)',
                       textDecoration: 'none',
                       background: 'var(--accent-dim)',
-                      padding: '4px 10px',
-                      borderRadius: '6px'
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit'
                     }}
                   >
+                    <Paperclip size={14} />
                     <span>{request.documentName || 'View Document'}</span>
-                  </a>
+                  </button>
                 </div>
               )}
 
@@ -503,6 +703,195 @@ export default function RequestDetail() {
           />
         </div>
       </div>
+
+      {/* =====================================================
+          CTPO DECISION
+      ===================================================== */}
+      {isCtpoPending && (
+        <div
+          className="card"
+          style={{
+            marginTop: '24px',
+            padding: '24px',
+            border: '1px solid var(--border)',
+            borderRadius: '12px'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '6px'
+            }}
+          >
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'var(--accent-dim)',
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <CheckCircle2 size={19} />
+            </div>
+
+            <div>
+              <div
+                style={{
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)'
+                }}
+              >
+                CTPO Decision
+              </div>
+
+              <div
+                style={{
+                  marginTop: '3px',
+                  fontSize: '13px',
+                  color: 'var(--text-muted)'
+                }}
+              >
+                Review the request and choose an action
+              </div>
+            </div>
+          </div>
+
+          {ctpoActionMessage && (
+            <div
+              className="alert alert-success"
+              style={{
+                marginTop: '16px',
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <CheckCircle2 size={16} />
+              <span>{ctpoActionMessage}</span>
+            </div>
+          )}
+
+          {ctpoActionError && (
+            <div
+              className="alert alert-error"
+              style={{
+                marginTop: '16px',
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <AlertTriangle size={16} />
+              <span>{ctpoActionError}</span>
+            </div>
+          )}
+
+          <div className="form-group" style={{ marginTop: '18px' }}>
+            <label
+              className="form-label"
+              style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 600
+              }}
+            >
+              Remarks{' '}
+              <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+                (Optional for approval)
+              </span>
+            </label>
+
+            <textarea
+              className="form-input"
+              rows={4}
+              placeholder="Enter remarks here..."
+              value={ctpoRemarks}
+              disabled={ctpoActionLoading}
+              onChange={(e) => {
+                setCtpoRemarks(e.target.value);
+                if (ctpoActionError) setCtpoActionError('');
+              }}
+              style={{
+                width: '100%',
+                minHeight: '100px',
+                resize: 'vertical',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '12px',
+              marginTop: '18px',
+              flexWrap: 'wrap'
+            }}
+          >
+            <button
+              type="button"
+              className="btn"
+              disabled={ctpoActionLoading}
+              onClick={handleCtpoApprove}
+              style={{
+                minWidth: '150px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '7px',
+                background: '#10b981',
+                border: '1px solid #10b981',
+                color: '#ffffff',
+                fontWeight: 700,
+                borderRadius: '8px',
+                padding: '10px 18px',
+                cursor: ctpoActionLoading ? 'not-allowed' : 'pointer',
+                opacity: ctpoActionLoading ? 0.65 : 1
+              }}
+            >
+              <Check size={17} />
+              <span>
+                {ctpoActionLoading ? 'Processing...' : 'Approve'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className="btn"
+              disabled={ctpoActionLoading}
+              onClick={handleCtpoReject}
+              style={{
+                minWidth: '150px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '7px',
+                background: '#ef4444',
+                border: '1px solid #ef4444',
+                color: '#ffffff',
+                fontWeight: 700,
+                borderRadius: '8px',
+                padding: '10px 18px',
+                cursor: ctpoActionLoading ? 'not-allowed' : 'pointer',
+                opacity: ctpoActionLoading ? 0.65 : 1
+              }}
+            >
+              <X size={17} />
+              <span>Reject</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ─── Edit & Resubmit Modal ─── */}
       {resubmitModalOpen && (

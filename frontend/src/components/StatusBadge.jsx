@@ -9,17 +9,17 @@ import {
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
-  PENDING_CTPO: { label: 'Pending CTPO', icon: Clock, className: 'badge-pending_ctpo' },
+  PENDING_CTPO: { label: 'Pending', icon: Clock, className: 'badge-pending_ctpo' },
   PENDING_HOD: { label: 'Pending HOD', icon: Clock, className: 'badge-pending_hod' },
   PENDING_HOSTEL_INCHARGE: { label: 'Pending Hostel', icon: Clock, className: 'badge-pending_hostel_incharge' },
   PENDING_PLACEMENT_OFFICER: { label: 'Pending Placement', icon: Clock, className: 'badge-pending_hod' },
-  APPROVED: { label: 'Approved / Cleared', icon: CheckCircle2, className: 'badge-issued' },
+  APPROVED: { label: 'Approved ', icon: CheckCircle2, className: 'badge-approved' },
   ISSUED: { label: 'Issued (Active)', icon: QrCode, className: 'badge-issued' },
   USED: { label: 'Used / Gate Passed', icon: CheckCheck, className: 'badge-used' },
-  REJECTED_CTPO: { label: 'Rejected (CTPO)', icon: XCircle, className: 'badge-rejected_ctpo' },
-  REJECTED_HOD: { label: 'Rejected (HOD)', icon: XCircle, className: 'badge-rejected_hod' },
-  REJECTED_HOSTEL_INCHARGE: { label: 'Rejected (Hostel)', icon: XCircle, className: 'badge-rejected_hostel_incharge' },
-  REJECTED_PLACEMENT_OFFICER: { label: 'Rejected (Placement)', icon: XCircle, className: 'badge-rejected_hod' },
+  REJECTED_CTPO: { label: 'Rejected ', icon: XCircle, className: 'badge-rejected_ctpo' },
+  REJECTED_HOD: { label: 'Rejected ', icon: XCircle, className: 'badge-rejected_hod' },
+  REJECTED_HOSTEL_INCHARGE: { label: 'Rejected ', icon: XCircle, className: 'badge-rejected_hostel_incharge' },
+  REJECTED_PLACEMENT_OFFICER: { label: 'Rejected ', icon: XCircle, className: 'badge-rejected_hod' },
   CANCELLED: { label: 'Cancelled', icon: Ban, className: 'badge-cancelled' },
 };
 
