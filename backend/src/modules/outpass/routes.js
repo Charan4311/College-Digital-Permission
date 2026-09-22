@@ -37,6 +37,9 @@ router.get('/pending/for-me', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLA
 router.get('/all/for-me', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLACEMENT_OFFICER'), c.getAllForMe);
 router.get('/dashboard-stats', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLACEMENT_OFFICER', 'ADMIN'), c.getDashboardStats);
 
+// Common proof view API used by all dashboards
+router.get('/files/:fileId', c.getProofFile);
+
 // Single request (student sees own, approvers see their scope, admin sees all)
 router.get('/:id/qr', requireRole('STUDENT', 'ADMIN'), c.getQRImage);
 router.get('/:id', c.getRequest);

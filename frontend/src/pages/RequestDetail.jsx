@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import StatusBadge from '../components/StatusBadge';
@@ -51,6 +51,42 @@ function getWorkflowChain(request) {
   // OUTPASS:
   return request.studentType === 'HOSTELER' ? ['CTPO', 'HOD', 'HOSTEL_INCHARGE'] : ['CTPO', 'HOD'];
 }
+
+
+/* ─────────────────────────────────────────────────────────────
+   ATTACHED DOCUMENT URL
+   Uploaded files are served by the backend, not the Vite frontend.
+   This converts a relative file URL such as /uploads/file.jpg
+   into the backend URL such as http://localhost:5000/uploads/file.jpg.
+───────────────────────────────────────────────────────────── */
+const getDocumentUrl = (documentUrl) => {
+  if (!documentUrl) return '';
+
+  // If the backend already returned a complete URL, use it directly.
+  if (/^https?:\/\//i.test(documentUrl)) {
+    return documentUrl;
+  }
+
+  // Use the Axios backend URL when available.
+  // If it ends in /api, remove that suffix because uploaded files
+  // are served from the backend root (/uploads/...).
+  let backendBaseUrl = api?.defaults?.baseURL || '';
+
+  if (backendBaseUrl) {
+    backendBaseUrl = backendBaseUrl.replace(/\/api\/?$/, '');
+  }
+
+  // Fallback for the current local development setup.
+  if (!backendBaseUrl) {
+    backendBaseUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
+  }
+
+  const path = documentUrl.startsWith('/')
+    ? documentUrl
+    : `/${documentUrl}`;
+
+  return `${backendBaseUrl}${path}`;
+};
 
 function Timeline({ steps, status, request }) {
   const chain = getWorkflowChain(request);
@@ -127,11 +163,18 @@ function Timeline({ steps, status, request }) {
 export default function RequestDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qrImage, setQrImage] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
+
+  // Approver Approval State
+  const [approverRemarks, setApproverRemarks] = useState('');
+  const [approverActionLoading, setApproverActionLoading] = useState(false);
+  const [approverActionError, setApproverActionError] = useState('');
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
 
   // Edit & Resubmit Modal State
   const [resubmitModalOpen, setResubmitModalOpen] = useState(false);
@@ -241,6 +284,59 @@ export default function RequestDetail() {
     }
   };
 
+  // Approver Approve
+  const handleApproverApprove = async () => {
+    setApproverActionError('');
+    setApproverActionLoading(true);
+
+    try {
+      await api.post(`/outpass/${id}/approve`, {
+        remarks: 'Approved'
+      });
+
+      await fetchData();
+      setApproverRemarks('');
+      setRejectModalOpen(false);
+    } catch (err) {
+      setApproverActionError(
+        err.response?.data?.message || 'Failed to approve request'
+      );
+    } finally {
+      setApproverActionLoading(false);
+    }
+  };
+
+  // Approver Reject
+  const handleApproverReject = async () => {
+    const remarks = approverRemarks.trim();
+
+    if (!remarks) {
+      setApproverActionError(
+        'Please enter remarks before rejecting the request.'
+      );
+      return;
+    }
+
+    setApproverActionError('');
+    setApproverActionLoading(true);
+
+    try {
+      await api.post(`/outpass/${id}/reject`, {
+        remarks
+      });
+
+      await fetchData();
+      setApproverRemarks('');
+      setRejectModalOpen(false);
+    } catch (err) {
+      setApproverActionError(
+        err.response?.data?.message || 'Failed to reject request'
+      );
+    } finally {
+      setApproverActionLoading(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -264,6 +360,31 @@ export default function RequestDetail() {
   const reqType = request.requestType || 'OUTPASS';
   const isOwner = user?.role === 'STUDENT' && (request.studentId?._id === user?.id || request.studentId === user?.id);
   const isApprovedOrIssued = request.status === 'APPROVED' || request.status === 'ISSUED' || request.status === 'USED';
+
+  const isApproverPending =
+    (user?.role === 'CTPO' && request.status === 'PENDING_CTPO') ||
+    (user?.role === 'HOD' &&
+      (request.status === 'PENDING_HOD' ||
+        request.status === 'PENDING_HOD_APPROVAL')) ||
+    (user?.role === 'HOSTEL_INCHARGE' &&
+      request.status === 'PENDING_HOSTEL_INCHARGE') ||
+    (user?.role === 'PLACEMENT_OFFICER' &&
+      request.requestType === 'INTERNSHIP' &&
+      request.status === 'PENDING_PLACEMENT_OFFICER');
+
+  // Approval actions are shown only when the request was opened from an
+  // approver queue. Normal detail pages remain read-only.
+  const isApprovalMode = searchParams.get('mode') === 'approval';
+  const showApproverApprovalActions = isApproverPending && isApprovalMode;
+
+  const approverTitle =
+    user?.role === 'PLACEMENT_OFFICER'
+      ? 'Placement Officer Approval'
+      : user?.role === 'HOSTEL_INCHARGE'
+        ? 'Hostel In-charge Approval'
+        : user?.role === 'CTPO'
+          ? 'CTPO Approval'
+          : 'HOD Approval';
 
   // Compute clean Reference ID
   const refId = request.referenceId || `PERM-${new Date(request.createdAt).getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}`;
@@ -423,9 +544,9 @@ export default function RequestDetail() {
                     <span>Attached Document</span>
                   </span>
                   <a
-                    href={request.documentUrl}
+                    href={getDocumentUrl(request.documentUrl)}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -436,8 +557,10 @@ export default function RequestDetail() {
                       textDecoration: 'none',
                       background: 'var(--accent-dim)',
                       padding: '4px 10px',
-                      borderRadius: '6px'
+                      borderRadius: '6px',
+                      cursor: 'pointer'
                     }}
+                    title="Open attached document"
                   >
                     <span>{request.documentName || 'View Document'}</span>
                   </a>
@@ -504,6 +627,335 @@ export default function RequestDetail() {
         </div>
       </div>
 
+      {/* ─────────────────────────────────────────────
+          APPROVAL ACTIONS
+      ───────────────────────────────────────────── */}
+      {showApproverApprovalActions && (
+        <>
+          <div
+            className="card"
+            style={{
+              marginTop: '24px',
+              border: '1px solid var(--border)'
+            }}
+          >
+            <div
+              className="card-header"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '20px'
+              }}
+            >
+              <ShieldCheck size={18} color="var(--purple)" />
+              <div className="card-title" style={{ margin: 0 }}>
+                {approverTitle}
+              </div>
+            </div>
+
+            {approverActionError && (
+              <div
+                className="alert alert-error"
+                style={{
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <AlertTriangle size={16} />
+                <span>{approverActionError}</span>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '12px',
+                width: '100%'
+              }}
+            >
+              {/* APPROVE BUTTON */}
+              <button
+                type="button"
+                className="btn"
+                onClick={handleApproverApprove}
+                disabled={approverActionLoading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '7px',
+                  width: '154px',
+                  height: '44px',
+                  padding: '0',
+                  borderRadius: '8px',
+                  background: '#16a34a',
+                  color: '#fff',
+                  border: '1px solid #16a34a',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  cursor: approverActionLoading ? 'not-allowed' : 'pointer',
+                  opacity: approverActionLoading ? 0.65 : 1
+                }}
+              >
+                {approverActionLoading ? (
+                  <span
+                    className="spinner"
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderColor: 'rgba(255,255,255,0.4)',
+                      borderTopColor: '#fff'
+                    }}
+                  />
+                ) : (
+                  <CheckCircle2 size={15} />
+                )}
+                <span>
+                  {approverActionLoading ? 'Processing...' : 'Approve'}
+                </span>
+              </button>
+
+              {/* REJECT BUTTON */}
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setApproverRemarks('');
+                  setApproverActionError('');
+                  setRejectModalOpen(true);
+                }}
+                disabled={approverActionLoading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '7px',
+                  width: '154px',
+                  height: '44px',
+                  padding: '0',
+                  borderRadius: '8px',
+                  background: '#fff1f2',
+                  color: '#dc2626',
+                  border: '1px solid #fecaca',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  cursor: approverActionLoading ? 'not-allowed' : 'pointer',
+                  opacity: approverActionLoading ? 0.65 : 1
+                }}
+              >
+                <XCircle size={15} />
+                <span>Reject</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Reject Remarks Popup */}
+          {rejectModalOpen && (
+            <div
+              className="modal-overlay"
+              onClick={(e) => {
+                if (e.target === e.currentTarget && !approverActionLoading) {
+                  setRejectModalOpen(false);
+                  setApproverRemarks('');
+                  setApproverActionError('');
+                }
+              }}
+              style={{
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <div
+                className="modal"
+                style={{
+                  width: 'min(520px, calc(100vw - 32px))',
+                  maxWidth: '520px',
+                  padding: '24px',
+                  borderRadius: '14px'
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '18px'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        background: '#fee2e2',
+                        color: '#dc2626',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <XCircle size={20} />
+                    </div>
+
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: 700,
+                          color: 'var(--text-primary)'
+                        }}
+                      >
+                        Reject Request
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: 'var(--text-muted)',
+                          marginTop: '2px'
+                        }}
+                      >
+                        Enter a reason before rejecting this request.
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (approverActionLoading) return;
+                      setRejectModalOpen(false);
+                      setApproverRemarks('');
+                      setApproverActionError('');
+                    }}
+                    disabled={approverActionLoading}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: approverActionLoading ? 'not-allowed' : 'pointer',
+                      color: 'var(--text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px'
+                    }}
+                    aria-label="Close"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {approverActionError && (
+                  <div
+                    className="alert alert-error"
+                    style={{
+                      marginBottom: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <AlertTriangle size={16} />
+                    <span>{approverActionError}</span>
+                  </div>
+                )}
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">
+                    Rejection Remarks <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+
+                  <textarea
+                    className="form-input"
+                    rows={5}
+                    autoFocus
+                    placeholder="Enter reason for rejecting this request..."
+                    value={approverRemarks}
+                    onChange={(e) => {
+                      setApproverRemarks(e.target.value);
+                      setApproverActionError('');
+                    }}
+                    disabled={approverActionLoading}
+                    style={{
+                      resize: 'vertical',
+                      minHeight: '120px'
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '10px'
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      if (approverActionLoading) return;
+                      setRejectModalOpen(false);
+                      setApproverRemarks('');
+                      setApproverActionError('');
+                    }}
+                    disabled={approverActionLoading}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={handleApproverReject}
+                    disabled={approverActionLoading}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      background: '#dc2626',
+                      color: '#fff',
+                      border: '1px solid #dc2626',
+                      minWidth: '135px'
+                    }}
+                  >
+                    {approverActionLoading ? (
+                      <span
+                        className="spinner"
+                        style={{
+                          width: 14,
+                          height: 14,
+                          borderColor: 'rgba(255,255,255,0.4)',
+                          borderTopColor: '#fff'
+                        }}
+                      />
+                    ) : (
+                      <XCircle size={15} />
+                    )}
+                    <span>
+                      {approverActionLoading ? 'Rejecting...' : 'Confirm Reject'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
       {/* ─── Edit & Resubmit Modal ─── */}
       {resubmitModalOpen && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setResubmitModalOpen(false)}>

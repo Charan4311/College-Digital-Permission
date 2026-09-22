@@ -9,16 +9,38 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const refreshUser = async () => {
     const token = Cookies.get('token');
-    if (token) {
-      api.get('/me')
-        .then(res => setUser(res.data.data))
-        .catch(() => Cookies.remove('token'))
-        .finally(() => setLoading(false));
-    } else {
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return null;
+    }
+
+    try {
+      const res = await api.get('/me');
+      const nextUser = res.data.data;
+      setUser(nextUser ? { ...nextUser, profileImage: nextUser.profileImage || '' } : null);
+      return nextUser;
+    } catch (error) {
+      Cookies.remove('token');
+      setUser(null);
+      throw error;
+    } finally {
       setLoading(false);
     }
+  };
+
+  const updateUser = (updater) => {
+    setUser((currentUser) => {
+      if (!currentUser) return currentUser;
+      const nextUser = typeof updater === 'function' ? updater(currentUser) : updater;
+      return nextUser ? { ...nextUser, profileImage: nextUser.profileImage || '' } : null;
+    });
+  };
+
+  useEffect(() => {
+    refreshUser();
   }, []);
 
   const login = async (username, password) => {
@@ -39,7 +61,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser, updateUser }}>
       {!loading && children}
     </AuthContext.Provider>
   );

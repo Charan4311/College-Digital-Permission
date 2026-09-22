@@ -1,5 +1,9 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
+const { GridFSBucket, ObjectId } = require('mongodb');
+const fs = require('fs');
+const path = require('path');
 const User = require('../../models/User');
 const Branch = require('../../models/Branch');
 
@@ -77,6 +81,7 @@ exports.login = async (req, res) => {
           branchName: account.branchId?.name,
           branchCode: account.branchId?.code,
           assignedYear: account.assignedYear,
+          profileImage: account.profileImage || '',
           ...(isStudent && {
             rollNo: account.rollNo,
             studentType: account.studentType,
@@ -118,6 +123,7 @@ exports.getMe = async (req, res) => {
         branchName: account.branchId?.name,
         branchCode: account.branchId?.code,
         assignedYear: account.assignedYear,
+        profileImage: account.profileImage || '',
         ...(isStudent && {
           rollNo: account.rollNo,
           studentType: account.studentType,
@@ -132,5 +138,168 @@ exports.getMe = async (req, res) => {
   } catch (error) {
     console.error('getMe error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const account = await User.findById(req.user.id);
+    if (!account || !account.isActive) {
+      return res.status(401).json({ success: false, message: 'Account disabled or not found' });
+    }
+
+    const { name, studentType, year, yearTier } = req.body;
+    if (name !== undefined && !String(name).trim()) {
+      return res.status(400).json({ success: false, message: 'Name is required' });
+    }
+
+    if (name !== undefined) account.name = String(name).trim();
+    if (studentType !== undefined) {
+      const normalized = String(studentType).toUpperCase();
+      if (!['DAY_SCHOLAR', 'HOSTELER'].includes(normalized)) {
+        return res.status(400).json({ success: false, message: 'Invalid student type' });
+      }
+      account.studentType = normalized;
+    }
+    if (year !== undefined) account.year = Number(year);
+    if (yearTier !== undefined) account.yearTier = String(yearTier);
+
+    await account.save();
+
+    const updated = await User.findById(account._id)
+      .select('-passwordHash')
+      .populate('branchId', 'name code');
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Current password, new password, and confirm password are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'New password and confirm password do not match' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long' });
+    }
+
+    const account = await User.findById(req.user.id);
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, account.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    account.passwordHash = await bcrypt.hash(newPassword, 10);
+    await account.save();
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    let fileUrl = '';
+
+    if (req.file.filename) {
+      // Saved via multer disk storage
+      fileUrl = `/uploads/${req.file.filename}`;
+    } else if (req.file.buffer) {
+      // Memory storage: save to uploads dir on disk as well as GridFS if available
+      const uploadDir = path.join(__dirname, '../../../uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const uniqueName = Date.now() + '-' + (req.file.originalname || 'profile.png');
+      const diskPath = path.join(uploadDir, uniqueName);
+      fs.writeFileSync(diskPath, req.file.buffer);
+      fileUrl = `/uploads/${uniqueName}`;
+
+      const db = mongoose.connection.db;
+      if (db) {
+        try {
+          const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+          const uploadStream = bucket.openUploadStream(req.file.originalname, {
+            contentType: req.file.mimetype,
+            metadata: { uploadedBy: req.user.id, kind: 'profile-image' }
+          });
+          uploadStream.end(req.file.buffer);
+        } catch (err) {
+          console.warn('GridFS save warning:', err);
+        }
+      }
+    }
+
+    const account = await User.findByIdAndUpdate(
+      req.user.id,
+      { profileImage: fileUrl },
+      { new: true }
+    ).select('-passwordHash').populate('branchId', 'name code');
+
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, data: account, fileUrl });
+  } catch (error) {
+    console.error('Upload profile image error:', error);
+    res.status(500).json({ success: false, message: 'Image upload failed' });
+  }
+};
+
+exports.deleteProfileImage = async (req, res) => {
+  try {
+    const account = await User.findById(req.user.id);
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (account.profileImage) {
+      const fileName = account.profileImage.split('/').pop();
+      // If on disk, remove
+      if (fileName) {
+        const diskPath = path.join(__dirname, '../../../uploads', fileName);
+        if (fs.existsSync(diskPath)) {
+          try { fs.unlinkSync(diskPath); } catch (_) {}
+        }
+      }
+      if (fileName && ObjectId.isValid(fileName)) {
+        const db = mongoose.connection.db;
+        if (db) {
+          try {
+            const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+            await bucket.delete(new ObjectId(fileName));
+          } catch (_) {}
+        }
+      }
+    }
+
+    account.profileImage = '';
+    await account.save();
+
+    res.json({ success: true, message: 'Profile image deleted successfully' });
+  } catch (error) {
+    console.error('Delete profile image error:', error);
+    res.status(500).json({ success: false, message: 'Profile image deletion failed' });
   }
 };

@@ -27,26 +27,34 @@ const NAV_CONFIG = {
     { label: 'Reports & Analytics', icon: BarChart2, path: '/admin/reports' },
   ],
   CTPO: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/ctpo/dashboard' },
+    { label: 'Overview', icon: LayoutDashboard, path: '/ctpo/dashboard' },
     { label: 'Pending Requests', icon: Clock, path: '/ctpo/pending' },
     { label: 'All Requests', icon: ClipboardList, path: '/ctpo/history' },
+    { label: 'Reports', icon: FileText, path: '/ctpo/reports' },
   ],
   HOD: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/hod/dashboard' },
-    { label: 'Pending Requests', icon: Clock, path: '/hod/pending' },
-    { label: 'All Requests', icon: ClipboardList, path: '/hod/history' },
+    { label: 'Overview', icon: LayoutDashboard, path: '/hod/dashboard' },
+    { label: 'Branches', icon: Building2, path: '/hod/branches' },
+    { label: 'Student Requests', icon: ClipboardList, path: '/hod/student-requests' },
+    { label: 'My Approvals', icon: UserCheck, path: '/hod/approvals' },
+    { label: 'Reports', icon: BarChart2, path: '/hod/reports' },
   ],
   HOSTEL_INCHARGE: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/hostel/dashboard' },
+    { label: 'Overview', icon: LayoutDashboard, path: '/hostel/dashboard' },
   ],
   PLACEMENT_OFFICER: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/placement/dashboard' },
+    { label: 'Overview', icon: LayoutDashboard, path: '/placement/dashboard' },
+    { label: 'Pending Requests', icon: Clock, path: '/placement/pending' },
+    { label: 'Review History', icon: ClipboardList, path: '/placement/history' },
   ],
   SECURITY: [
     { label: 'QR Scanner', icon: QrCode, path: '/security/scanner' },
   ],
   STUDENT: [
-    { label: 'My Permissions', icon: FileText, path: '/student/dashboard' },
+    { label: 'Overview', icon: LayoutDashboard, path: '/student/dashboard' },
+    { label: 'New Permission', icon: FileText, path: '/student/new-permission' },
+    { label: 'My Request', icon: ClipboardList, path: '/student/my-request' },
+    { label: 'My Profile', icon: Users, path: '/student/profile' },
   ],
 };
 
@@ -144,7 +152,13 @@ export default function Sidebar({ isOpen = false, onClose }) {
         </nav>
 
         <div className="sidebar-user">
-          <div className="sidebar-avatar">{initials}</div>
+          <div className="sidebar-avatar" style={{ overflow: 'hidden' }}>
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              initials
+            )}
+          </div>
           <div className="sidebar-user-info">
             <div className="sidebar-user-name" title={user?.name}>{user?.name || 'User'}</div>
             <div className="sidebar-user-role">{ROLE_LABELS[user?.role] || user?.role}</div>
