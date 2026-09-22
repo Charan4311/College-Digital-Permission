@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const User = require('../../models/User');
+const Branch = require('../../models/Branch');
 
 exports.login = async (req, res) => {
   const { password } = req.body;
@@ -10,16 +11,15 @@ exports.login = async (req, res) => {
   }
 
   const trimmed = username.trim();
+  const trimmedPassword = password.trim();
 
   try {
-    // Find in unified User collection by username or rollNo (case-insensitive)
+    const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Find in unified User collection by username or rollNo (case-insensitive regex)
     let account = await User.findOne({
       $or: [
-        { username: trimmed },
-        { username: trimmed.toLowerCase() },
-        { username: trimmed.toUpperCase() },
-        { rollNo: trimmed.toUpperCase() },
-        { rollNo: trimmed }
+        { username: { $regex: new RegExp(`^${escaped}$`, 'i') } },
+        { rollNo: { $regex: new RegExp(`^${escaped}$`, 'i') } }
       ]
     });
 
@@ -33,11 +33,21 @@ exports.login = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Account disabled' });
     }
 
-    const isMatch = await bcrypt.compare(password, account.passwordHash);
+    let isMatch = await bcrypt.compare(password, account.passwordHash);
+    if (!isMatch && trimmedPassword !== password) {
+      isMatch = await bcrypt.compare(trimmedPassword, account.passwordHash);
+    }
+    if (!isMatch && (account.role === 'STUDENT' || account.rollNo)) {
+      isMatch = await bcrypt.compare(trimmedPassword.toUpperCase(), account.passwordHash) ||
+                await bcrypt.compare(trimmedPassword.toLowerCase(), account.passwordHash);
+    }
+
     if (!isMatch) {
       console.log(`[LOGIN FAILED] Password mismatch for user: ${username}`);
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
+
+    console.log(`[LOGIN SUCCESS] User logged in: ${account.username || account.rollNo} (${account.role})`);
 
     // Populate branchId to get branch name
     if (account.branchId) {
@@ -95,8 +105,32 @@ exports.getMe = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Account disabled or not found' });
     }
 
-    res.json({ success: true, data: account });
+    const isStudent = account.role === 'STUDENT';
+    res.json({
+      success: true,
+      data: {
+        id: account._id,
+        _id: account._id,
+        name: account.name,
+        username: account.username || account.rollNo,
+        role: account.role,
+        branchId: account.branchId?._id || account.branchId,
+        branchName: account.branchId?.name,
+        branchCode: account.branchId?.code,
+        assignedYear: account.assignedYear,
+        ...(isStudent && {
+          rollNo: account.rollNo,
+          studentType: account.studentType,
+          year: account.year || 4,
+          yearTier: account.yearTier || 'TIER_4TH'
+        }),
+        ...(!isStudent && {
+          authorityScope: account.authorityScope
+        })
+      }
+    });
   } catch (error) {
+    console.error('getMe error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

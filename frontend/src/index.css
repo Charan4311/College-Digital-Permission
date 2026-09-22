@@ -40,7 +40,11 @@
 
 /* ─── Reset ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
+html {
+  height: 100%;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg-base);
@@ -49,14 +53,26 @@ body {
   line-height: 1.6;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
-#root { min-height: 100vh; display: flex; flex-direction: column; }
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
 
 /* ─── Layout ─────────────────────────────────────────────────── */
 .layout {
   display: flex;
   min-height: 100vh;
   background: var(--bg-base);
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 .main-content {
   flex: 1;
@@ -65,6 +81,10 @@ body {
   min-height: 100vh;
   background: var(--bg-base);
   transition: margin-left var(--transition);
+  min-width: 0;
+  max-width: calc(100vw - 260px);
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 .screen-center {
   display: flex;
@@ -521,12 +541,295 @@ tbody td {
 @keyframes fadeInUp  { from { transform: translateY(6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes pulse     { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-/* ─── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
-  .main-content { margin-left: 0; padding: 20px; }
-  .form-grid { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: 1fr 1fr; }
+/* ─── Mobile Topbar & Sidebar Drawer ─────────────────────────── */
+.mobile-topbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.03);
+}
+
+.mobile-sidebar-close {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+/* ─── Admin Responsive Layout Classes ────────────────────────── */
+.admin-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.admin-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* 4-Card Summary Grid */
+.admin-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+  min-width: 0;
+}
+
+/* 2-Column Analytics Charts Grids */
+.admin-charts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 24px;
+  min-width: 0;
+}
+
+.admin-reports-grid-1 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+  min-width: 0;
+}
+
+.admin-reports-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+
+.admin-charts-grid > *,
+.admin-reports-grid-1 > *,
+.admin-reports-grid-2 > *,
+.admin-summary-grid > * {
+  min-width: 0;
+}
+
+/* Filter Card Row */
+.admin-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-filter-group {
+  flex: 1 1 180px;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+
+/* Donut chart + Legend container */
+.admin-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Reports & Analytics Responsive Controls */
+.reports-desktop-controls {
+  display: flex;
+}
+
+.reports-mobile-controls-box {
+  display: none;
+}
+
+/* ─── Responsive Breakpoints ─────────────────────────────────── */
+@media (max-width: 1200px) {
+  .admin-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .admin-charts-grid,
+  .admin-reports-grid-1,
+  .admin-reports-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .reports-desktop-controls {
+    display: none !important;
+  }
+  .reports-mobile-controls-box {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .reports-mobile-controls-box > div,
+  .reports-mobile-controls-box > button {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: unset !important;
+    box-sizing: border-box;
+  }
+  .reports-mobile-controls-box > button {
+    height: 42px !important;
+    display: flex !important;
+    justify-content: center;
+  }
+  .chart-bar-label,
+  .chart-xaxis-subtext,
+  .recharts-label-list {
+    display: none !important;
+  }
+  .layout {
+    flex-direction: column;
+  }
+  .mobile-topbar {
+    display: flex;
+  }
+  .mobile-sidebar-close {
+    display: flex;
+  }
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 999;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop.open {
+    display: block;
+    opacity: 1;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 20px 16px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+  .admin-charts-grid,
+  .admin-reports-grid-1,
+  .admin-reports-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-filter-bar {
+    gap: 12px;
+  }
+  .admin-filter-group {
+    flex: 1 1 calc(50% - 12px);
+    min-width: 130px;
+  }
+  .admin-filter-action {
+    width: 100%;
+    margin-top: 4px;
+  }
+  .admin-filter-action button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .reports-mobile-controls-box {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .reports-mobile-controls-box > div,
+  .reports-mobile-controls-box > button {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: unset !important;
+    box-sizing: border-box;
+  }
+  .reports-mobile-controls-box > button {
+    height: 42px !important;
+    display: flex !important;
+    justify-content: center;
+  }
+  .admin-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .admin-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .admin-header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .admin-filter-group {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .admin-donut-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .main-content {
+    padding: 16px 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 20px;
+  }
+  .admin-header-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
 
 /* ─── Print Styles for Official Slip / Certificate ────────────── */

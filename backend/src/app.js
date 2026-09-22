@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const auth = require('./middleware/auth');
+require('./models');
 
 const path = require('path');
 

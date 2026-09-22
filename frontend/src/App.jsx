@@ -9,11 +9,10 @@ import RequestDetail from './pages/RequestDetail';
 import ApproverDashboard from './pages/ApproverDashboard';
 import SecurityScanner from './pages/SecurityScanner';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminBranches from './pages/admin/AdminBranches';
-import AdminYearTiers from './pages/admin/AdminYearTiers';
-import AdminUsers from './pages/admin/AdminUsers';
 import AdminStudents from './pages/admin/AdminStudents';
-import AdminSession from './pages/admin/AdminSession';
+import AdminRequests from './pages/admin/AdminRequests';
+import AdminReports from './pages/admin/AdminReports';
+
 
 // Role-based protected route
 function ProtectedRoute({ children, roles }) {
@@ -84,21 +83,16 @@ function AppRoutes() {
       <Route path="/admin/dashboard" element={
         <ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>
       } />
-      <Route path="/admin/branches" element={
-        <ProtectedRoute roles={['ADMIN']}><AdminBranches /></ProtectedRoute>
-      } />
-      <Route path="/admin/year-tiers" element={
-        <ProtectedRoute roles={['ADMIN']}><AdminYearTiers /></ProtectedRoute>
-      } />
-      <Route path="/admin/users" element={
-        <ProtectedRoute roles={['ADMIN']}><AdminUsers /></ProtectedRoute>
-      } />
       <Route path="/admin/students" element={
         <ProtectedRoute roles={['ADMIN']}><AdminStudents /></ProtectedRoute>
       } />
-      <Route path="/admin/session" element={
-        <ProtectedRoute roles={['ADMIN']}><AdminSession /></ProtectedRoute>
+      <Route path="/admin/requests" element={
+        <ProtectedRoute roles={['ADMIN']}><AdminRequests /></ProtectedRoute>
       } />
+      <Route path="/admin/reports" element={
+        <ProtectedRoute roles={['ADMIN']}><AdminReports /></ProtectedRoute>
+      } />
+
 
       {/* Request detail (approvers can view) */}
       <Route path="/outpass/:id" element={
