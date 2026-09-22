@@ -37,8 +37,7 @@ router.get('/pending/for-me', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLA
 router.get('/all/for-me', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLACEMENT_OFFICER'), c.getAllForMe);
 router.get('/dashboard-stats', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLACEMENT_OFFICER', 'ADMIN'), c.getDashboardStats);
 
-// Single request (student sees own, approvers see their scope, admin sees all)
-router.get('/:id/qr', requireRole('STUDENT', 'ADMIN'), c.getQRImage);
+// Single request (student sees own, approvers see their scope, admin sees all)router.get('/:id/qr', requireRole('STUDENT', 'ADMIN'), c.getQRImage);
 router.get('/:id', c.getRequest);
 router.post('/:id/approve', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLACEMENT_OFFICER'), c.approveRequest);
 router.post('/:id/reject', requireRole('CTPO', 'HOD', 'HOSTEL_INCHARGE', 'PLACEMENT_OFFICER'), c.rejectRequest);
