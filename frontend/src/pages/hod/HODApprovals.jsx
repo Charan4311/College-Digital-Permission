@@ -1076,9 +1076,6 @@ export default function HODApprovals() {
                                                                         )
                                                                     }
                                                                 </span>
-                                                                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace' }}>
-                                                                    Ref: {request?.referenceId || request?.refId || 'N/A'}
-                                                                </span>
                                                             </div>
                                                         </td>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../lib/api';
 import {
@@ -35,8 +35,8 @@ const TYPE_STYLES = {
 };
 
 const STATUS_STYLES = {
-  PENDING: { label: 'Pending', icon: FaClock, bg: '#fef3c7', text: '#b45309', border: '#fcd34d' },
-  APPROVED: { label: 'Approved', icon: FaCircleCheck, bg: '#dcfce7', text: '#15803d', border: '#86efac' },
+  PENDING: { label: 'Pending', icon: FaClock, bg: '#ffedd5', text: '#ea580c', border: '#fdba74' },
+  APPROVED: { label: 'Approved', icon: FaCircleCheck, bg: '#dcfce7', text: '#16a34a', border: '#86efac' },
   REJECTED: { label: 'Rejected', icon: FaCircleXmark, bg: '#fee2e2', text: '#dc2626', border: '#fca5a5' },
   CANCELLED: { label: 'Cancelled', icon: FaBan, bg: '#e2e8f0', text: '#475569', border: '#cbd5e1' }
 };
@@ -62,10 +62,11 @@ function sortRequests(list, sortBy) {
 
 export default function StudentMyRequestsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [historyFilter, setHistoryFilter] = useState('ALL');
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState(location.state?.status || '');
   const [dateFilter, setDateFilter] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
   const [currentPage, setCurrentPage] = useState(1);
@@ -291,23 +292,31 @@ export default function StudentMyRequestsPage() {
                         <td style={{ padding: '14px 16px', color: '#0f172a' }}>
                           {reqType === 'INTERNSHIP' ? (
                             <>
-                              <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{request.companyName || 'Company'} - {request.role || 'Role'}</div>
-                              <div style={{ color: '#64748b', fontSize: '12px' }}>{request.internshipMode || 'Offline'}</div>
+                              <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>
+                                {[request.companyName, request.role].filter(v => v && v !== 'N/A').join(' - ') || 'Internship'}
+                              </div>
+                              {request.internshipMode && request.internshipMode !== 'N/A' && (
+                                <div style={{ color: '#64748b', fontSize: '12px' }}>{request.internshipMode}</div>
+                              )}
                             </>
                           ) : reqType === 'LIBRARY' ? (
                             <>
                               <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Library Access</div>
-                              <div style={{ color: '#64748b', fontSize: '12px' }}>{request.reason || 'N/A'}</div>
+                              {request.reason && request.reason !== 'N/A' && (
+                                <div style={{ color: '#64748b', fontSize: '12px' }}>{request.reason}</div>
+                              )}
                             </>
                           ) : reqType === 'MESS_FEE' ? (
                             <>
                               <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Mess Fee Clearance</div>
-                              <div style={{ color: '#64748b', fontSize: '12px' }}>{request.reason || 'N/A'}</div>
+                              {request.reason && request.reason !== 'N/A' && (
+                                <div style={{ color: '#64748b', fontSize: '12px' }}>{request.reason}</div>
+                              )}
                             </>
                           ) : (
                             <>
-                              <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{request.reason || 'Out-Pass'}</div>
-                              <div style={{ color: '#64748b', fontSize: '12px' }}>{request.place || 'N/A'}</div>
+                              <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{request.reason && request.reason !== 'N/A' ? request.reason : 'Out-Pass'}</div>
+                              {request.place && request.place !== 'N/A' && <div style={{ color: '#64748b', fontSize: '12px' }}>{request.place}</div>}
                             </>
                           )}
                         </td>

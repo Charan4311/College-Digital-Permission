@@ -337,7 +337,6 @@ export default function StudentNewPermissionPage() {
                         <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#eff6ff', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Student Category (Out-Pass Route)</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>Select your category to proceed</div>
                         </div>
                       </div>
 
@@ -365,7 +364,6 @@ export default function StudentNewPermissionPage() {
                         <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#eff6ff', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>2</div>
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Reason for Leaving Campus</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>Clearly mention the reason for your out-pass request</div>
                         </div>
                       </div>
 
@@ -380,7 +378,6 @@ export default function StudentNewPermissionPage() {
                         <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#eff6ff', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>3</div>
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Out-Pass Details</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>Select your expected out and return date</div>
                         </div>
                       </div>
 
@@ -405,7 +402,6 @@ export default function StudentNewPermissionPage() {
                         <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#eff6ff', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>4</div>
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Emergency Contact</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>Provide parent/guardian contact number for emergency communication</div>
                         </div>
                       </div>
 
@@ -423,11 +419,6 @@ export default function StudentNewPermissionPage() {
                           <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: '#eff6ff', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>{sectionIndex + 1}</div>
                           <div>
                             <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{section}</div>
-                            <div style={{ fontSize: '12px', color: '#64748b' }}>
-                              {sectionIndex === 0 && 'Provide the mess fee clearance reason'}
-                              {sectionIndex === 1 && 'Select the relevant clearance period'}
-                              {sectionIndex === 2 && 'Enter the amount and payment status'}
-                            </div>
                           </div>
                         </div>
 
@@ -515,7 +506,6 @@ export default function StudentNewPermissionPage() {
                           <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: '#eff6ff', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>{idx + 1}</div>
                           <div>
                             <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{title}</div>
-                            <div style={{ fontSize: '12px', color: '#64748b' }}>{idx === 0 ? 'Enter the internship details' : idx === 1 ? 'Specify the internship role and mode' : 'Select the internship start and end dates'}</div>
                           </div>
                         </div>
                         {body}
@@ -553,7 +543,6 @@ export default function StudentNewPermissionPage() {
                         <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: '#eff6ff', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>Library Access Details</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>Provide your access information and purpose</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px] mb-[14px]">

@@ -13,7 +13,16 @@ import {
     CalendarDays,
     RefreshCw,
     ClipboardList,
+    Download,
+    X,
+    FileDown,
+    CheckCircle2,
+    FileText,
+    FileSpreadsheet,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const PAGE_SIZE = 10;
 
@@ -333,6 +342,8 @@ export default function HODBranchRequests() {
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [showGenerateModal, setShowGenerateModal] = useState(false);
+    const [downloadLoading, setDownloadLoading] = useState(false);
 
     const fetchRequests = async (refresh = false) => {
         try {
@@ -617,6 +628,84 @@ export default function HODBranchRequests() {
         URL.revokeObjectURL(url);
     };
 
+    const exportPDF = () => {
+        setDownloadLoading(true);
+        setTimeout(() => {
+            try {
+                const doc = new jsPDF();
+                
+                doc.setFontSize(18);
+                doc.text(`${branch.name} (${branch.code}) Requests`, 14, 20);
+                
+                let filterText = `Status: ${activeStatus} | Type: ${typeFilter}`;
+                if (fromDate) filterText += ` | From: ${fromDate}`;
+                if (toDate) filterText += ` | To: ${toDate}`;
+                
+                doc.setFontSize(11);
+                doc.text(filterText, 14, 30);
+                
+                const tableColumn = ["Name", "Roll No", "Type", "Status", "Date"];
+                const tableRows = [];
+                
+                filteredRequests.forEach(request => {
+                    tableRows.push([
+                        studentName(request),
+                        rollNo(request),
+                        requestType(request),
+                        statusLabel(statusOf(request)),
+                        formatDate(request)
+                    ]);
+                });
+                
+                autoTable(doc, {
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 35,
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [37, 99, 235] }
+                });
+                
+                doc.save(`${branch.code}_Requests_Report.pdf`);
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('An error occurred while generating the PDF.');
+            } finally {
+                setDownloadLoading(false);
+                setShowGenerateModal(false);
+            }
+        }, 300);
+    };
+
+    const exportCSV = () => {
+        setDownloadLoading(true);
+        setTimeout(() => {
+            try {
+                const exportData = filteredRequests.map((request, idx) => ({
+                    'S.No': idx + 1,
+                    'Student Name': studentName(request),
+                    'Roll Number': rollNo(request),
+                    'Year': yearOf(request),
+                    'Student Type': studentType(request),
+                    'Permission Type': requestType(request),
+                    'Status': statusLabel(statusOf(request)),
+                    'Date': formatDate(request),
+                }));
+
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Requests');
+                
+                XLSX.writeFile(workbook, `${branch.code}_Requests_Report.xlsx`);
+            } catch (error) {
+                console.error('Error generating Excel:', error);
+                alert('An error occurred while generating the Excel file.');
+            } finally {
+                setDownloadLoading(false);
+                setShowGenerateModal(false);
+            }
+        }, 300);
+    };
+
     const countFor = key => {
         if (loading) return '—';
 
@@ -775,6 +864,21 @@ export default function HODBranchRequests() {
                         </div>
                     </div>
 
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => setShowGenerateModal(true)}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 7,
+                            }}
+                        >
+                            <Download size={15} />
+                            Export Report
+                        </button>
+                    </div>
                 </div>
 
                 {/* STATUS TABS — same interaction style as Student Requests */}
@@ -1579,6 +1683,170 @@ export default function HODBranchRequests() {
                     }
                 }
             `}</style>
+            
+            {/* GENERATE REPORT MODAL */}
+            {showGenerateModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                        backdropFilter: 'blur(4px)',
+                        zIndex: 9999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 20,
+                    }}
+                >
+                    <div
+                        style={{
+                            background: '#fff',
+                            borderRadius: 16,
+                            width: '100%',
+                            maxWidth: 480,
+                            boxShadow:
+                                '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                            overflow: 'hidden',
+                            animation: 'slideUp 0.3s ease-out',
+                        }}
+                    >
+                        <div
+                            style={{
+                                padding: '20px 24px',
+                                borderBottom: '1px solid #f1f5f9',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    margin: 0,
+                                    fontSize: 18,
+                                    color: '#0f172a',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                }}
+                            >
+                                <Download size={20} color="#2563eb" />
+                                Export Report
+                            </h2>
+                            <button
+                                onClick={() => setShowGenerateModal(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#94a3b8',
+                                    cursor: 'pointer',
+                                    padding: 4,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 6,
+                                }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: 24 }}>
+                            <div
+                                style={{
+                                    background: '#f8fafc',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: 12,
+                                    padding: 16,
+                                    marginBottom: 24,
+                                }}
+                            >
+                                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>Report Period:</span>
+                                    <span style={{ color: '#0f172a', fontSize: 13, fontWeight: 600 }}>
+                                        {fromDate && toDate ? `${fromDate} to ${toDate}` : fromDate ? `From ${fromDate}` : toDate ? `Up to ${toDate}` : 'All Time'}
+                                    </span>
+                                </div>
+                                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>Branch:</span>
+                                    <span style={{ color: '#0f172a', fontSize: 13, fontWeight: 600 }}>{branch.code}</span>
+                                </div>
+                                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>Permission Type:</span>
+                                    <span style={{ color: '#0f172a', fontSize: 13, fontWeight: 600 }}>{typeFilter === 'ALL' ? 'All Types' : typeFilter}</span>
+                                </div>
+                                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>Status:</span>
+                                    <span style={{ color: '#0f172a', fontSize: 13, fontWeight: 600 }}>{activeStatus === 'ALL' ? 'All Statuses' : activeStatus}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>Total Requests:</span>
+                                    <span style={{ color: '#2563eb', fontSize: 14, fontWeight: 700 }}>
+                                        {filteredRequests.length}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>
+                                Choose a format to download your report:
+                            </p>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <button
+                                    className="btn btn-outline"
+                                    onClick={exportPDF}
+                                    disabled={downloadLoading || filteredRequests.length === 0}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        padding: '16px 12px',
+                                        height: 'auto',
+                                        justifyContent: 'center',
+                                        borderColor: '#e2e8f0',
+                                        color: '#334155',
+                                    }}
+                                >
+                                    {downloadLoading ? (
+                                        <RefreshCw size={24} className="spin" color="#64748b" />
+                                    ) : (
+                                        <FileText size={24} color="#dc2626" />
+                                    )}
+                                    <span style={{ fontWeight: 600 }}>Download PDF</span>
+                                </button>
+                                
+                                <button
+                                    className="btn btn-outline"
+                                    onClick={exportCSV}
+                                    disabled={downloadLoading || filteredRequests.length === 0}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        padding: '16px 12px',
+                                        height: 'auto',
+                                        justifyContent: 'center',
+                                        borderColor: '#e2e8f0',
+                                        color: '#334155',
+                                    }}
+                                >
+                                    {downloadLoading ? (
+                                        <RefreshCw size={24} className="spin" color="#64748b" />
+                                    ) : (
+                                        <FileSpreadsheet size={24} color="#16a34a" />
+                                    )}
+                                    <span style={{ fontWeight: 600 }}>Download Excel</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 }

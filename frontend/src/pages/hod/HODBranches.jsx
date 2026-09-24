@@ -21,12 +21,12 @@ const DEPARTMENT_BRANCHES = [
         name: "Computer Science & Data Science",
     },
     {
-        code: "AID",
-        name: "Artificial Intelligence & Data Science",
-    },
-    {
         code: "CSC",
         name: "Cyber Security",
+    },
+    {
+        code: "AID",
+        name: "Artificial Intelligence & Data Science",
     },
 ];
 
@@ -415,7 +415,7 @@ const HODBranches = () => {
                         
                         <button 
                             className="btn btn-sm"
-                            style={{ padding: '6px 12px', fontSize: '12px', background: '#10b981', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            style={{ padding: '6px 12px', fontSize: '12px', background: '#2563eb', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
                             onClick={() => handleViewRequests(branch.code)}
                         >
                             View Details <ArrowRight size={14} />

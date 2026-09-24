@@ -14,7 +14,17 @@ import {
   Building,
   BarChart3,
   ArrowRight,
+  Download,
+  X,
+  FileDown,
+  RefreshCw,
+  FileText,
+  FileSpreadsheet
 } from "lucide-react";
+
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 import {
   ResponsiveContainer,
@@ -45,6 +55,8 @@ const CTPODashboard = () => {
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Use the SAME endpoint used by the working All Requests page.
   // This keeps dashboard cards/charts synchronized with All Requests.
@@ -707,6 +719,10 @@ const CTPODashboard = () => {
   };
 
   // ==========================================================
+  // EXPORT HANDLERS
+  // ==========================================================
+
+  // ==========================================================
   // RENDER
   // ==========================================================
 
@@ -736,30 +752,39 @@ const CTPODashboard = () => {
           <div
             style={{
               display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
-              gap: "10px",
+              marginBottom: "5px",
             }}
           >
-            <CTPOMobileNav />
-
-            <Building
-              size={28}
-              strokeWidth={2}
+            <div
               style={{
-                color: "#111827",
-              }}
-            />
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "28px",
-                fontWeight: 700,
-                color: "#111827",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
               }}
             >
-              CTPO Dashboard
-            </h1>
+              <CTPOMobileNav />
+
+              <Building
+                size={28}
+                strokeWidth={2}
+                style={{
+                  color: "#111827",
+                }}
+              />
+
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "28px",
+                  fontWeight: 700,
+                  color: "#111827",
+                }}
+              >
+                CTPO Dashboard
+              </h1>
+            </div>
           </div>
 
           <p
@@ -796,7 +821,8 @@ const CTPODashboard = () => {
           ================================================== */}
 
           <div
-            style={statCardStyle}
+            onClick={() => navigate('/ctpo/history')}
+            style={clickableCardStyle}
           >
             <div
               style={{
@@ -851,7 +877,8 @@ const CTPODashboard = () => {
           ================================================== */}
 
           <div
-            style={statCardStyle}
+            onClick={() => navigate('/ctpo/pending')}
+            style={clickableCardStyle}
           >
             <div
               style={{
@@ -908,7 +935,8 @@ const CTPODashboard = () => {
           ================================================== */}
 
           <div
-            style={statCardStyle}
+            onClick={() => navigate('/ctpo/history?status=APPROVED')}
+            style={clickableCardStyle}
           >
             <div
               style={{
@@ -965,7 +993,8 @@ const CTPODashboard = () => {
           ================================================== */}
 
           <div
-            style={statCardStyle}
+            onClick={() => navigate('/ctpo/history?status=REJECTED')}
+            style={clickableCardStyle}
           >
             <div
               style={{
@@ -1283,6 +1312,10 @@ const CTPODashboard = () => {
         </div>
 
       </div>
+
+      {/* ====================================================
+          GENERATE REPORT MODAL
+      ==================================================== */}
     </DashboardLayout>
   );
 };

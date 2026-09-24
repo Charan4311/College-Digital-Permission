@@ -20,6 +20,8 @@ const STATUS_CONFIG = {
   REJECTED_HOD: { label: 'Rejected', icon: XCircle, className: 'badge-rejected_hod' },
   REJECTED_HOSTEL_INCHARGE: { label: 'Rejected', icon: XCircle, className: 'badge-rejected_hostel_incharge' },
   REJECTED_PLACEMENT_OFFICER: { label: 'Rejected', icon: XCircle, className: 'badge-rejected_hod' },
+  REJECTED: { label: 'Rejected', icon: XCircle, className: 'badge-rejected' },
+  PENDING: { label: 'Pending', icon: Clock, className: 'badge-pending' },
   CANCELLED: { label: 'Cancelled', icon: Ban, className: 'badge-cancelled' },
 };
 

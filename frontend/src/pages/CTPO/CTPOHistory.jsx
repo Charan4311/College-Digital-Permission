@@ -1032,17 +1032,7 @@ const student =
           </div>
 
 
-          <div className="ctpo-header-actions">
-            <button
-              type="button"
-              className="ctpo-export-button"
-              onClick={handleExport}
-            >
-              <Download size={17} />
-              Export
-            </button>
 
-          </div>
 
         </div>
 

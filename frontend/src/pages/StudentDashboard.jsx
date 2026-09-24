@@ -27,8 +27,11 @@ import {
   YAxis
 } from 'recharts';
 
+import { useNavigate } from 'react-router-dom';
+
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     total: 0,
     approved: 0,
@@ -87,9 +90,9 @@ export default function StudentDashboard() {
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const pieData = [
-    { name: 'Approved', value: stats.approved, color: '#1d4ed8' },
-    { name: 'Rejected', value: stats.rejected, color: '#60a5fa' },
-    { name: 'Pending', value: stats.pending, color: '#3b82f6' }
+    { name: 'Approved', value: stats.approved, color: '#16a34a' },
+    { name: 'Rejected', value: stats.rejected, color: '#dc2626' },
+    { name: 'Pending', value: stats.pending, color: '#ea580c' }
   ];
 
   const monthlyOverview = stats.monthlyOverview?.length ? stats.monthlyOverview : monthNames.map((month) => ({ month, total: 0, approved: 0, rejected: 0, pending: 0 }));
@@ -116,7 +119,7 @@ export default function StudentDashboard() {
       ) : (
         <>
           <div className="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[18px] mb-[30px] items-stretch">
-            <div className="stat-card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)' }}>
+            <div className="stat-card" onClick={() => navigate('/student/my-request')} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#eff6ff', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <FaFileLines size={22} />
@@ -129,42 +132,42 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            <div className="stat-card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)' }}>
+            <div className="stat-card" onClick={() => navigate('/student/my-request', { state: { status: 'Approved' } })} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#eff6ff', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <FaCircleCheck size={22} />
                 </div>
                 <div style={{ fontSize: '14px', color: '#475569', fontWeight: 700, lineHeight: 1.3 }}>Approved</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '8px' }}>
                 <span style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stats.approved}</span>
-                <div style={{ fontSize: '12px', color: '#2563EB', fontWeight: 600 }}>{stats.total ? `${((stats.approved / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
+                <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>{stats.total ? `${((stats.approved / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
               </div>
             </div>
 
-            <div className="stat-card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)' }}>
+            <div className="stat-card" onClick={() => navigate('/student/my-request', { state: { status: 'Pending' } })} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#eff6ff', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#ffedd5', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <FaClock size={22} />
                 </div>
                 <div style={{ fontSize: '14px', color: '#475569', fontWeight: 700, lineHeight: 1.3 }}>Pending</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '8px' }}>
                 <span style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stats.pending}</span>
-                <div style={{ fontSize: '12px', color: '#3B82F6', fontWeight: 600 }}>{stats.total ? `${((stats.pending / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
+                <div style={{ fontSize: '12px', color: '#ea580c', fontWeight: 600 }}>{stats.total ? `${((stats.pending / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
               </div>
             </div>
 
-            <div className="stat-card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)' }}>
+            <div className="stat-card" onClick={() => navigate('/student/my-request', { state: { status: 'Rejected' } })} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#eff6ff', color: '#60A5FA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <FaCircleXmark size={22} />
                 </div>
                 <div style={{ fontSize: '14px', color: '#475569', fontWeight: 700, lineHeight: 1.3 }}>Rejected</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '8px' }}>
                 <span style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stats.rejected}</span>
-                <div style={{ fontSize: '12px', color: '#60A5FA', fontWeight: 600 }}>{stats.total ? `${((stats.rejected / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
+                <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: 600 }}>{stats.total ? `${((stats.rejected / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
               </div>
             </div>
           </div>
@@ -193,16 +196,16 @@ export default function StudentDashboard() {
                         <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#1d4ed8" stopOpacity={0.12}/>
-                        <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.12}/>
+                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.12}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#ea580c" stopOpacity={0.12}/>
+                        <stop offset="95%" stopColor="#ea580c" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.12}/>
-                        <stop offset="95%" stopColor="#60a5fa" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#dc2626" stopOpacity={0.12}/>
+                        <stop offset="95%" stopColor="#dc2626" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.6} />
@@ -227,28 +230,28 @@ export default function StudentDashboard() {
                       labelStyle={{ color: '#64748b', fontWeight: 600, marginBottom: '4px' }}
                     />
                     <Area type="monotone" dataKey="total" name="Total Requests" stroke="#1e3a8a" strokeWidth={1.5} fillOpacity={1} fill="url(#colorTotal)" activeDot={{ r: 5, fill: '#1e3a8a', strokeWidth: 0, boxShadow: '0 0 10px rgba(30,58,138,0.5)' }} />
-                    <Area type="monotone" dataKey="approved" name="Approved" stroke="#1d4ed8" strokeWidth={1.5} fillOpacity={1} fill="url(#colorApproved)" activeDot={{ r: 5, fill: '#1d4ed8', strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="pending" name="Pending" stroke="#3b82f6" strokeWidth={1.5} fillOpacity={1} fill="url(#colorPending)" activeDot={{ r: 5, fill: '#3b82f6', strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#60a5fa" strokeWidth={1.5} fillOpacity={1} fill="url(#colorRejected)" activeDot={{ r: 5, fill: '#60a5fa', strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="approved" name="Approved" stroke="#16a34a" strokeWidth={1.5} fillOpacity={1} fill="url(#colorApproved)" activeDot={{ r: 5, fill: '#16a34a', strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="pending" name="Pending" stroke="#ea580c" strokeWidth={1.5} fillOpacity={1} fill="url(#colorPending)" activeDot={{ r: 5, fill: '#ea580c', strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#dc2626" strokeWidth={1.5} fillOpacity={1} fill="url(#colorRejected)" activeDot={{ r: 5, fill: '#dc2626', strokeWidth: 0 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', padding: '16px 0 12px', borderTop: '1px solid #f1f5f9', marginTop: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', display: 'inline-block' }} />
+                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#1d4ed8', display: 'inline-block' }} />
                   <span>Total</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)', display: 'inline-block' }} />
+                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#16a34a', display: 'inline-block' }} />
                   <span>Approved</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)', display: 'inline-block' }} />
+                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#ea580c', display: 'inline-block' }} />
                   <span>Pending</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: 'linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%)', display: 'inline-block' }} />
+                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#dc2626', display: 'inline-block' }} />
                   <span>Rejected</span>
                 </div>
               </div>

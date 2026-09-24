@@ -38,8 +38,13 @@ import {
     MapPin,
     Menu,
     X as CloseIcon,
-    LogOut
+    LogOut,
+    FileDown,
+    FileSpreadsheet
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const ROLE_LABELS = {
     CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#3b82f6', desc: 'Department-level review for out-pass, mess, internship & library requests' },
@@ -79,6 +84,8 @@ export default function ApproverDashboard() {
     const [placementToDate, setPlacementToDate] = useState('');
     const [placementRefreshLoading, setPlacementRefreshLoading] = useState(false);
     const [placementMobileOpen, setPlacementMobileOpen] = useState(false);
+    const [showGenerateModal, setShowGenerateModal] = useState(false);
+    const [downloadLoading, setDownloadLoading] = useState(false);
 
     const handlePlacementLogout = () => {
         logout();
@@ -789,6 +796,50 @@ export default function ApproverDashboard() {
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
+        setDownloadLoading(false);
+    };
+
+    const exportPlacementPDF = (records = placementHistoryFiltered) => {
+        try {
+            setDownloadLoading('pdf');
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            
+            doc.setFontSize(20);
+            doc.setTextColor(40, 45, 90);
+            doc.text('Digital Permission', 14, 16);
+            
+            doc.setFontSize(14);
+            doc.text('Placement Officer Report', 14, 24);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 110);
+            doc.text(`Period: ${placementPeriod === 'ALL' ? 'All Time' : placementPeriod}`, 14, 32);
+            doc.text(`Total Requests: ${records.length}`, 14, 38);
+            
+            autoTable(doc, {
+                startY: 45,
+                head: [[
+                    'Student', 'Roll No', 'Branch', 'Company', 'Role', 'Status'
+                ]],
+                body: records.map(req => [
+                    req?.studentId?.name || '-',
+                    req?.studentId?.rollNo || '-',
+                    req?.branchId?.name || req?.branchId?.code || '-',
+                    req?.companyName || '-',
+                    req?.role || '-',
+                    req?.status || '-'
+                ]),
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [40, 45, 90] }
+            });
+            
+            doc.save(`placement-internship-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            alert('Unable to generate PDF.');
+        } finally {
+            setDownloadLoading(false);
+        }
     };
 
     const refreshPlacementDashboard = async () => {
@@ -816,24 +867,24 @@ export default function ApproverDashboard() {
 
         if (filter === 'PENDING') {
             setPlacementStatusFilter('PENDING_PLACEMENT_OFFICER');
-            setPlacementView('requests');
+            navigate('/placement/pending');
             return;
         }
 
         if (filter === 'APPROVED') {
             setPlacementStatusFilter('APPROVED');
-            setPlacementView('requests');
+            navigate('/placement/history');
             return;
         }
 
         if (filter === 'REJECTED') {
             setPlacementStatusFilter('REJECTED_PLACEMENT_OFFICER');
-            setPlacementView('requests');
+            navigate('/placement/history');
             return;
         }
 
         setPlacementStatusFilter('ALL');
-        setPlacementView('requests');
+        navigate('/placement/history');
     };
 
     const renderPlacementStatus = (status) => {
@@ -1202,9 +1253,11 @@ export default function ApproverDashboard() {
                             <div
                                 key={card.key}
                                 className="stat-card"
+                                onClick={() => handlePlacementKpi(card.key)}
                                 style={{
                                     position: 'relative',
                                     overflow: 'hidden',
+                                    cursor: 'pointer',
                                 }}
                             >
                                 <div
@@ -1575,8 +1628,9 @@ export default function ApproverDashboard() {
                         {!isPendingView && (
                             <button
                                 className="btn btn-primary"
-                                onClick={() => exportPlacementCSV(records)}
+                                onClick={() => setShowGenerateModal(true)}
                                 style={{
+
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: 7,
@@ -2704,6 +2758,54 @@ export default function ApproverDashboard() {
                             >
                                 {actionLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <X size={14} />}
                                 <span>Confirm Rejection</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showGenerateModal && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onMouseDown={(e) => { if (e.target === e.currentTarget) setShowGenerateModal(false); }}>
+                    <div className="card" style={{ width: '100%', maxWidth: 490, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                                <div style={{ width: 35, height: 35, borderRadius: 9, background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <FileDown size={18} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>Generate Report</h2>
+                                    <p style={{ margin: '3px 0 0', fontSize: 10, color: 'var(--text-muted)' }}>Choose a format to download the selected report.</p>
+                                </div>
+                            </div>
+                            <button type="button" onClick={() => setShowGenerateModal(false)} style={{ border: 'none', background: '#f3f4f6', width: 29, height: 29, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}>
+                                <X size={15} />
+                            </button>
+                        </div>
+
+                        <div style={{ border: '1px solid var(--border)', borderRadius: 9, padding: 12, marginBottom: 15 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Report Period</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{placementPeriod === 'ALL' ? 'All Time' : placementPeriod}</span></div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Permission Type</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Internship</span></div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Total Requests</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{placementHistoryFiltered.length}</span></div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: 15 }}>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text)', marginBottom: 7 }}>Report Includes</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                {['Summary', 'Request Details'].map((item) => (
+                                    <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: 'var(--text-muted)' }}>
+                                        <CheckCircle2 size={12} style={{ color: '#10b981' }} /> {item}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
+                            <button type="button" onClick={() => exportPlacementPDF(placementHistoryFiltered)} disabled={!!downloadLoading} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#dc2626', fontSize: 10, fontWeight: 800, cursor: downloadLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: downloadLoading ? 0.6 : 1 }}>
+                                {downloadLoading === 'pdf' ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={15} />} Download PDF
+                            </button>
+                            <button type="button" onClick={() => exportPlacementCSV(placementHistoryFiltered)} disabled={!!downloadLoading} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#16a34a', fontSize: 10, fontWeight: 800, cursor: downloadLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: downloadLoading ? 0.6 : 1 }}>
+                                {downloadLoading === 'excel' ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileSpreadsheet size={15} />} Download CSV
                             </button>
                         </div>
                     </div>

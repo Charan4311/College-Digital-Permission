@@ -10,7 +10,16 @@ import {
   FileText,
   TrendingUp,
   PieChart as PieChartIcon,
+  CheckCircle2,
+  RefreshCw,
+  FileDown,
+  X,
+  FileSpreadsheet,
 } from "lucide-react";
+
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 import {
   AreaChart,
@@ -48,6 +57,9 @@ export default function CTPOReports() {
   const [permissionType, setPermissionType] = useState("All Types");
 
   const [requests, setRequests] = useState([]);
+
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Requests currently waiting for THIS CTPO.
   // This comes from the same endpoint used by the CTPO Pending page.
@@ -1075,378 +1087,210 @@ export default function CTPOReports() {
   };
 
   // ==========================================================
-  // GENERATE PRINT / PDF REPORT
+  // EXPORT HANDLERS
   // ==========================================================
-
-  const generatePdfReport = () => {
-    const popup = window.open("", "_blank", "width=1000,height=800");
-
-    if (!popup) {
-      alert("Please allow pop-ups to generate the report.");
-
-      return;
+  
+  const getMappedRequest = (req) => {
+    const rawStudent = req.student || req.studentId || req.user || req.userId || {};
+    const branchObj = req.branchId || req.branch || rawStudent.branch || rawStudent.branchId || {};
+    
+    let year = req.year || rawStudent.year || rawStudent.yearOfStudy || branchObj.year || 'Unknown Year';
+    // ensure year is a string if it's an object with a name property
+    if (typeof year === 'object' && year.name) year = year.name;
+    
+    let branchName = branchObj.name || branchObj.code || branchObj.branchName || req.branchName || req.branchCode || req.branch || 'Unknown Branch';
+    if (typeof branchName === 'object' && branchName.name) branchName = branchName.name;
+    
+    const sectionName = req.section || rawStudent.section || '';
+    const sectionBranch = `${branchName} ${sectionName}`.trim();
+    
+    const studentName = req.studentName || rawStudent.name || rawStudent.fullName || '-';
+    const rollNo = req.rollNo || req.rollNumber || rawStudent.rollNo || rawStudent.rollNumber || '-';
+    const studentType = rawStudent.studentType || rawStudent.type || req.studentType || '-';
+    
+    let permissionType = req.permissionType?.name || req.permissionType?.label || req.permissionTypeName || req.type || req.requestType || req.permissionType || '-';
+    if (typeof permissionType === 'object') {
+       permissionType = permissionType.name || permissionType.label || '-';
     }
 
-    const permissionRows = Object.entries(reportData.permissionTypes)
-      .map(
-        ([type, count]) => `
-            <tr>
-              <td>${type}</td>
-              <td>${count}</td>
-            </tr>
-          `,
-      )
-      .join("");
+    const details = req.reason || req.purpose || req.description || req.details || '-';
+    const date = new Date(req.createdAt || req.requestDate || Date.now()).toLocaleDateString();
+    const status = req._status || req.status || '-';
 
-    const dailyRows = reportData.daily
-      .map(
-        (item) => `
-            <tr>
-              <td>${item.date}</td>
-              <td>${item.approved}</td>
-              <td>${item.pending}</td>
-              <td>${item.rejected}</td>
-            </tr>
-          `,
-      )
-      .join("");
+    return {
+      year,
+      sectionBranch,
+      studentName,
+      rollNo,
+      studentType,
+      permissionType,
+      details,
+      date,
+      status
+    };
+  };
 
-    popup.document.write(`
+  const groupRequestsByYearAndSection = () => {
+    const grouped = {};
+    requests.forEach(req => {
+      const mapped = getMappedRequest(req);
+      
+      if (!grouped[mapped.year]) grouped[mapped.year] = {};
+      if (!grouped[mapped.year][mapped.sectionBranch]) grouped[mapped.year][mapped.sectionBranch] = [];
+      
+      grouped[mapped.year][mapped.sectionBranch].push(mapped);
+    });
+    return grouped;
+  };
 
-      <!DOCTYPE html>
-
-      <html>
-
-      <head>
-
-        <title>CTPO Class Report</title>
-
-        <style>
-
-          * {
-            box-sizing: border-box;
+  const handleExportPDF = () => {
+    setExporting(true);
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text('CTPO Requests Report', 14, 15);
+      
+      let currentY = 25;
+      const grouped = groupRequestsByYearAndSection();
+      
+      Object.keys(grouped).sort().forEach(year => {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Year: ${year}`, 14, currentY);
+        currentY += 8;
+        
+        Object.keys(grouped[year]).sort().forEach(section => {
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text(`Section/Branch: ${section}`, 18, currentY);
+          currentY += 6;
+          
+          const sectionRequests = grouped[year][section];
+          
+          const headers = ['Type', 'Student', 'Roll No', 'Details', 'Date', 'Status'];
+          const rows = sectionRequests.map(mapped => [
+            mapped.permissionType,
+            mapped.studentName,
+            mapped.rollNo,
+            mapped.details,
+            mapped.date,
+            mapped.status
+          ]);
+          
+          autoTable(doc, {
+            startY: currentY,
+            head: [headers],
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [37, 99, 235] },
+            margin: { left: 18 }
+          });
+          
+          currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : currentY + 30;
+          if (currentY > 270) {
+            doc.addPage();
+            currentY = 20;
           }
-
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 35px;
-            color: #0f172a;
-            background: #ffffff;
-          }
-
-          .header {
-            border-bottom: 2px solid #2563eb;
-            padding-bottom: 18px;
-            margin-bottom: 25px;
-          }
-
-          .title {
-            font-size: 26px;
-            font-weight: 800;
-            margin: 0;
-          }
-
-          .subtitle {
-            margin-top: 7px;
-            color: #64748b;
-            font-size: 13px;
-          }
-
-          .meta {
-            margin-top: 18px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-          }
-
-          .meta-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px 12px;
-          }
-
-          .meta-label {
-            color: #64748b;
-            font-size: 11px;
-            margin-bottom: 4px;
-          }
-
-          .meta-value {
-            font-size: 14px;
-            font-weight: 700;
-          }
-
-          .summary {
-            display: grid;
-            grid-template-columns:
-              repeat(4, 1fr);
-            gap: 12px;
-            margin: 25px 0;
-          }
-
-          .summary-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-          }
-
-          .summary-card span {
-            display: block;
-            color: #64748b;
-            font-size: 11px;
-            margin-bottom: 6px;
-          }
-
-          .summary-card strong {
-            font-size: 24px;
-          }
-
-          h2 {
-            font-size: 17px;
-            margin-top: 28px;
-            margin-bottom: 10px;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-          }
-
-          th,
-          td {
-            border: 1px solid #e2e8f0;
-            padding: 9px;
-            text-align: left;
-            font-size: 12px;
-          }
-
-          th {
-            background: #f1f5f9;
-            font-weight: 700;
-          }
-
-          .footer {
-            margin-top: 35px;
-            padding-top: 15px;
-            border-top: 1px solid #e2e8f0;
-            color: #64748b;
-            font-size: 11px;
-          }
-
-          @media print {
-
-            body {
-              padding: 15px;
-            }
-
-            .no-print {
-              display: none;
-            }
-
-          }
-
-        </style>
-
-      </head>
-
-
-      <body>
-
-        <div class="header">
-
-          <h1 class="title">
-            College Digital Permission
-            & Approval Platform
-          </h1>
-
-          <div class="subtitle">
-            CTPO Class Permission Report
-          </div>
-
-        </div>
-
-
-        <div class="meta">
-
-          <div class="meta-box">
-
-            <div class="meta-label">
-              Report Period
-            </div>
-
-            <div class="meta-value">
-              ${formatDateForDisplay(fromDate)}
-              -
-              ${formatDateForDisplay(toDate)}
-            </div>
-
-          </div>
-
-
-          <div class="meta-box">
-
-            <div class="meta-label">
-              Permission Type
-            </div>
-
-            <div class="meta-value">
-              ${permissionType}
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="summary">
-
-          <div class="summary-card">
-            <span>Total Requests</span>
-            <strong>
-              ${reportData.total}
-            </strong>
-          </div>
-
-          <div class="summary-card">
-            <span>Approved</span>
-            <strong>
-              ${reportData.approved}
-            </strong>
-          </div>
-
-          <div class="summary-card">
-            <span>Pending</span>
-            <strong>
-              ${reportData.pending}
-            </strong>
-          </div>
-
-          <div class="summary-card">
-            <span>Rejected</span>
-            <strong>
-              ${reportData.rejected}
-            </strong>
-          </div>
-
-        </div>
-
-
-        <h2>
-          Requests by Permission Type
-        </h2>
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Permission Type</th>
-              <th>Requests</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${
-              permissionRows ||
-              `
-              <tr>
-                <td colspan="2">
-                  No requests found
-                </td>
-              </tr>
-            `
-            }
-
-          </tbody>
-
-        </table>
-
-
-        <h2>
-          Approval Activity
-        </h2>
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Date</th>
-              <th>Approved</th>
-              <th>Pending</th>
-              <th>Rejected</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${
-              dailyRows ||
-              `
-              <tr>
-                <td colspan="4">
-                  No activity found
-                </td>
-              </tr>
-            `
-            }
-
-          </tbody>
-
-        </table>
-
-
-        <div class="footer">
-
-          Generated on:
-          ${new Date().toLocaleString("en-IN")}
-
-        </div>
-
-
-        <div class="no-print"
-             style="
-               margin-top:25px;
-               text-align:center;
-             ">
-
-          <button
-            onclick="window.print()"
-            style="
-              padding:10px 22px;
-              border:none;
-              border-radius:7px;
-              background:#2563eb;
-              color:white;
-              font-weight:700;
-              cursor:pointer;
-            "
-          >
-            Print / Save as PDF
-          </button>
-
-        </div>
-
-
-      </body>
-
-      </html>
-
-    `);
-
-    popup.document.close();
-
-    popup.focus();
-
-    setTimeout(() => {
-      popup.print();
-    }, 500);
+        });
+        currentY += 5;
+      });
+      
+      doc.save('CTPO_Permission_Report.pdf');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExporting(false);
+      setShowGenerateModal(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    setExporting(true);
+    try {
+      const grouped = groupRequestsByYearAndSection();
+      const excelRows = [];
+      
+      Object.keys(grouped).sort().forEach(year => {
+        Object.keys(grouped[year]).sort().forEach(section => {
+          grouped[year][section].forEach(mapped => {
+            excelRows.push({
+              Year: year,
+              'Section/Branch': section,
+              'Request Type': mapped.permissionType,
+              'Student Name': mapped.studentName,
+              'Roll Number': mapped.rollNo,
+              'Details': mapped.details,
+              'Submitted Date': mapped.date,
+              'CTPO Status': mapped.status
+            });
+          });
+        });
+      });
+      
+      const ws = XLSX.utils.json_to_sheet(excelRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "CTPO Report");
+      XLSX.writeFile(wb, 'CTPO_Permission_Report.xlsx');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExporting(false);
+      setShowGenerateModal(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    setExporting(true);
+    try {
+      const grouped = groupRequestsByYearAndSection();
+      const rows = [];
+      
+      rows.push(['Year', 'Section/Branch', 'Student Name', 'Roll Number', 'Student Type', 'Permission Type', 'Request Date', 'Status']);
+
+      const escapeCSV = (val) => {
+        if (val == null) return '-';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      Object.keys(grouped).sort().forEach(year => {
+        Object.keys(grouped[year]).sort().forEach(section => {
+          grouped[year][section].forEach(mapped => {
+            rows.push([
+              escapeCSV(year),
+              escapeCSV(section),
+              escapeCSV(mapped.studentName),
+              escapeCSV(mapped.rollNo),
+              escapeCSV(mapped.studentType),
+              escapeCSV(mapped.permissionType),
+              escapeCSV(mapped.date),
+              escapeCSV(mapped.status)
+            ]);
+          });
+        });
+      });
+      
+      const csvContent = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "CTPO_Permission_Report.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExporting(false);
+      setShowGenerateModal(false);
+    }
   };
 
   // ==========================================================
@@ -1454,7 +1298,7 @@ export default function CTPOReports() {
   // ==========================================================
 
   const handleGenerateReport = () => {
-    generatePdfReport();
+    setShowGenerateModal(true);
   };
 
   // ==========================================================
@@ -1462,7 +1306,7 @@ export default function CTPOReports() {
   // ==========================================================
 
   const handleDownload = () => {
-    generatePdfReport();
+    setShowGenerateModal(true);
   };
 
   // ==========================================================
@@ -2579,6 +2423,62 @@ export default function CTPOReports() {
         }
 
             `}</style>
+
+      {/* ====================================================
+          GENERATE REPORT MODAL
+      ==================================================== */}
+      {showGenerateModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onMouseDown={(e) => { if (e.target === e.currentTarget) setShowGenerateModal(false); }}>
+            <div className="card" style={{ width: '100%', maxWidth: 490, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                        <div style={{ width: 35, height: 35, borderRadius: 9, background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FileDown size={18} />
+                        </div>
+                        <div>
+                            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>Generate Report</h2>
+                            <p style={{ margin: '3px 0 0', fontSize: 10, color: 'var(--text-muted)' }}>Choose a format to download the selected report.</p>
+                        </div>
+                    </div>
+                    <button type="button" onClick={() => setShowGenerateModal(false)} style={{ border: 'none', background: '#f3f4f6', width: 29, height: 29, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}>
+                        <X size={15} />
+                    </button>
+                </div>
+
+                <div style={{ border: '1px solid var(--border)', borderRadius: 9, padding: 12, marginBottom: 15 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Report Scope</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>All CTPO Sections</span></div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Report Organization</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Year &amp; Section</span></div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Total Requests</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{requests.length}</span></div>
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: 15 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text)', marginBottom: 7 }}>Report Includes</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                        {['Year-wise Analysis', 'Section/Branch-wise Analysis', 'Request Details', 'Permission Type', 'Status'].map((item) => (
+                            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: 'var(--text-muted)' }}>
+                                <CheckCircle2 size={12} style={{ color: '#10b981' }} /> {item}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 9 }}>
+                    <button type="button" onClick={handleExportPDF} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#dc2626', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
+                        {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={15} />} Download PDF
+                    </button>
+                    <button type="button" onClick={handleExportExcel} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#16a34a', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
+                        {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileSpreadsheet size={15} />} Download Excel
+                    </button>
+                    <button type="button" onClick={handleExportCSV} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#0284c7', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
+                        {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={15} />} Download CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
     </DashboardLayout>
   );
 }
