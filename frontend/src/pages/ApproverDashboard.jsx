@@ -4,31 +4,34 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import StatusBadge from '../components/StatusBadge';
 import api from '../lib/api';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
+import { Dialog, DialogContent } from '../components/ui/dialog';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-  Clock,
-  ClipboardList,
-  CheckCircle2,
-  XCircle,
-  Check,
-  X,
-  Eye,
-  AlertCircle,
-  Building,
-  User,
-  Calendar,
-  Sparkles,
-  ShieldAlert,
-  ArrowRight,
-  Receipt,
-  Briefcase,
-  BookOpen,
-  GraduationCap,
-  Paperclip,
-  ExternalLink
-} from 'lucide-react';
+  LuClock as Clock,
+  LuClipboardList as ClipboardList,
+  LuCircleCheck as CheckCircle2,
+  LuCircleX as XCircle,
+  LuCheck as Check,
+  LuX as X,
+  LuEye as Eye,
+  LuCircleAlert as AlertCircle,
+  LuBuilding as Building,
+  LuUser as User,
+  LuCalendar as Calendar,
+  LuSparkles as Sparkles,
+  LuShieldAlert as ShieldAlert,
+  LuArrowRight as ArrowRight,
+  LuReceipt as Receipt,
+  LuBriefcase as Briefcase,
+  LuBookOpen as BookOpen,
+  LuGraduationCap as GraduationCap,
+  LuPaperclip as Paperclip,
+  LuExternalLink as ExternalLink
+} from 'react-icons/lu';
 
 const ROLE_LABELS = {
   CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#3b82f6', desc: 'Department-level review for out-pass, mess, internship & library requests' },
@@ -37,7 +40,7 @@ const ROLE_LABELS = {
   PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#2563eb', desc: 'Final institutional authorization for student internships' },
 };
 
-export default function ApproverDashboard() {
+export default function ApproverDashboard({ defaultTab = null }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,10 +48,15 @@ export default function ApproverDashboard() {
   const cfg = ROLE_LABELS[role] || ROLE_LABELS.CTPO;
   const isHostelIncharge = role === 'HOSTEL_INCHARGE';
 
+  function getInitialTab() {
+    if (defaultTab) return defaultTab;
+    return searchParams.get('view') || 'overview';
+  }
+
   const [pending, setPending] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(() => searchParams.get('view') || 'overview');
+  const [tab, setTab] = useState(getInitialTab);
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [history, setHistory] = useState([]);
   const [kpiFilter, setKpiFilter] = useState('TOTAL');
@@ -105,6 +113,12 @@ export default function ApproverDashboard() {
     const requestedView = searchParams.get('view');
 
     if (isHostelIncharge) {
+      if (defaultTab) {
+        setTab(defaultTab);
+        setKpiFilter(defaultTab === 'history' ? 'TOTAL' : 'TOTAL');
+        return;
+      }
+
       if (requestedView === 'pending' || requestedView === 'history' || requestedView === 'overview') {
         setTab(requestedView);
         setKpiFilter(requestedView === 'pending' ? 'PENDING' : 'TOTAL');
@@ -113,7 +127,7 @@ export default function ApproverDashboard() {
         setKpiFilter('TOTAL');
       }
     }
-  }, [searchParams, isHostelIncharge]);
+  }, [searchParams, isHostelIncharge, defaultTab]);
 
   useEffect(() => {
     if (tab === 'history') fetchHistory();
@@ -336,6 +350,9 @@ export default function ApproverDashboard() {
   const hostelRejected = hostelReviewedRequests.filter(r =>
     isRejectedHostelStatus(r.status)
   ).length;
+  const hostelHistoryTotal = hostelReviewedRequests.length;
+  const displayHostelTotal = tab === 'history' ? hostelHistoryTotal : hostelTotal;
+  const displayHostelPending = tab === 'history' ? 0 : hostelPending;
 
   // Hostel overview must show every request relevant to the Hostel In-charge,
   // including requests that are still pending. Pending requests are also
@@ -407,6 +424,17 @@ export default function ApproverDashboard() {
 
           .approver-dashboard .table-wrapper table {
             min-width: 760px;
+          }
+
+          .approver-dashboard .stat-card {
+            border-radius: 16px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+          }
+
+          .approver-dashboard .stat-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
           }
 
           .hostel-mobile-list {
@@ -868,23 +896,21 @@ export default function ApproverDashboard() {
         )}
 
         {/* Stats Cards */}
-        {isHostelIncharge ? (
+        {isHostelIncharge && tab !== 'history' ? (
           <div className="stats-grid" style={{ marginBottom: '24px' }}>
             <div
               className="stat-card"
-              onClick={() => handleHostelKpi('TOTAL')}
-              style={{ cursor: 'pointer', border: kpiFilter === 'TOTAL' ? '2px solid var(--accent)' : '1px solid var(--border)' }}
+              style={{ border: '1px solid var(--border)' }}
             >
               <div className="stat-icon" style={{ color: 'var(--accent)' }}>
                 <ClipboardList size={22} />
               </div>
               <div className="stat-label">TOTAL REQUESTS</div>
-              <div className="stat-value">{hostelTotal}</div>
+              <div className="stat-value">{displayHostelTotal}</div>
             </div>
             <div
               className="stat-card"
-              onClick={() => handleHostelKpi('APPROVED')}
-              style={{ cursor: 'pointer', border: kpiFilter === 'APPROVED' ? '2px solid var(--green)' : '1px solid var(--border)' }}
+              style={{ border: '1px solid var(--border)' }}
             >
               <div className="stat-icon" style={{ color: 'var(--green)' }}>
                 <CheckCircle2 size={22} />
@@ -894,19 +920,17 @@ export default function ApproverDashboard() {
             </div>
             <div
               className="stat-card"
-              onClick={() => handleHostelKpi('PENDING')}
-              style={{ cursor: 'pointer', border: kpiFilter === 'PENDING' ? '2px solid var(--yellow)' : '1px solid var(--border)' }}
+              style={{ border: '1px solid var(--border)' }}
             >
               <div className="stat-icon" style={{ color: 'var(--yellow)' }}>
                 <Clock size={22} />
               </div>
               <div className="stat-label">PENDING</div>
-              <div className="stat-value" style={{ color: 'var(--yellow)' }}>{hostelPending}</div>
+              <div className="stat-value" style={{ color: 'var(--yellow)' }}>{displayHostelPending}</div>
             </div>
             <div
               className="stat-card"
-              onClick={() => handleHostelKpi('REJECTED')}
-              style={{ cursor: 'pointer', border: kpiFilter === 'REJECTED' ? '2px solid var(--red)' : '1px solid var(--border)' }}
+              style={{ border: '1px solid var(--border)' }}
             >
               <div className="stat-icon" style={{ color: 'var(--red)' }}>
                 <XCircle size={22} />
@@ -915,7 +939,7 @@ export default function ApproverDashboard() {
               <div className="stat-value" style={{ color: 'var(--red)' }}>{hostelRejected}</div>
             </div>
           </div>
-        ) : (
+        ) : !isHostelIncharge ? (
           <div className="stats-grid" style={{ marginBottom: '24px' }}>
             <div className="stat-card">
               <div className="stat-icon" style={{ color: 'var(--yellow)' }}>
@@ -941,7 +965,7 @@ export default function ApproverDashboard() {
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* 7-day Activity Chart */}
         {!isHostelIncharge && (
@@ -997,7 +1021,7 @@ export default function ApproverDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
           {!isHostelIncharge && (
             <div className="tabs" style={{ marginBottom: 0 }}>
-              <button
+              <Button
                 className={`tab ${isHostelIncharge ? (tab === 'overview' ? 'active' : '') : (tab === 'pending' ? 'active' : '')}`}
                 onClick={() => {
                   if (isHostelIncharge) {
@@ -1011,9 +1035,9 @@ export default function ApproverDashboard() {
               >
                 <Clock size={14} />
                 <span>{isHostelIncharge ? 'Overview' : `Pending Queue (${pending.length})`}</span>
-              </button>
+              </Button>
               {isHostelIncharge && (
-                <button
+                <Button
                   className={`tab ${tab === 'pending' ? 'active' : ''}`}
                   onClick={() => {
                     setKpiFilter('PENDING');
@@ -1023,10 +1047,10 @@ export default function ApproverDashboard() {
                 >
                   <Clock size={14} />
                   <span>Pending Requests ({hostelPending})</span>
-                </button>
+                </Button>
               )}
 
-              <button
+              <Button
                 className={`tab ${tab === 'history' ? 'active' : ''}`}
                 onClick={() => {
                   if (isHostelIncharge) {
@@ -1040,7 +1064,7 @@ export default function ApproverDashboard() {
               >
                 <ClipboardList size={14} />
                 <span>Review History</span>
-              </button>
+              </Button>
             </div>
           )}
 
@@ -1152,7 +1176,7 @@ export default function ApproverDashboard() {
                           )}
 
                           {tab === 'pending' && (
-                            <button
+                            <Button
                               type="button"
                               className="hostel-mobile-view"
                               onClick={() =>
@@ -1161,7 +1185,7 @@ export default function ApproverDashboard() {
                             >
                               <Eye size={15} />
                               View Request
-                            </button>
+                            </Button>
                           )}
                         </div>
                       );
@@ -1288,7 +1312,7 @@ export default function ApproverDashboard() {
                                 </td>
                                 {tab === 'pending' && (
                                   <td>
-                                    <button
+                                    <Button
                                       className="btn btn-ghost btn-sm"
                                       onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
                                       style={{
@@ -1300,14 +1324,14 @@ export default function ApproverDashboard() {
                                     >
                                       <Eye size={14} />
                                       <span>View</span>
-                                    </button>
+                                    </Button>
                                   </td>
                                 )}
                               </>
                             ) : (
                               <td>
                                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                  <button
+                                  <Button
                                     className="btn btn-success btn-sm"
                                     disabled={actionLoading}
                                     onClick={() => handleApprove(req._id)}
@@ -1315,8 +1339,8 @@ export default function ApproverDashboard() {
                                   >
                                     <Check size={14} />
                                     <span>Approve</span>
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button
                                     className="btn btn-danger btn-sm"
                                     disabled={actionLoading}
                                     onClick={() => setRejectModal({ id: req._id, remarks: '', requestType: reqType })}
@@ -1324,15 +1348,15 @@ export default function ApproverDashboard() {
                                   >
                                     <X size={14} />
                                     <span>Reject</span>
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button
                                     className="btn btn-ghost btn-sm"
                                     onClick={() => navigate(`/outpass/${req._id}`)}
                                     style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
                                   >
                                     <Eye size={14} />
                                     <span>View</span>
-                                  </button>
+                                  </Button>
                                 </div>
                               </td>
                             )}
@@ -1424,14 +1448,14 @@ export default function ApproverDashboard() {
                             </div>
                           </div>
 
-                          <button
+                          <Button
                             type="button"
                             className="hostel-mobile-view"
                             onClick={() => navigate(`/outpass/${req._id}`)}
                           >
                             <Eye size={15} />
                             View Request
-                          </button>
+                          </Button>
                         </div>
                       );
                     })}
@@ -1497,14 +1521,14 @@ export default function ApproverDashboard() {
                             </td>
                             {isHostelIncharge && (
                               <td>
-                                <button
+                                <Button
                                   className="btn btn-ghost btn-sm"
                                   onClick={() => navigate(`/outpass/${req._id}`)}
                                   style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
                                 >
                                   <Eye size={14} />
                                   <span>View</span>
-                                </button>
+                                </Button>
                               </td>
                             )}
                           </tr>
@@ -1520,8 +1544,8 @@ export default function ApproverDashboard() {
 
         {/* Reject Modal */}
         {rejectModal && (
-          <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setRejectModal(null)}>
-            <div className="modal">
+          <Dialog open={Boolean(rejectModal)} onOpenChange={(open) => !open && setRejectModal(null)}>
+            <DialogContent className="modal">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--red)' }}>
                 <ShieldAlert size={20} />
                 <span>Reject {getBadgeTypeLabel(rejectModal.requestType)} Request</span>
@@ -1531,7 +1555,7 @@ export default function ApproverDashboard() {
               </p>
               <div className="form-group" style={{ marginBottom: '20px' }}>
                 <label className="form-label">Rejection Remarks (Mandatory)</label>
-                <textarea
+                <Textarea
                   rows={3}
                   className="form-input"
                   placeholder="e.g. Incomplete documentation, unpaid arrears, signature mismatch..."
@@ -1540,8 +1564,8 @@ export default function ApproverDashboard() {
                 />
               </div>
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button className="btn btn-ghost" onClick={() => setRejectModal(null)}>Cancel</button>
-                <button
+                <Button className="btn btn-ghost" onClick={() => setRejectModal(null)}>Cancel</Button>
+                <Button
                   className="btn btn-danger"
                   disabled={!rejectModal.remarks.trim() || actionLoading}
                   onClick={handleReject}
@@ -1549,10 +1573,10 @@ export default function ApproverDashboard() {
                 >
                   {actionLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <X size={14} />}
                   <span>Confirm Rejection</span>
-                </button>
+                </Button>
               </div>
-            </div>
-          </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </DashboardLayout>

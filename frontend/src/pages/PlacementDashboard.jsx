@@ -1,45 +1,52 @@
 import React, { useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import StatusBadge from '../components/StatusBadge';
 import api from '../lib/api';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent } from '../components/ui/dialog';
+import { Textarea } from '../components/ui/textarea';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     Cell
 } from 'recharts';
 import {
-    Clock,
-    ClipboardList,
-    CheckCircle2,
-    XCircle,
-    Check,
-    X,
-    Eye,
-    AlertCircle,
-    Building,
-    User,
-    Calendar,
-    Sparkles,
-    ShieldAlert,
-    ArrowRight,
-    Receipt,
-    Briefcase,
-    BookOpen,
-    GraduationCap,
-    Paperclip,
-    ExternalLink,
-    RefreshCw,
-    Download,
-    Search,
-    CalendarDays,
-    TrendingUp,
-    FileText,
-    MapPin,
-    Menu,
-    X as CloseIcon,
-    LogOut
-} from 'lucide-react';
+  LuClock as Clock,
+  LuClipboardList as ClipboardList,
+  LuCircleCheck as CheckCircle2,
+  LuCircleX as XCircle,
+  LuCheck as Check,
+  LuX as X,
+  LuEye as Eye,
+  LuCircleAlert as AlertCircle,
+  LuBuilding as Building,
+  LuUser as User,
+  LuCalendar as Calendar,
+  LuSparkles as Sparkles,
+  LuShieldAlert as ShieldAlert,
+  LuArrowRight as ArrowRight,
+  LuReceipt as Receipt,
+  LuBriefcase as Briefcase,
+  LuBookOpen as BookOpen,
+  LuGraduationCap as GraduationCap,
+  LuPaperclip as Paperclip,
+  LuExternalLink as ExternalLink,
+  LuRefreshCw as RefreshCw,
+  LuDownload as Download,
+  LuSearch as Search,
+  LuCalendarDays as CalendarDays,
+  LuTrendingUp as TrendingUp,
+  LuFileText as FileText,
+  LuMapPin as MapPin,
+  LuMenu as Menu,
+  LuX as CloseIcon,
+  LuLogOut as LogOut
+} from 'react-icons/lu';
 
 const ROLE_LABELS = {
     CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#3b82f6', desc: 'Department-level review for out-pass, mess, internship & library requests' },
@@ -733,62 +740,39 @@ export default function ApproverDashboard() {
     };
 
     const exportPlacementCSV = (records = placementHistoryFiltered) => {
-        const headers = [
-            'Request ID',
-            'Student Name',
-            'Roll Number',
-            'Branch',
-            'Year',
-            'Company',
-            'Company Location',
-            'Internship Role',
-            'Mode',
-            'Start Date',
-            'End Date',
-            'Status',
-            'Submitted Date',
-            'Rejection Reason',
-        ];
+        const doc = new jsPDF('landscape');
+        doc.setFontSize(16);
+        doc.text('Placement Internship Report', 14, 22);
 
-        const escapeCSV = (value) =>
-            `"${String(value ?? '').replace(/"/g, '""')}"`;
+        const headers = [['Request ID', 'Student Name', 'Roll Number', 'Branch', 'Year', 'Company', 'Location', 'Role', 'Mode', 'Start Date', 'End Date', 'Status', 'Submitted Date', 'Rejection Reason']];
 
         const rows = records.map((request) => [
-            request?._id,
-            request?.studentId?.name,
-            request?.studentId?.rollNo,
-            request?.branchId?.name || request?.branchId?.code,
-            request?.year || request?.studentId?.year,
-            request?.companyName,
-            request?.companyLocation,
-            request?.role,
-            request?.internshipMode,
+            request?._id || '-',
+            request?.studentId?.name || '-',
+            request?.studentId?.rollNo || '-',
+            request?.branchId?.name || request?.branchId?.code || '-',
+            request?.year || request?.studentId?.year || '-',
+            request?.companyName || '-',
+            request?.companyLocation || '-',
+            request?.role || '-',
+            request?.internshipMode || '-',
             formatPlacementDate(request?.startDate),
             formatPlacementDate(request?.endDate),
-            request?.status,
+            request?.status || '-',
             formatPlacementDateTime(getPlacementRequestDate(request)),
-            request?.rejectionReason,
+            request?.rejectionReason || '-'
         ]);
 
-        const csv = [
-            headers.map(escapeCSV).join(','),
-            ...rows.map((row) => row.map(escapeCSV).join(',')),
-        ].join('\n');
-
-        const blob = new Blob([csv], {
-            type: 'text/csv;charset=utf-8;',
+        doc.autoTable({
+            startY: 30,
+            head: headers,
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize: 7, cellPadding: 1 },
+            headStyles: { fillColor: [37, 99, 235] },
         });
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `placement-internship-report-${new Date()
-            .toISOString()
-            .slice(0, 10)}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
+        doc.save(`placement-internship-report-${new Date().toISOString().slice(0, 10)}.pdf`);
     };
 
     const refreshPlacementDashboard = async () => {
@@ -909,99 +893,39 @@ export default function ApproverDashboard() {
     };
 
     const printPlacementReport = (records = placementHistoryFiltered) => {
-        const rows = records
-            .map(
-                (request) => `
-          <tr>
-            <td>${request?.studentId?.name || '-'}</td>
-            <td>${request?.studentId?.rollNo || '-'}</td>
-            <td>${request?.companyName || '-'}</td>
-            <td>${request?.role || '-'}</td>
-            <td>${request?.internshipMode || '-'}</td>
-            <td>${formatPlacementDate(request?.startDate)} - ${formatPlacementDate(request?.endDate)}</td>
-            <td>${String(request?.status || '').replace(/_/g, ' ')}</td>
-            <td>${request?.rejectionReason || '-'}</td>
-          </tr>
-        `
-            )
-            .join('');
+        const doc = new jsPDF('landscape');
+        doc.setFontSize(16);
+        doc.text('Placement Internship Permission Report', 14, 22);
 
-        const reportWindow = window.open('', '_blank', 'width=1200,height=800');
+        doc.setFontSize(10);
+        doc.text(`Generated on ${new Date().toLocaleString('en-IN')}`, 14, 30);
+        
+        doc.text(`Total: ${records.length} | Approved: ${records.filter((r) => r?.status === 'APPROVED').length} | Pending: ${records.filter((r) => r?.status === 'PENDING_PLACEMENT_OFFICER').length} | Rejected: ${records.filter((r) => r?.status === 'REJECTED_PLACEMENT_OFFICER').length}`, 14, 38);
 
-        if (!reportWindow) {
-            setActionMsg('Please allow pop-ups to print the report.');
-            return;
-        }
+        const headers = [['Student', 'Roll Number', 'Company', 'Role', 'Mode', 'Duration', 'Status', 'Remarks']];
 
-        reportWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>Placement Internship Permission Report</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 32px;
-              color: #0f172a;
-            }
-            h1 { margin: 0 0 6px; }
-            p { color: #64748b; margin-top: 0; }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 24px;
-              font-size: 12px;
-            }
-            th, td {
-              border: 1px solid #dbe3ef;
-              padding: 8px;
-              text-align: left;
-              vertical-align: top;
-            }
-            th {
-              background: #f1f5f9;
-              font-weight: 700;
-            }
-            .summary {
-              display: flex;
-              gap: 24px;
-              margin-top: 18px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Placement Internship Permission Report</h1>
-          <p>Generated on ${new Date().toLocaleString('en-IN')}</p>
+        const rows = records.map((request) => [
+            request?.studentId?.name || '-',
+            request?.studentId?.rollNo || '-',
+            request?.companyName || '-',
+            request?.role || '-',
+            request?.internshipMode || '-',
+            `${formatPlacementDate(request?.startDate)} - ${formatPlacementDate(request?.endDate)}`,
+            String(request?.status || '').replace(/_/g, ' '),
+            request?.rejectionReason || '-'
+        ]);
 
-          <div class="summary">
-            <strong>Total: ${records.length}</strong>
-            <strong>Approved: ${records.filter((r) => r?.status === 'APPROVED').length}</strong>
-            <strong>Pending: ${records.filter((r) => r?.status === 'PENDING_PLACEMENT_OFFICER').length}</strong>
-            <strong>Rejected: ${records.filter((r) => r?.status === 'REJECTED_PLACEMENT_OFFICER').length}</strong>
-          </div>
+        doc.autoTable({
+            startY: 45,
+            head: headers,
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [37, 99, 235] },
+        });
 
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Roll Number</th>
-                <th>Company</th>
-                <th>Role</th>
-                <th>Mode</th>
-                <th>Duration</th>
-                <th>Status</th>
-                <th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </body>
-      </html>
-    `);
-
-        reportWindow.document.close();
-        reportWindow.focus();
-        setTimeout(() => reportWindow.print(), 250);
+        doc.autoPrint();
+        window.open(doc.output('bloburl'), '_blank');
     };
 
     const renderPlacementDashboard = () => {
@@ -1170,7 +1094,7 @@ export default function ApproverDashboard() {
                     </div>
                 )}
 
-                {/* KPI CARDS — pending first, like the HOD dashboard */}
+                {/* KPI CARDS — display-only stats for the overview page */}
                 <div
                     className="stats-grid placement-kpi-grid"
                     style={{
@@ -1190,22 +1114,12 @@ export default function ApproverDashboard() {
                             <div
                                 key={card.key}
                                 className="stat-card"
-                                onClick={() => handlePlacementKpi(card.key)}
                                 style={{
-                                    cursor: 'pointer',
+                                    cursor: 'default',
                                     position: 'relative',
                                     overflow: 'hidden',
                                     transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                                 }}
-                                title={
-                                    card.key === 'PENDING'
-                                        ? 'Open pending internship requests'
-                                        : card.key === 'APPROVED'
-                                            ? 'Open approved internship history'
-                                            : card.key === 'REJECTED'
-                                                ? 'Open rejected internship history'
-                                                : 'Open all internship history'
-                                }
                             >
                                 <div
                                     style={{
@@ -1240,288 +1154,6 @@ export default function ApproverDashboard() {
                             </div>
                         );
                     })}
-                </div>
-
-                {/* HOD-STYLE ANALYTICS ROW */}
-                <div
-                    className="placement-analytics-grid"
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'minmax(0, 1.15fr) minmax(320px, 0.85fr)',
-                        gap: 16,
-                        marginBottom: 16,
-                    }}
-                >
-                    {/* Approval Activity */}
-                    <div className="card" style={{ marginBottom: 0, minHeight: 300 }}>
-                        <div
-                            className="card-header"
-                            style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                                gap: 12,
-                            }}
-                        >
-                            <div>
-                                <div
-                                    className="card-title"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 7,
-                                    }}
-                                >
-                                    <TrendingUp size={17} color="#2563eb" />
-                                    Approval Activity (Last 7 Days)
-                                </div>
-                                <div className="card-subtitle">
-                                    Approved vs rejected internship decisions recorded
-                                </div>
-                            </div>
-
-                            <span
-                                style={{
-                                    fontSize: 12,
-                                    color: '#94a3b8',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
-                                Daily Volume
-                            </span>
-                        </div>
-
-                        <div style={{ height: 195, marginTop: 4 }}>
-                            {placementApprovalActivity.some(
-                                (item) => item.approved > 0 || item.rejected > 0
-                            ) ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart
-                                        data={placementApprovalActivity}
-                                        margin={{ top: 10, right: 12, left: -10, bottom: 8 }}
-                                        barGap={4}
-                                    >
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            stroke="#e2e8f0"
-                                            vertical={false}
-                                        />
-
-                                        <XAxis
-                                            dataKey="date"
-                                            stroke="#64748b"
-                                            fontSize={11}
-                                            tickLine={false}
-                                            axisLine={false}
-                                        />
-
-                                        <YAxis
-                                            stroke="#64748b"
-                                            fontSize={11}
-                                            allowDecimals={false}
-                                            tickLine={false}
-                                            axisLine={false}
-                                        />
-
-                                        <Tooltip
-                                            contentStyle={{
-                                                borderRadius: 10,
-                                                border: '1px solid #e2e8f0',
-                                                boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
-                                            }}
-                                        />
-
-                                        <Legend
-                                            wrapperStyle={{
-                                                fontSize: 12,
-                                                paddingTop: 8,
-                                            }}
-                                        />
-
-                                        <Bar
-                                            dataKey="approved"
-                                            name="Approved"
-                                            fill="#10b981"
-                                            radius={[4, 4, 0, 0]}
-                                            maxBarSize={28}
-                                            cursor="pointer"
-                                            onClick={() => handlePlacementKpi('APPROVED')}
-                                        />
-
-                                        <Bar
-                                            dataKey="rejected"
-                                            name="Rejected"
-                                            fill="#ef4444"
-                                            radius={[4, 4, 0, 0]}
-                                            maxBarSize={28}
-                                            cursor="pointer"
-                                            onClick={() => handlePlacementKpi('REJECTED')}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div
-                                    className="empty-state"
-                                    style={{ height: '100%', padding: 20 }}
-                                >
-                                    <div className="empty-state-icon">
-                                        <TrendingUp size={34} />
-                                    </div>
-
-                                    <div className="empty-state-title">
-                                        No decisions recorded
-                                    </div>
-
-                                    <div className="empty-state-desc">
-                                        Approved and rejected decisions will appear here.
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Internship request summary */}
-                    <div className="card" style={{ marginBottom: 0, minHeight: 300 }}>
-                        <div className="card-header">
-                            <div
-                                className="card-title"
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 7,
-                                }}
-                            >
-                                <Briefcase size={17} color="#2563eb" />
-                                Internship Requests
-                            </div>
-
-                            <div className="card-subtitle">
-                                Current request status
-                            </div>
-                        </div>
-
-                        <div style={{ padding: '4px 0 6px' }}>
-                            {[
-                                {
-                                    label: 'Pending Requests',
-                                    value: pendingCount,
-                                    color: '#f59e0b',
-                                    icon: Clock,
-                                    onClick: () => handlePlacementKpi('PENDING'),
-                                },
-                                {
-                                    label: 'Approved Requests',
-                                    value: approved,
-                                    color: '#059669',
-                                    icon: CheckCircle2,
-                                    onClick: () => handlePlacementKpi('APPROVED'),
-                                },
-                                {
-                                    label: 'Rejected Requests',
-                                    value: rejected,
-                                    color: '#dc2626',
-                                    icon: XCircle,
-                                    onClick: () => handlePlacementKpi('REJECTED'),
-                                },
-                            ].map((item) => {
-                                const Icon = item.icon;
-
-                                return (
-                                    <button
-                                        key={item.label}
-                                        type="button"
-                                        onClick={item.onClick}
-                                        title={`Open ${item.label.toLowerCase()}`}
-                                        style={{
-                                            width: '100%',
-                                            border: 0,
-                                            borderBottom: '1px solid #eef2f7',
-                                            background: 'transparent',
-                                            padding: '17px 4px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 12,
-                                            cursor: 'pointer',
-                                            textAlign: 'left',
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                width: 38,
-                                                height: 38,
-                                                borderRadius: 10,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                background: `${item.color}12`,
-                                                color: item.color,
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            <Icon size={18} />
-                                        </span>
-
-                                        <span style={{ flex: 1 }}>
-                                            <span
-                                                style={{
-                                                    display: 'block',
-                                                    fontSize: 13,
-                                                    fontWeight: 700,
-                                                    color: '#334155',
-                                                }}
-                                            >
-                                                {item.label}
-                                            </span>
-
-                                            <span
-                                                style={{
-                                                    display: 'block',
-                                                    fontSize: 11,
-                                                    color: '#94a3b8',
-                                                    marginTop: 3,
-                                                }}
-                                            >
-                                                Click to review
-                                            </span>
-                                        </span>
-
-                                        <strong
-                                            style={{
-                                                fontSize: 22,
-                                                color: item.color,
-                                            }}
-                                        >
-                                            {item.value}
-                                        </strong>
-
-                                        <ArrowRight size={16} color="#94a3b8" />
-                                    </button>
-                                );
-                            })}
-
-                            <button
-                                type="button"
-                                onClick={() => handlePlacementKpi('TOTAL')}
-                                style={{
-                                    width: '100%',
-                                    border: 0,
-                                    background: '#f8fafc',
-                                    borderRadius: 10,
-                                    marginTop: 12,
-                                    padding: '13px 12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    cursor: 'pointer',
-                                    color: '#2563eb',
-                                    fontWeight: 700,
-                                }}
-                            >
-                                <span>View all internship requests</span>
-                                <ArrowRight size={16} />
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Dashboard ends here. Pending requests are intentionally kept on /placement/pending only. */}
@@ -1575,7 +1207,8 @@ export default function ApproverDashboard() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
 
                         {!isPendingView && (
-                            <button
+                            <Button
+                                variant="ghost"
                                 className="btn btn-ghost"
                                 onClick={() => printPlacementReport(records)}
                                 style={{
@@ -1586,11 +1219,12 @@ export default function ApproverDashboard() {
                             >
                                 <FileText size={15} />
                                 Print
-                            </button>
+                            </Button>
                         )}
 
                         {!isPendingView && (
-                            <button
+                            <Button
+                                variant="default"
                                 className="btn btn-primary"
                                 onClick={() => exportPlacementCSV(records)}
                                 style={{
@@ -1601,7 +1235,7 @@ export default function ApproverDashboard() {
                             >
                                 <Download size={15} />
                                 Export
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -1637,42 +1271,25 @@ export default function ApproverDashboard() {
                                     color: 'var(--text-muted)',
                                 }}
                             />
-                            <input
-                                className="form-input"
+                            <Input
+                                className="form-input pl-9"
                                 value={placementSearch}
                                 onChange={(e) => setPlacementSearch(e.target.value)}
                                 placeholder="Search student, roll number, company or role..."
-                                style={{ paddingLeft: 36 }}
                             />
                         </div>
 
                         {!isPendingView && (
-                            <select
-                                className="form-input"
-                                value={placementStatusFilter}
-                                onChange={(e) => setPlacementStatusFilter(e.target.value)}
-                                style={{ width: 150 }}
-                            >
-                                <option value="REVIEWED">Approved & Rejected</option>
-                                <option value="ALL">All Requests</option>
-                                <option value="PENDING_PLACEMENT_OFFICER">Pending</option>
-                                <option value="APPROVED">Approved</option>
-                                <option value="REJECTED_PLACEMENT_OFFICER">Rejected</option>
-                            </select>
+                            <Select value={placementStatusFilter} onValueChange={setPlacementStatusFilter}>
+                                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value="REVIEWED">Approved & Rejected</SelectItem><SelectItem value="ALL">All Requests</SelectItem><SelectItem value="PENDING_PLACEMENT_OFFICER">Pending</SelectItem><SelectItem value="APPROVED">Approved</SelectItem><SelectItem value="REJECTED_PLACEMENT_OFFICER">Rejected</SelectItem></SelectContent>
+                            </Select>
                         )}
 
-                        <select
-                            className="form-input"
-                            value={placementPeriod}
-                            onChange={(e) => setPlacementPeriod(e.target.value)}
-                            style={{ width: 145 }}
-                        >
-                            <option value="ALL">All Time</option>
-                            <option value="TODAY">Today</option>
-                            <option value="WEEK">This Week</option>
-                            <option value="MONTH">This Month</option>
-                            <option value="CUSTOM">Custom Range</option>
-                        </select>
+                        <Select value={placementPeriod} onValueChange={setPlacementPeriod}>
+                            <SelectTrigger className="w-[145px]"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="ALL">All Time</SelectItem><SelectItem value="TODAY">Today</SelectItem><SelectItem value="WEEK">This Week</SelectItem><SelectItem value="MONTH">This Month</SelectItem><SelectItem value="CUSTOM">Custom Range</SelectItem></SelectContent>
+                        </Select>
                     </div>
 
                     {placementPeriod === 'CUSTOM' && (
@@ -1684,19 +1301,17 @@ export default function ApproverDashboard() {
                                 flexWrap: 'wrap',
                             }}
                         >
-                            <input
+                            <Input
                                 type="date"
-                                className="form-input"
+                                className="form-input max-w-[180px]"
                                 value={placementFromDate}
                                 onChange={(e) => setPlacementFromDate(e.target.value)}
-                                style={{ maxWidth: 180 }}
                             />
-                            <input
+                            <Input
                                 type="date"
-                                className="form-input"
+                                className="form-input max-w-[180px]"
                                 value={placementToDate}
                                 onChange={(e) => setPlacementToDate(e.target.value)}
-                                style={{ maxWidth: 180 }}
                             />
                         </div>
                     )}
@@ -1779,22 +1394,12 @@ export default function ApproverDashboard() {
                                                         <Paperclip size={13} /> View Doc
                                                     </a>
                                                 )}
-                                                <button
+                                                <Button
                                                     className="btn btn-primary btn-sm placement-mobile-view-btn"
                                                     onClick={() => navigate(isPendingView ? `/outpass/${request._id}?mode=approval` : `/outpass/${request._id}`)}
                                                 >
                                                     <Eye size={13} /> View Request
-                                                </button>
-                                                {isPendingView && (
-                                                    <>
-                                                        <button className="btn btn-success btn-sm placement-mobile-action-btn" disabled={actionLoading} onClick={() => handleApprove(request._id)}>
-                                                            <Check size={13} /> Approve
-                                                        </button>
-                                                        <button className="btn btn-danger btn-sm placement-mobile-action-btn" disabled={actionLoading} onClick={() => setRejectModal({ id: request._id, remarks: '', requestType: 'INTERNSHIP' })}>
-                                                            <X size={13} /> Reject
-                                                        </button>
-                                                    </>
-                                                )}
+                                                </Button>
                                             </div>
                                         </article>
                                     );
@@ -1931,7 +1536,7 @@ export default function ApproverDashboard() {
                                                                 flexWrap: 'wrap',
                                                             }}
                                                         >
-                                                            <button
+                                                            <Button
                                                                 className="btn btn-ghost btn-sm"
                                                                 onClick={() =>
                                                                     navigate(
@@ -1948,47 +1553,8 @@ export default function ApproverDashboard() {
                                                             >
                                                                 <Eye size={13} />
                                                                 View
-                                                            </button>
+                                                            </Button>
 
-                                                            {isPendingView && (
-                                                                <>
-                                                                    <button
-                                                                        className="btn btn-success btn-sm"
-                                                                        disabled={actionLoading}
-                                                                        onClick={() =>
-                                                                            handleApprove(request._id)
-                                                                        }
-                                                                        style={{
-                                                                            display: 'inline-flex',
-                                                                            alignItems: 'center',
-                                                                            gap: 4,
-                                                                        }}
-                                                                    >
-                                                                        <Check size={13} />
-                                                                        Approve
-                                                                    </button>
-
-                                                                    <button
-                                                                        className="btn btn-danger btn-sm"
-                                                                        disabled={actionLoading}
-                                                                        onClick={() =>
-                                                                            setRejectModal({
-                                                                                id: request._id,
-                                                                                remarks: '',
-                                                                                requestType: 'INTERNSHIP',
-                                                                            })
-                                                                        }
-                                                                        style={{
-                                                                            display: 'inline-flex',
-                                                                            alignItems: 'center',
-                                                                            gap: 4,
-                                                                        }}
-                                                                    >
-                                                                        <X size={13} />
-                                                                        Reject
-                                                                    </button>
-                                                                </>
-                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -2068,16 +1634,16 @@ export default function ApproverDashboard() {
       `}</style>
             <div className="placement-officer-shell">
                 {placementMobileOpen && (
-                    <button type="button" className="placement-sidebar-overlay" aria-label="Close navigation" onClick={() => setPlacementMobileOpen(false)} />
+                    <Button type="button" className="placement-sidebar-overlay" aria-label="Close navigation" onClick={() => setPlacementMobileOpen(false)} />
                 )}
-                <button
+                <Button
                     type="button"
                     className="placement-mobile-menu"
                     aria-label={placementMobileOpen ? 'Close navigation' : 'Open navigation'}
                     onClick={() => setPlacementMobileOpen((v) => !v)}
                 >
                     {placementMobileOpen ? <CloseIcon size={22} /> : <Menu size={22} />}
-                </button>
+                </Button>
                 <aside
                     className={`placement-officer-sidebar${placementMobileOpen ? ' mobile-open' : ''}`}
                     style={{
@@ -2114,7 +1680,7 @@ export default function ApproverDashboard() {
                         ].map((item) => {
                             const Icon = item.icon;
                             return (
-                                <button
+                                <Button
                                     key={item.path}
                                     type="button"
                                     onClick={() => {
@@ -2148,7 +1714,7 @@ export default function ApproverDashboard() {
                                 >
                                     <Icon size={18} />
                                     {item.label}
-                                </button>
+                                </Button>
                             );
                         })}
                     </div>
@@ -2191,7 +1757,7 @@ export default function ApproverDashboard() {
                                 </div>
                             </div>
 
-                            <button
+                            <Button
                                 type="button"
                                 onClick={handlePlacementLogout}
                                 title="Logout"
@@ -2221,7 +1787,7 @@ export default function ApproverDashboard() {
                                 }}
                             >
                                 <LogOut size={18} />
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </aside>
@@ -2395,7 +1961,7 @@ export default function ApproverDashboard() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
                             {!isHostelIncharge && (
                                 <div className="tabs" style={{ marginBottom: 0 }}>
-                                    <button
+                                    <Button
                                         className={`tab ${isHostelIncharge ? (tab === 'overview' ? 'active' : '') : (tab === 'pending' ? 'active' : '')}`}
                                         onClick={() => {
                                             if (isHostelIncharge) {
@@ -2409,9 +1975,9 @@ export default function ApproverDashboard() {
                                     >
                                         <Clock size={14} />
                                         <span>{isHostelIncharge ? 'Overview' : `Pending Queue (${pending.length})`}</span>
-                                    </button>
+                                    </Button>
                                     {isHostelIncharge && (
-                                        <button
+                                        <Button
                                             className={`tab ${tab === 'pending' ? 'active' : ''}`}
                                             onClick={() => {
                                                 setKpiFilter('PENDING');
@@ -2421,10 +1987,10 @@ export default function ApproverDashboard() {
                                         >
                                             <Clock size={14} />
                                             <span>Pending Requests ({hostelPending})</span>
-                                        </button>
+                                        </Button>
                                     )}
 
-                                    <button
+                                    <Button
                                         className={`tab ${tab === 'history' ? 'active' : ''}`}
                                         onClick={() => {
                                             if (isHostelIncharge) {
@@ -2438,14 +2004,14 @@ export default function ApproverDashboard() {
                                     >
                                         <ClipboardList size={14} />
                                         <span>Review History</span>
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
 
                             {/* Feature Filter Pills */}
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                 {['ALL', 'OUTPASS', 'MESS_FEE', 'INTERNSHIP'].map(f => (
-                                    <button
+                                    <Button
                                         key={f}
                                         type="button"
                                         onClick={() => setTypeFilter(f)}
@@ -2465,7 +2031,7 @@ export default function ApproverDashboard() {
                                         {f === 'OUTPASS' && 'Out-Pass'}
                                         {f === 'MESS_FEE' && 'Mess Fee'}
                                         {f === 'INTERNSHIP' && 'Internship'}
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </div>
@@ -2609,7 +2175,7 @@ export default function ApproverDashboard() {
                                                                     </td>
                                                                     {tab === 'pending' && (
                                                                         <td>
-                                                                            <button
+                                                                            <Button
                                                                                 className="btn btn-ghost btn-sm"
                                                                                 onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
                                                                                 style={{
@@ -2621,14 +2187,14 @@ export default function ApproverDashboard() {
                                                                             >
                                                                                 <Eye size={14} />
                                                                                 <span>View</span>
-                                                                            </button>
+                                                                            </Button>
                                                                         </td>
                                                                     )}
                                                                 </>
                                                             ) : (
                                                                 <td>
                                                                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                                                        <button
+                                                                        <Button
                                                                             className="btn btn-success btn-sm"
                                                                             disabled={actionLoading}
                                                                             onClick={() => handleApprove(req._id)}
@@ -2636,8 +2202,8 @@ export default function ApproverDashboard() {
                                                                         >
                                                                             <Check size={14} />
                                                                             <span>Approve</span>
-                                                                        </button>
-                                                                        <button
+                                                                        </Button>
+                                                                        <Button
                                                                             className="btn btn-danger btn-sm"
                                                                             disabled={actionLoading}
                                                                             onClick={() => setRejectModal({ id: req._id, remarks: '', requestType: reqType })}
@@ -2645,15 +2211,15 @@ export default function ApproverDashboard() {
                                                                         >
                                                                             <X size={14} />
                                                                             <span>Reject</span>
-                                                                        </button>
-                                                                        <button
+                                                                        </Button>
+                                                                        <Button
                                                                             className="btn btn-ghost btn-sm"
                                                                             onClick={() => navigate(`/outpass/${req._id}`)}
                                                                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
                                                                         >
                                                                             <Eye size={14} />
                                                                             <span>View</span>
-                                                                        </button>
+                                                                        </Button>
                                                                     </div>
                                                                 </td>
                                                             )}
@@ -2732,14 +2298,14 @@ export default function ApproverDashboard() {
                                                             <td>{isHostelIncharge ? renderHostelStatus(req) : <StatusBadge status={req.status} />}</td>
                                                             {isHostelIncharge && (
                                                                 <td>
-                                                                    <button
+                                                                    <Button
                                                                         className="btn btn-ghost btn-sm"
                                                                         onClick={() => navigate(`/outpass/${req._id}`)}
                                                                         style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
                                                                     >
                                                                         <Eye size={14} />
                                                                         <span>View</span>
-                                                                    </button>
+                                                                    </Button>
                                                                 </td>
                                                             )}
                                                         </tr>
@@ -2758,8 +2324,8 @@ export default function ApproverDashboard() {
 
             {/* Reject Modal */}
             {rejectModal && (
-                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setRejectModal(null)}>
-                    <div className="modal">
+                <Dialog open={Boolean(rejectModal)} onOpenChange={(open) => !open && setRejectModal(null)}>
+                    <DialogContent className="modal">
                         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--red)' }}>
                             <ShieldAlert size={20} />
                             <span>Reject {getBadgeTypeLabel(rejectModal.requestType)} Request</span>
@@ -2769,7 +2335,7 @@ export default function ApproverDashboard() {
                         </p>
                         <div className="form-group" style={{ marginBottom: '20px' }}>
                             <label className="form-label">Rejection Remarks (Mandatory)</label>
-                            <textarea
+                            <Textarea
                                 rows={3}
                                 className="form-input"
                                 placeholder="e.g. Incomplete documentation, unpaid arrears, signature mismatch..."
@@ -2778,8 +2344,8 @@ export default function ApproverDashboard() {
                             />
                         </div>
                         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                            <button className="btn btn-ghost" onClick={() => setRejectModal(null)}>Cancel</button>
-                            <button
+                            <Button className="btn btn-ghost" onClick={() => setRejectModal(null)}>Cancel</Button>
+                            <Button
                                 className="btn btn-danger"
                                 disabled={!rejectModal.remarks.trim() || actionLoading}
                                 onClick={handleReject}
@@ -2787,10 +2353,10 @@ export default function ApproverDashboard() {
                             >
                                 {actionLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <X size={14} />}
                                 <span>Confirm Rejection</span>
-                            </button>
+                            </Button>
                         </div>
-                    </div>
-                </div>
+                    </DialogContent>
+                </Dialog>
             )}
         </>
     );

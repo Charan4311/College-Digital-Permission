@@ -6,20 +6,23 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import {
-  BarChart2,
-  TrendingUp,
-  PieChart as PieChartIcon,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  FileText,
-  Calendar,
-  Download,
-  ChevronDown,
-  Layers,
-  ArrowUpRight,
-  ArrowDownRight
-} from 'lucide-react';
+  LuChartBar as BarChart2,
+  LuTrendingUp as TrendingUp,
+  LuChartPie as PieChartIcon,
+  LuCircleCheck as CheckCircle2,
+  LuClock as Clock,
+  LuCircleX as XCircle,
+  LuFileText as FileText,
+  LuCalendar as Calendar,
+  LuDownload as Download,
+  LuChevronDown as ChevronDown,
+  LuLayers as Layers,
+  LuArrowUpRight as ArrowUpRight,
+  LuArrowDownRight as ArrowDownRight
+} from 'react-icons/lu';
+import { Button } from '../../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Table } from '../../components/ui/table';
 
 const TYPE_COLORS = {
   'Outpass': '#3B82F6',
@@ -156,61 +159,29 @@ export default function AdminReports() {
             display: 'inline-flex',
             alignItems: 'center'
           }}>
-            <select
-              value={range}
-              onChange={(e) => setRange(e.target.value)}
-              style={{
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                background: '#FFFFFF',
-                border: '1px solid #CBD5E1',
-                borderRadius: '8px',
-                padding: '8px 32px 8px 34px',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#334155',
-                cursor: 'pointer',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                outline: 'none'
-              }}
-            >
-              <option value="7days">Last 7 Days</option>
-              <option value="30days">Last 30 Days</option>
-              <option value="6months">Last 6 Months</option>
-              <option value="thisyear">This Year</option>
-            </select>
+            <Select value={range} onValueChange={setRange}>
+              <SelectTrigger className="h-10 min-w-[150px] pl-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7days">Last 7 Days</SelectItem>
+                <SelectItem value="30days">Last 30 Days</SelectItem>
+                <SelectItem value="6months">Last 6 Months</SelectItem>
+                <SelectItem value="thisyear">This Year</SelectItem>
+              </SelectContent>
+            </Select>
             <Calendar size={15} color="#64748B" style={{ position: 'absolute', left: '10px', pointerEvents: 'none' }} />
             <ChevronDown size={14} color="#64748B" style={{ position: 'absolute', right: '10px', pointerEvents: 'none' }} />
           </div>
 
           {/* Export Report Button */}
-          <button
+          <Button
             onClick={handleExport}
             disabled={exporting}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #CBD5E1',
-              borderRadius: '8px',
-              padding: '8px 16px',
-              fontSize: '13px',
-              fontWeight: 700,
-              color: '#1E293B',
-              cursor: exporting ? 'not-allowed' : 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.borderColor = '#3B82F6'}
-            onMouseOut={(e) => e.currentTarget.style.borderColor = '#CBD5E1'}
+            variant="outline"
+            className="gap-2"
           >
             <Download size={15} color="#2563EB" />
             <span>{exporting ? 'Exporting...' : 'Export Report'}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -395,68 +366,29 @@ export default function AdminReports() {
           width: '100%',
           boxSizing: 'border-box'
         }}>
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            style={{
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              MozAppearance: 'none',
-              width: '100%',
-              height: '42px',
-              display: 'flex',
-              alignItems: 'center',
-              background: '#FFFFFF',
-              border: '1px solid #CBD5E1',
-              borderRadius: '8px',
-              padding: '0 32px 0 36px',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: '#334155',
-              cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          >
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-            <option value="6months">Last 6 Months</option>
-            <option value="thisyear">This Year</option>
-          </select>
+          <Select value={range} onValueChange={setRange}>
+            <SelectTrigger className="h-[42px] w-full pl-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7days">Last 7 Days</SelectItem>
+              <SelectItem value="30days">Last 30 Days</SelectItem>
+              <SelectItem value="6months">Last 6 Months</SelectItem>
+              <SelectItem value="thisyear">This Year</SelectItem>
+            </SelectContent>
+          </Select>
           <Calendar size={16} color="#64748B" style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }} />
           <ChevronDown size={14} color="#64748B" style={{ position: 'absolute', right: '12px', pointerEvents: 'none' }} />
         </div>
 
         {/* Export Report Button */}
-        <button
+        <Button
           onClick={handleExport}
           disabled={exporting}
-          style={{
-            width: '100%',
-            height: '42px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #CBD5E1',
-            borderRadius: '8px',
-            padding: '0 18px',
-            fontSize: '13px',
-            fontWeight: 700,
-            color: '#1E293B',
-            cursor: exporting ? 'not-allowed' : 'pointer',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-            transition: 'all 0.15s ease',
-            boxSizing: 'border-box'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.borderColor = '#3B82F6'}
-          onMouseOut={(e) => e.currentTarget.style.borderColor = '#CBD5E1'}
+          variant="outline"
+          className="h-[42px] w-full gap-2"
         >
           <Download size={16} color="#2563EB" />
           <span>{exporting ? 'Exporting...' : 'Export Report'}</span>
-        </button>
+        </Button>
       </div>
 
       {/* Main Charts Row 1 */}
@@ -511,7 +443,7 @@ export default function AdminReports() {
                 { label: 'Last 6 months', val: '6months' },
                 { label: 'This year', val: 'thisyear' }
               ].map(t => (
-                <button
+                <Button
                   key={t.val}
                   onClick={() => setRange(t.val)}
                   style={{
@@ -527,7 +459,7 @@ export default function AdminReports() {
                   }}
                 >
                   {t.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -673,7 +605,7 @@ export default function AdminReports() {
 
             {/* Side Legend Table */}
             <div style={{ flex: 1, overflowX: 'auto', width: '100%' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <Table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                   {typeDistribution.map((t, idx) => (
                     <tr key={idx} style={{ borderBottom: idx < typeDistribution.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
@@ -698,7 +630,7 @@ export default function AdminReports() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </div>
         </div>
@@ -733,7 +665,7 @@ export default function AdminReports() {
           </div>
 
           <div className="table-wrapper" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <Table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                   <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>Permission Type</th>
@@ -780,7 +712,7 @@ export default function AdminReports() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         </div>
 

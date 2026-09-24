@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../lib/api";
+import { Button } from '../../components/ui/button';
 import {
-    Building2,
-    ArrowRight,
-} from "lucide-react";
+  LuBuilding2 as Building2,
+  LuArrowRight as ArrowRight
+} from 'react-icons/lu';
 
 const DEPARTMENT_BRANCHES = [
     {
@@ -423,7 +424,7 @@ const HODBranches = () => {
                         </div>
 
                         {/* View Requests */}
-                        <button
+                        <Button
                             className="btn btn-primary"
                             style={{
                                 width: "100%",
@@ -436,7 +437,7 @@ const HODBranches = () => {
                         >
                             View Requests
                             <ArrowRight size={16} />
-                        </button>
+                        </Button>
                     </div>
                 ))}
             </div>

@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import PermissionRequestsTrend from "../../components/PermissionRequestsTrend";
 import api from '../../lib/api';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Dialog, DialogContent } from '../../components/ui/dialog';
 
 import {
     ResponsiveContainer,
@@ -23,19 +26,19 @@ import {
 } from 'recharts';
 
 import {
-    FileText,
-    CheckCircle2,
-    Clock3,
-    XCircle,
-    CalendarDays,
-    RefreshCw,
-    BarChart3,
-    FileSpreadsheet,
-    FileDown,
-    X,
-    Building2,
-    ChevronDown,
-} from 'lucide-react';
+  LuFileText as FileText,
+  LuCircleCheck as CheckCircle2,
+  LuClock3 as Clock3,
+  LuCircleX as XCircle,
+  LuCalendarDays as CalendarDays,
+  LuRefreshCw as RefreshCw,
+  LuChartColumn as BarChart3,
+  LuFileSpreadsheet as FileSpreadsheet,
+  LuFileDown as FileDown,
+  LuX as X,
+  LuBuilding2 as Building2,
+  LuChevronDown as ChevronDown
+} from 'react-icons/lu';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -2100,7 +2103,7 @@ export default function HODReports() {
                         </SelectField>
 
 
-                        <button
+                        <Button
                             type="button"
                             onClick={
                                 handleGenerate
@@ -2127,7 +2130,7 @@ export default function HODReports() {
                             />
 
                             Generate Report
-                        </button>
+                        </Button>
 
                     </div>
 
@@ -2403,7 +2406,7 @@ export default function HODReports() {
                                     ].map((tab) => {
                                         const active = trendRange === tab.value;
                                         return (
-                                            <button
+                                            <Button
                                                 key={tab.value}
                                                 type="button"
                                                 onClick={() => setTrendRange(tab.value)}
@@ -2420,7 +2423,7 @@ export default function HODReports() {
                                                 }}
                                             >
                                                 {tab.label}
-                                            </button>
+                                            </Button>
                                         );
                                     })}
                                 </div>
@@ -2577,51 +2580,8 @@ export default function HODReports() {
             ============================================================ */}
 
             {showGenerateModal && (
-
-                <div
-                    style={{
-                        position:
-                            'fixed',
-                        inset: 0,
-                        zIndex: 9999,
-                        background:
-                            'rgba(15,23,42,0.45)',
-                        backdropFilter:
-                            'blur(3px)',
-                        display:
-                            'flex',
-                        alignItems:
-                            'center',
-                        justifyContent:
-                            'center',
-                        padding: 20,
-                    }}
-                    onMouseDown={(event) => {
-
-                        if (
-                            event.target ===
-                            event.currentTarget
-                        ) {
-                            setShowGenerateModal(
-                                false
-                            );
-                        }
-
-                    }}
-                >
-
-                    <div
-                        className="card"
-                        style={{
-                            width:
-                                '100%',
-                            maxWidth:
-                                490,
-                            padding: 20,
-                            boxShadow:
-                                '0 20px 60px rgba(0,0,0,0.18)',
-                        }}
-                    >
+                <Dialog open={showGenerateModal} onOpenChange={setShowGenerateModal}>
+                    <DialogContent className="card" style={{ width: '100%', maxWidth: 490, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
 
                         {/* HEADER */}
 
@@ -2708,7 +2668,7 @@ export default function HODReports() {
                             </div>
 
 
-                            <button
+                            <Button
                                 type="button"
                                 onClick={() =>
                                     setShowGenerateModal(
@@ -2739,7 +2699,7 @@ export default function HODReports() {
                                 <X
                                     size={15}
                                 />
-                            </button>
+                            </Button>
 
                         </div>
 
@@ -2899,7 +2859,7 @@ export default function HODReports() {
                             }}
                         >
 
-                            <button
+                            <Button
                                 type="button"
                                 onClick={
                                     downloadPDF
@@ -2961,10 +2921,10 @@ export default function HODReports() {
 
                                 Download PDF
 
-                            </button>
+                            </Button>
 
 
-                            <button
+                            <Button
                                 type="button"
                                 onClick={
                                     downloadExcel
@@ -3026,13 +2986,12 @@ export default function HODReports() {
 
                                 Download Excel
 
-                            </button>
+                            </Button>
 
                         </div>
 
-                    </div>
-
-                </div>
+                    </DialogContent>
+                </Dialog>
 
             )}
 

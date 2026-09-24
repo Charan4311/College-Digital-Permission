@@ -10,21 +10,25 @@ import {
 } from 'react-router-dom';
 
 import {
-  ClipboardList,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Search,
-  Eye,
-  FileText,
-  Printer,
-  Download,
-} from 'lucide-react';
+  LuClipboardList,
+  LuCircleCheck,
+  LuCircleX,
+  LuClock,
+  LuSearch,
+  LuEye,
+  LuFileText,
+  LuDownload,
+} from 'react-icons/lu';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import DashboardLayout from '../../components/DashboardLayout';
-import CTPOMobileNav from '../../components/CTPOMobileNav';
 import StatusBadge from '../../components/StatusBadge';
 import api from '../../lib/api';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Table } from '../../components/ui/table';
 
 
 // ============================================================
@@ -921,7 +925,7 @@ const student =
     }
 
     navigate(
-      `/outpass/${request._id}`
+      `/outpass/${request._id}?mode=approval`
     );
   };
 
@@ -961,95 +965,71 @@ const student =
 
 
   // ==========================================================
-  // PRINT
-  // ==========================================================
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-
-  // ==========================================================
-  // EXPORT
+  // EXPORT PDF
   // ==========================================================
 
   const handleExport = () => {
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.setTextColor(15, 23, 42);
+      doc.text('CTPO Requests Report', 14, 18);
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        `Generated on: ${new Date().toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })} · Total Requests: ${filteredRequests.length}`,
+        14,
+        25
+      );
 
-    const headers = [
-      'Request Type',
-      'Student',
-      'Roll Number',
-      'Details',
-      'Submitted',
-      'CTPO Status',
-    ];
+      const tableHeaders = [
+        ['#', 'Reference ID', 'Type', 'Student', 'Roll No', 'Details', 'Submitted', 'Status'],
+      ];
 
-    const rows =
-      filteredRequests.map(
-        (request) => [
-          request._permissionType,
-          request._studentName,
-          request._rollNo,
+      const tableData = filteredRequests.map((request, idx) => [
+        idx + 1,
+        request?.referenceId || request?._referenceId || '—',
+        request._permissionType || 'Permission',
+        request._studentName || '—',
+        request._rollNo || '—',
+        (
           request?.reason ||
-            request?.purpose ||
-            request?.description ||
-            request?.details ||
-            '',
-          formatDate(
-            request?.createdAt ||
+          request?.purpose ||
+          request?.description ||
+          request?.details ||
+          '—'
+        ).substring(0, 32),
+        formatDate(
+          request?.createdAt ||
             request?.submittedAt ||
             request?.createdDate ||
             request?.requestDate
-          ),
-          getCTPODisplayStatus(
-            request
-          ),
-        ]
-      );
+        ),
+        getCTPODisplayStatus(request) || 'PENDING',
+      ]);
 
+      autoTable(doc, {
+        head: tableHeaders,
+        body: tableData,
+        startY: 30,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: {
+          fillColor: [79, 70, 229],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+      });
 
-    const csv = [
-      headers,
-      ...rows,
-    ]
-      .map(
-        (row) =>
-          row
-            .map(
-              (value) =>
-                `"${String(value)
-                  .replace(/"/g, '""')}"`
-            )
-            .join(',')
-      )
-      .join('\n');
-
-
-    const blob = new Blob(
-      [csv],
-      {
-        type:
-          'text/csv;charset=utf-8;',
-      }
-    );
-
-    const url =
-      URL.createObjectURL(blob);
-
-    const link =
-      document.createElement('a');
-
-    link.href = url;
-    link.download =
-      'ctpo-all-requests.csv';
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
+      doc.save(`ctpo-requests-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error('PDF export error:', err);
+      alert('Failed to export PDF. Please try again.');
+    }
   };
 
 
@@ -1069,7 +1049,6 @@ const student =
         <div className="ctpo-history-header">
 
           <div className="ctpo-history-title-row">
-            <CTPOMobileNav />
             <div>
               <h1>
                 All Requests
@@ -1083,26 +1062,14 @@ const student =
 
 
           <div className="ctpo-header-actions">
-
-            <button
-              type="button"
-              className="ctpo-action-button"
-              onClick={handlePrint}
-            >
-              <Printer size={17} />
-              Print
-            </button>
-
-
-            <button
+            <Button
               type="button"
               className="ctpo-export-button"
               onClick={handleExport}
             >
-              <Download size={17} />
-              Export
-            </button>
-
+              <LuDownload size={17} />
+              Export PDF
+            </Button>
           </div>
 
         </div>
@@ -1114,7 +1081,7 @@ const student =
 
         <div className="ctpo-history-tabs">
 
-          <button
+          <Button
             type="button"
             className={
               activeStatus === 'ALL'
@@ -1125,7 +1092,7 @@ const student =
               handleStatusChange('ALL')
             }
           >
-            <ClipboardList size={18} />
+            <LuClipboardList size={18} />
 
             <span>
               All Requests
@@ -1133,10 +1100,10 @@ const student =
                 ({allCount})
               </strong>
             </span>
-          </button>
+          </Button>
 
 
-          <button
+          <Button
             type="button"
             className={
               activeStatus === 'APPROVED'
@@ -1149,7 +1116,7 @@ const student =
               )
             }
           >
-            <CheckCircle size={18} />
+            <LuCircleCheck size={18} />
 
             <span>
               Approved
@@ -1157,10 +1124,10 @@ const student =
                 ({approvedCount})
               </strong>
             </span>
-          </button>
+          </Button>
 
 
-          <button
+          <Button
             type="button"
             className={
               activeStatus === 'REJECTED'
@@ -1173,7 +1140,7 @@ const student =
               )
             }
           >
-            <XCircle size={18} />
+            <LuCircleX size={18} />
 
             <span>
               Rejected
@@ -1181,19 +1148,19 @@ const student =
                 ({rejectedCount})
               </strong>
             </span>
-          </button>
+          </Button>
 
 
           {/* PENDING */}
 
-          <button
+          <Button
             type="button"
             className="ctpo-history-tab pending-tab"
             onClick={() =>
               navigate('/ctpo/pending')
             }
           >
-            <Clock size={18} />
+            <LuClock size={18} />
 
             <span>
               Pending Requests
@@ -1201,7 +1168,7 @@ const student =
                 ({pendingCount})
               </strong>
             </span>
-          </button>
+          </Button>
 
         </div>
 
@@ -1214,12 +1181,12 @@ const student =
 
           <div className="ctpo-search-box">
 
-            <Search
+            <LuSearch
               size={19}
               className="ctpo-search-icon"
             />
 
-            <input
+            <Input
               type="text"
               value={searchInput}
               onChange={(event) =>
@@ -1236,62 +1203,24 @@ const student =
           </div>
 
 
-          <select
+          <Select
             className="ctpo-filter-select"
             value={typeFilter}
-            onChange={(event) =>
-              setTypeFilter(
-                event.target.value
-              )
-            }
+            onValueChange={setTypeFilter}
           >
-            <option value="ALL">
-              All Types
-            </option>
-
-            <option value="Out-Pass">
-              Out-Pass
-            </option>
-
-            <option value="Mess Fee">
-              Mess Fee
-            </option>
-
-            <option value="Internship">
-              Internship
-            </option>
-
-            <option value="Library">
-              Library
-            </option>
-          </select>
+            <SelectTrigger className="ctpo-filter-select"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="ALL">All Types</SelectItem><SelectItem value="Out-Pass">Out-Pass</SelectItem><SelectItem value="Mess Fee">Mess Fee</SelectItem><SelectItem value="Internship">Internship</SelectItem><SelectItem value="Library">Library</SelectItem></SelectContent>
+          </Select>
 
 
-          <select
+          <Select
             className="ctpo-filter-select"
             value={timeFilter}
-            onChange={(event) =>
-              setTimeFilter(
-                event.target.value
-              )
-            }
+            onValueChange={setTimeFilter}
           >
-            <option value="ALL">
-              All Time
-            </option>
-
-            <option value="TODAY">
-              Today
-            </option>
-
-            <option value="WEEK">
-              This Week
-            </option>
-
-            <option value="MONTH">
-              This Month
-            </option>
-          </select>
+            <SelectTrigger className="ctpo-filter-select"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="ALL">All Time</SelectItem><SelectItem value="TODAY">Today</SelectItem><SelectItem value="WEEK">This Week</SelectItem><SelectItem value="MONTH">This Month</SelectItem></SelectContent>
+          </Select>
 
         </div>
 
@@ -1325,12 +1254,12 @@ const student =
                 {error}
               </p>
 
-              <button
+              <Button
                 type="button"
                 onClick={loadRequests}
               >
                 Retry
-              </button>
+              </Button>
 
             </div>
           )}
@@ -1361,7 +1290,7 @@ const student =
 
               <div className="ctpo-table-wrapper">
 
-                <table className="ctpo-history-table">
+                <Table className="ctpo-history-table">
 
                   <thead>
 
@@ -1417,7 +1346,7 @@ const student =
 
                             <div className="ctpo-request-type">
 
-                              <FileText
+                              <LuFileText
                                 size={17}
                               />
 
@@ -1516,7 +1445,7 @@ const student =
 
                           <td data-label="Action">
 
-                            <button
+                            <Button
                               type="button"
                               className="ctpo-view-button"
                               onClick={() =>
@@ -1526,13 +1455,13 @@ const student =
                               }
                             >
 
-                              <Eye
+                              <LuEye
                                 size={16}
                               />
 
                               Review
 
-                            </button>
+                            </Button>
 
                           </td>
 
@@ -1543,7 +1472,7 @@ const student =
 
                   </tbody>
 
-                </table>
+                </Table>
 
               </div>
             )}

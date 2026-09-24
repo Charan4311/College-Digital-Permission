@@ -1,16 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import {
-  ClipboardList,
-  CheckCircle,
-  Clock,
-  XCircle,
-  Download,
-  CalendarDays,
-  FileText,
-  TrendingUp,
-  PieChart as PieChartIcon,
-} from "lucide-react";
+  LuClipboardList,
+  LuCircleCheck,
+  LuClock,
+  LuCircleX,
+  LuDownload,
+  LuCalendarDays,
+  LuFileText,
+  LuTrendingUp,
+  LuChartPie as PieChartIcon,
+} from "react-icons/lu";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import {
   AreaChart,
@@ -27,8 +29,9 @@ import {
 } from "recharts";
 
 import DashboardLayout from "../../components/DashboardLayout";
-import CTPOMobileNav from "../../components/CTPOMobileNav";
 import api from "../../lib/api";
+import { Button } from '../../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 
 // ============================================================
 // CTPO REPORTS
@@ -1079,374 +1082,55 @@ export default function CTPOReports() {
   // ==========================================================
 
   const generatePdfReport = () => {
-    const popup = window.open("", "_blank", "width=1000,height=800");
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.setTextColor(15, 23, 42);
+      doc.text("CTPO Class Permission Report", 14, 20);
 
-    if (!popup) {
-      alert("Please allow pop-ups to generate the report.");
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Period: " + period + " (" + fromDate + " to " + toDate + ") | Scope: " + permissionType, 14, 28);
+      doc.text("Generated: " + new Date().toLocaleString("en-IN"), 14, 34);
 
-      return;
+      // Summary statistics
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text(
+        "Total: " + reportData.total + "   |   Approved: " + reportData.approved + "   |   Pending: " + reportData.pending + "   |   Rejected: " + reportData.rejected,
+        14,
+        44
+      );
+
+      // Permission Breakdown Table
+      const permissionHeaders = [["Permission Type", "Count"]];
+      const permissionData = Object.entries(reportData.permissionTypes).map(([type, count]) => [type, count]);
+
+      autoTable(doc, {
+        head: permissionHeaders,
+        body: permissionData,
+        startY: 50,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [79, 70, 229], textColor: 255 },
+      });
+
+      // Daily Activity Table
+      const dailyHeaders = [["Date", "Approved", "Pending", "Rejected"]];
+      const dailyData = reportData.daily.map((item) => [item.date, item.approved, item.pending, item.rejected]);
+
+      autoTable(doc, {
+        head: dailyHeaders,
+        body: dailyData,
+        startY: (doc.lastAutoTable?.finalY || 100) + 12,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [79, 70, 229], textColor: 255 },
+      });
+
+      doc.save("ctpo-report-" + period.toLowerCase().replace(/\s+/g, "-") + ".pdf");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      alert("Failed to generate PDF. Please try again.");
     }
-
-    const permissionRows = Object.entries(reportData.permissionTypes)
-      .map(
-        ([type, count]) => `
-            <tr>
-              <td>${type}</td>
-              <td>${count}</td>
-            </tr>
-          `,
-      )
-      .join("");
-
-    const dailyRows = reportData.daily
-      .map(
-        (item) => `
-            <tr>
-              <td>${item.date}</td>
-              <td>${item.approved}</td>
-              <td>${item.pending}</td>
-              <td>${item.rejected}</td>
-            </tr>
-          `,
-      )
-      .join("");
-
-    popup.document.write(`
-
-      <!DOCTYPE html>
-
-      <html>
-
-      <head>
-
-        <title>CTPO Class Report</title>
-
-        <style>
-
-          * {
-            box-sizing: border-box;
-          }
-
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 35px;
-            color: #0f172a;
-            background: #ffffff;
-          }
-
-          .header {
-            border-bottom: 2px solid #2563eb;
-            padding-bottom: 18px;
-            margin-bottom: 25px;
-          }
-
-          .title {
-            font-size: 26px;
-            font-weight: 800;
-            margin: 0;
-          }
-
-          .subtitle {
-            margin-top: 7px;
-            color: #64748b;
-            font-size: 13px;
-          }
-
-          .meta {
-            margin-top: 18px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-          }
-
-          .meta-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px 12px;
-          }
-
-          .meta-label {
-            color: #64748b;
-            font-size: 11px;
-            margin-bottom: 4px;
-          }
-
-          .meta-value {
-            font-size: 14px;
-            font-weight: 700;
-          }
-
-          .summary {
-            display: grid;
-            grid-template-columns:
-              repeat(4, 1fr);
-            gap: 12px;
-            margin: 25px 0;
-          }
-
-          .summary-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-          }
-
-          .summary-card span {
-            display: block;
-            color: #64748b;
-            font-size: 11px;
-            margin-bottom: 6px;
-          }
-
-          .summary-card strong {
-            font-size: 24px;
-          }
-
-          h2 {
-            font-size: 17px;
-            margin-top: 28px;
-            margin-bottom: 10px;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-          }
-
-          th,
-          td {
-            border: 1px solid #e2e8f0;
-            padding: 9px;
-            text-align: left;
-            font-size: 12px;
-          }
-
-          th {
-            background: #f1f5f9;
-            font-weight: 700;
-          }
-
-          .footer {
-            margin-top: 35px;
-            padding-top: 15px;
-            border-top: 1px solid #e2e8f0;
-            color: #64748b;
-            font-size: 11px;
-          }
-
-          @media print {
-
-            body {
-              padding: 15px;
-            }
-
-            .no-print {
-              display: none;
-            }
-
-          }
-
-        </style>
-
-      </head>
-
-
-      <body>
-
-        <div class="header">
-
-          <h1 class="title">
-            College Digital Permission
-            & Approval Platform
-          </h1>
-
-          <div class="subtitle">
-            CTPO Class Permission Report
-          </div>
-
-        </div>
-
-
-        <div class="meta">
-
-          <div class="meta-box">
-
-            <div class="meta-label">
-              Report Period
-            </div>
-
-            <div class="meta-value">
-              ${formatDateForDisplay(fromDate)}
-              -
-              ${formatDateForDisplay(toDate)}
-            </div>
-
-          </div>
-
-
-          <div class="meta-box">
-
-            <div class="meta-label">
-              Permission Type
-            </div>
-
-            <div class="meta-value">
-              ${permissionType}
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="summary">
-
-          <div class="summary-card">
-            <span>Total Requests</span>
-            <strong>
-              ${reportData.total}
-            </strong>
-          </div>
-
-          <div class="summary-card">
-            <span>Approved</span>
-            <strong>
-              ${reportData.approved}
-            </strong>
-          </div>
-
-          <div class="summary-card">
-            <span>Pending</span>
-            <strong>
-              ${reportData.pending}
-            </strong>
-          </div>
-
-          <div class="summary-card">
-            <span>Rejected</span>
-            <strong>
-              ${reportData.rejected}
-            </strong>
-          </div>
-
-        </div>
-
-
-        <h2>
-          Requests by Permission Type
-        </h2>
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Permission Type</th>
-              <th>Requests</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${
-              permissionRows ||
-              `
-              <tr>
-                <td colspan="2">
-                  No requests found
-                </td>
-              </tr>
-            `
-            }
-
-          </tbody>
-
-        </table>
-
-
-        <h2>
-          Approval Activity
-        </h2>
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Date</th>
-              <th>Approved</th>
-              <th>Pending</th>
-              <th>Rejected</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${
-              dailyRows ||
-              `
-              <tr>
-                <td colspan="4">
-                  No activity found
-                </td>
-              </tr>
-            `
-            }
-
-          </tbody>
-
-        </table>
-
-
-        <div class="footer">
-
-          Generated on:
-          ${new Date().toLocaleString("en-IN")}
-
-        </div>
-
-
-        <div class="no-print"
-             style="
-               margin-top:25px;
-               text-align:center;
-             ">
-
-          <button
-            onclick="window.print()"
-            style="
-              padding:10px 22px;
-              border:none;
-              border-radius:7px;
-              background:#2563eb;
-              color:white;
-              font-weight:700;
-              cursor:pointer;
-            "
-          >
-            Print / Save as PDF
-          </button>
-
-        </div>
-
-
-      </body>
-
-      </html>
-
-    `);
-
-    popup.document.close();
-
-    popup.focus();
-
-    setTimeout(() => {
-      popup.print();
-    }, 500);
   };
 
   // ==========================================================
@@ -1507,7 +1191,6 @@ export default function CTPOReports() {
 
         <div className="ctpo-reports-header">
           <div className="ctpo-reports-title-row">
-            <CTPOMobileNav />
             <div>
               <h1>Reports &amp; Analytics</h1>
 
@@ -1525,34 +1208,27 @@ export default function CTPOReports() {
             {/* PERIOD DROPDOWN + EXPORT BUTTON */}
             <div className="ctpo-header-controls">
               <div className="ctpo-period-dropdown-wrap">
-                <CalendarDays size={15} className="ctpo-period-dropdown-icon" />
-                <select
+                <LuCalendarDays size={15} className="ctpo-period-dropdown-icon" />
+                <Select
                   id="ctpo-report-period-select"
                   className="ctpo-period-dropdown"
                   value={period}
-                  onChange={(e) => handlePeriodChange(e.target.value)}
+                  onValueChange={handlePeriodChange}
                 >
-                  {[
-                    "Today",
-                    "Last 7 Days",
-                    "Last 30 Days",
-                    "Last 6 Months",
-                    "This Year",
-                  ].map((item) => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
-                </select>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Today", "Last 7 Days", "Last 30 Days", "Last 6 Months", "This Year"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
 
-              <button
+              <Button
                 type="button"
                 id="ctpo-export-report-btn"
                 className="ctpo-export-button"
                 onClick={handleDownload}
               >
-                <Download size={15} />
+                <LuDownload size={15} />
                 Export Report
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1592,7 +1268,7 @@ export default function CTPOReports() {
 
           <div className="ctpo-summary-card">
             <div className="ctpo-summary-icon blue">
-              <ClipboardList size={21} />
+              <LuClipboardList size={21} />
             </div>
 
             <div>
@@ -1608,7 +1284,7 @@ export default function CTPOReports() {
 
           <div className="ctpo-summary-card">
             <div className="ctpo-summary-icon green">
-              <CheckCircle size={21} />
+              <LuCircleCheck size={21} />
             </div>
 
             <div>
@@ -1624,7 +1300,7 @@ export default function CTPOReports() {
 
           <div className="ctpo-summary-card">
             <div className="ctpo-summary-icon orange">
-              <Clock size={21} />
+              <LuClock size={21} />
             </div>
 
             <div>
@@ -1640,7 +1316,7 @@ export default function CTPOReports() {
 
           <div className="ctpo-summary-card">
             <div className="ctpo-summary-icon red">
-              <XCircle size={21} />
+              <LuCircleX size={21} />
             </div>
 
             <div>
@@ -1665,7 +1341,7 @@ export default function CTPOReports() {
             <div className="ctpo-trend-header">
               <div>
                 <h2 className="ctpo-trend-title">
-                  <TrendingUp size={18} />
+                  <LuTrendingUp size={18} />
                   Permission Requests Trend
                 </h2>
                 <p className="ctpo-trend-subtitle">
@@ -1680,14 +1356,14 @@ export default function CTPOReports() {
                   { key: "last6m", label: "Last 6 months" },
                   { key: "year",   label: "This year" },
                 ].map(({ key, label }) => (
-                  <button
+                  <Button
                     key={key}
                     type="button"
                     className={chartPeriod === key ? "ctpo-cpbtn active" : "ctpo-cpbtn"}
                     onClick={() => setChartPeriod(key)}
                   >
                     {label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Lock,
-  User,
-  ArrowRight,
-  Sparkles
-} from 'lucide-react';
+  LuLock as Lock,
+  LuUser as User,
+  LuArrowRight as ArrowRight,
+  LuSparkles as Sparkles
+} from 'react-icons/lu';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 const ROLE_REDIRECTS = {
   STUDENT: '/student/dashboard',
@@ -45,44 +47,33 @@ export default function Login() {
   };
 
   return (
-    <div className="login-page" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#f8fafc' }}>
-      <div className="login-card" style={{ maxWidth: '440px', width: '100%', background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', padding: '36px' }}>
-        <div className="login-logo" style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '52px',
-            height: '52px',
-            borderRadius: '14px',
-            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-            boxShadow: '0 8px 24px rgba(59,130,246,0.25)',
-            marginBottom: '16px',
-            color: '#fff'
-          }}>
+    <div className="login-page auth-page">
+      <div className="login-card auth-card">
+        <div className="login-logo auth-card-header">
+          <div className="auth-brand-mark">
             <Sparkles size={26} />
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 6px 0', color: '#0f172a', letterSpacing: '-0.3px', lineHeight: 1.3, textTransform: 'uppercase' }}>
+          <h1 className="auth-title">
             College Digital Permission & Approval Platform
           </h1>
-          <p style={{ color: '#64748b', fontSize: '13px', margin: 0, fontWeight: 500 }}>
+          <p className="auth-subtitle">
             Sign in with your institutional credentials or Roll Number
           </p>
         </div>
 
         {error && (
-          <div className="alert alert-error" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+          <div className="alert alert-error auth-alert">
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ marginBottom: '18px' }}>
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+          <div className="form-group auth-field">
+            <label className="form-label auth-label">
               <User size={14} color="var(--accent)" />
               <span>Username / Roll Number</span>
             </label>
-            <input
+            <Input
               type="text"
               required
               autoFocus
@@ -93,12 +84,12 @@ export default function Login() {
             />
           </div>
 
-          <div className="form-group" style={{ marginBottom: '24px' }}>
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+          <div className="form-group auth-field auth-field-last">
+            <label className="form-label auth-label">
               <Lock size={14} color="var(--accent)" />
               <span>Password</span>
             </label>
-            <input
+            <Input
               type="password"
               required
               className="form-input"
@@ -108,11 +99,10 @@ export default function Login() {
             />
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
             className="btn btn-primary btn-full"
-            style={{ padding: '12px 16px', fontSize: '15px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
             {loading ? (
               <>
@@ -125,7 +115,7 @@ export default function Login() {
                 <ArrowRight size={16} />
               </>
             )}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

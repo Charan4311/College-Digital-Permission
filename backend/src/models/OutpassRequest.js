@@ -14,10 +14,10 @@ const outpassRequestSchema = new mongoose.Schema({
   studentType: { type: String, enum: ['DAY_SCHOLAR', 'HOSTELER'], default: 'DAY_SCHOLAR' },
 
   referenceId: { type: String, unique: true, sparse: true },
-  emergencyContact: { type: String },
+  parentNumber: { type: String },
 
   // General Purpose / Reason
-  reason: { type: String, required: true },
+  reason: { type: String },
 
   // 1. Outpass Specific Fields
   outDate: { type: Date },

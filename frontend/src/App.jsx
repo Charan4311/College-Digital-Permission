@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Common Pages
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import RequestDetail from './pages/RequestDetail';
 import ApproverDashboard from './pages/ApproverDashboard';
@@ -65,6 +66,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
 
       {/* Student Routes */}
@@ -129,6 +131,9 @@ function AppRoutes() {
       <Route path="/hostel/dashboard" element={
         <ProtectedRoute roles={['HOSTEL_INCHARGE']}><ApproverDashboard /></ProtectedRoute>
       } />
+      <Route path="/hostel/history" element={
+        <ProtectedRoute roles={['HOSTEL_INCHARGE']}><ApproverDashboard defaultTab="history" /></ProtectedRoute>
+      } />
 
       {/* Placement Officer Routes */}
       <Route path="/placement/dashboard" element={
@@ -166,8 +171,7 @@ function AppRoutes() {
       } />
 
       {/* Fallbacks */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

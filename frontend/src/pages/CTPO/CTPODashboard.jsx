@@ -1,20 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../components/DashboardLayout";
-import CTPOMobileNav from "../../components/CTPOMobileNav";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 
 import {
-  ClipboardList,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Building,
-  BarChart3,
-  ArrowRight,
-} from "lucide-react";
+  LuClipboardList,
+  LuClock,
+  LuCircleCheck,
+  LuCircleX,
+  LuBuilding2,
+} from "react-icons/lu";
 
 import {
   ResponsiveContainer,
@@ -35,8 +31,6 @@ import {
 // ============================================================
 
 const CTPODashboard = () => {
-  const navigate = useNavigate();
-
   // ==========================================================
   // LIVE CTPO DASHBOARD DATA
   // ==========================================================
@@ -609,6 +603,8 @@ const CTPODashboard = () => {
 
   const getYearLabel = () => {
     const possibleYears = [
+      user?.authorityScope?.yearTier,
+      user?.assignedYear,
       user?.yearTier,
       user?.academicYear,
       user?.yearLabel,
@@ -617,14 +613,21 @@ const CTPODashboard = () => {
       user?.year?.value,
     ];
 
-    const year = possibleYears.find(
-      (value) =>
-        typeof value === "string" &&
-        /year/i.test(value) &&
-        !/^[a-f\d]{20,}$/i.test(value.trim()),
+    const yearValue = possibleYears.find(
+      (value) => value !== null && value !== undefined && String(value).trim(),
     );
 
-    return year ? String(year).trim() : "4th Year";
+    if (!yearValue) return "4th Year";
+
+    const normalizedYear = String(yearValue).trim().toUpperCase();
+    const yearNumber = normalizedYear.match(/(?:TIER_|YEAR_)?([1-6])(?:ST|ND|RD|TH)?/i)?.[1];
+
+    if (yearNumber) {
+      const suffix = yearNumber === "1" ? "st" : yearNumber === "2" ? "nd" : yearNumber === "3" ? "rd" : "th";
+      return `${yearNumber}${suffix} Year`;
+    }
+
+    return String(yearValue).trim();
   };
 
   const getCTPOCode = () => {
@@ -680,16 +683,6 @@ const CTPODashboard = () => {
   };
 
   // ==========================================================
-  // CLICKABLE CARD STYLE
-  // ==========================================================
-
-  const clickableCardStyle = {
-    ...statCardStyle,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  };
-
-  // ==========================================================
   // RENDER
   // ==========================================================
 
@@ -715,7 +708,6 @@ const CTPODashboard = () => {
             marginBottom: "18px",
           }}
         >
-          {/* Title row — CTPOMobileNav renders hamburger+drawer on mobile */}
           <div
             style={{
               display: "flex",
@@ -723,9 +715,7 @@ const CTPODashboard = () => {
               gap: "10px",
             }}
           >
-            <CTPOMobileNav />
-
-            <Building
+            <LuBuilding2
               size={28}
               strokeWidth={2}
               style={{
@@ -761,7 +751,7 @@ const CTPODashboard = () => {
         </div>
 
         {/* ====================================================
-            TOP SUMMARY CARDS
+            TOP SUMMARY CARDS (Display-Only)
         ==================================================== */}
 
         <div
@@ -774,21 +764,8 @@ const CTPODashboard = () => {
             marginBottom: "16px",
           }}
         >
-          {/* ==================================================
-              TOTAL REQUESTS
-          ================================================== */}
-
-          <div
-            style={clickableCardStyle}
-            onClick={() => navigate("/ctpo/history")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                navigate("/ctpo/history");
-              }
-            }}
-          >
+          {/* TOTAL REQUESTS */}
+          <div style={statCardStyle}>
             <div
               style={{
                 display: "flex",
@@ -808,7 +785,7 @@ const CTPODashboard = () => {
                   color: "#2563eb",
                 }}
               >
-                <ClipboardList size={21} />
+                <LuClipboardList size={21} />
               </div>
             </div>
 
@@ -837,21 +814,8 @@ const CTPODashboard = () => {
             </div>
           </div>
 
-          {/* ==================================================
-              PENDING QUEUE
-          ================================================== */}
-
-          <div
-            style={clickableCardStyle}
-            onClick={() => navigate("/ctpo/pending")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                navigate("/ctpo/pending");
-              }
-            }}
-          >
+          {/* PENDING QUEUE */}
+          <div style={statCardStyle}>
             <div
               style={{
                 display: "flex",
@@ -871,7 +835,7 @@ const CTPODashboard = () => {
                   color: "#f59e0b",
                 }}
               >
-                <Clock size={21} />
+                <LuClock size={21} />
               </div>
             </div>
 
@@ -884,7 +848,7 @@ const CTPODashboard = () => {
                 color: "#475569",
               }}
             >
-              Pending 
+              Pending
             </div>
 
             <div
@@ -900,23 +864,8 @@ const CTPODashboard = () => {
             </div>
           </div>
 
-          {/* ==================================================
-              APPROVED
-              IMPORTANT:
-              Goes directly to Approved tab in CTPO History
-          ================================================== */}
-
-          <div
-            style={clickableCardStyle}
-            onClick={() => navigate("/ctpo/history?status=APPROVED")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                navigate("/ctpo/history?status=APPROVED");
-              }
-            }}
-          >
+          {/* APPROVED */}
+          <div style={statCardStyle}>
             <div
               style={{
                 display: "flex",
@@ -936,7 +885,7 @@ const CTPODashboard = () => {
                   color: "#059669",
                 }}
               >
-                <CheckCircle2 size={21} />
+                <LuCircleCheck size={21} />
               </div>
             </div>
 
@@ -965,23 +914,8 @@ const CTPODashboard = () => {
             </div>
           </div>
 
-          {/* ==================================================
-              REJECTED
-              IMPORTANT:
-              Goes directly to Rejected tab in CTPO History
-          ================================================== */}
-
-          <div
-            style={clickableCardStyle}
-            onClick={() => navigate("/ctpo/history?status=REJECTED")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                navigate("/ctpo/history?status=REJECTED");
-              }
-            }}
-          >
+          {/* REJECTED */}
+          <div style={statCardStyle}>
             <div
               style={{
                 display: "flex",
@@ -1001,7 +935,7 @@ const CTPODashboard = () => {
                   color: "#ef4444",
                 }}
               >
-                <XCircle size={21} />
+                <LuCircleX size={21} />
               </div>
             </div>
 
@@ -1297,127 +1231,6 @@ const CTPODashboard = () => {
           </div>
         </div>
 
-        {/* ====================================================
-            REPORTS / DETAILED INSIGHTS
-        ==================================================== */}
-
-        <div
-          className="ctpo-insights-bar"
-          style={{
-            width: "100%",
-            minHeight: "86px",
-            padding: "16px 20px",
-            marginTop: "0px",
-            marginBottom: "16px",
-            boxSizing: "border-box",
-
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-
-            gap: "20px",
-
-            background: "linear-gradient(90deg, #f8f7ff 0%, #ffffff 100%)",
-
-            border: "1px solid #e9e7ff",
-            borderRadius: "12px",
-
-            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.03)",
-          }}
-        >
-          {/* LEFT SIDE */}
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "14px",
-              minWidth: 0,
-            }}
-          >
-            <div
-              style={{
-                width: "42px",
-                height: "42px",
-                minWidth: "42px",
-
-                borderRadius: "10px",
-
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-
-                background: "#eeebff",
-                color: "#6366f1",
-              }}
-            >
-              <BarChart3 size={22} />
-            </div>
-
-            <div
-              style={{
-                minWidth: 0,
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: "16px",
-                  lineHeight: 1.3,
-                  fontWeight: 700,
-                  color: "#0f172a",
-                }}
-              >
-                Get Detailed Insights
-              </h3>
-
-              <p
-                style={{
-                  margin: "4px 0 0 0",
-                  fontSize: "13px",
-                  lineHeight: 1.4,
-                  color: "#64748b",
-                }}
-              >
-                View detailed analytics and download department reports.
-              </p>
-            </div>
-          </div>
-
-          {/* RIGHT SIDE - GO TO REPORTS */}
-
-          <button
-            type="button"
-            onClick={() => navigate("/ctpo/reports")}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-
-              gap: "8px",
-
-              flexShrink: 0,
-
-              padding: "10px 18px",
-
-              border: "none",
-              borderRadius: "8px",
-
-              background: "#4f46e5",
-              color: "#ffffff",
-
-              fontSize: "13px",
-              fontWeight: 600,
-
-              cursor: "pointer",
-
-              boxShadow: "0 2px 5px rgba(79, 70, 229, 0.25)",
-            }}
-          >
-            Go to Reports
-            <ArrowRight size={17} />
-          </button>
-        </div>
       </div>
     </DashboardLayout>
   );

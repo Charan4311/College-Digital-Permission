@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import {
-  ShieldCheck,
-  Calendar,
-  Share2,
-  FileText,
-  ChevronsUpDown,
-  Shield,
-  CheckCircle2,
-  Download
-} from 'lucide-react';
+  LuShieldCheck as ShieldCheck,
+  LuCalendar as Calendar,
+  LuShare2 as Share2,
+  LuFileText as FileText,
+  LuChevronsUpDown as ChevronsUpDown,
+  LuShield as Shield,
+  LuCircleCheck as CheckCircle2,
+  LuDownload as Download
+} from 'react-icons/lu';
 
 export default function AdminRequests() {
   const [requests, setRequests] = useState([]);
@@ -217,28 +221,10 @@ export default function AdminRequests() {
               <Calendar size={16} color="#3b82f6" />
               <span>Select year</span>
             </label>
-            <select
-              className="form-input form-select"
-              style={{
-                width: '100%',
-                height: '42px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                padding: '0 14px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#0f172a',
-                background: '#ffffff',
-                cursor: 'pointer'
-              }}
-              value={selectedYear}
-              onChange={e => setSelectedYear(e.target.value)}
-            >
-              <option value="">All years</option>
-              <option value="2">2nd year</option>
-              <option value="3">3rd year</option>
-              <option value="4">4th year</option>
-            </select>
+            <Select value={selectedYear || 'ALL'} onValueChange={value => setSelectedYear(value === 'ALL' ? '' : value)}>
+              <SelectTrigger className="h-[42px] w-full"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All years</SelectItem><SelectItem value="2">2nd year</SelectItem><SelectItem value="3">3rd year</SelectItem><SelectItem value="4">4th year</SelectItem></SelectContent>
+            </Select>
           </div>
 
           {/* Select branch */}
@@ -255,30 +241,10 @@ export default function AdminRequests() {
               <Share2 size={16} color="#3b82f6" />
               <span>Select branch</span>
             </label>
-            <select
-              className="form-input form-select"
-              style={{
-                width: '100%',
-                height: '42px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                padding: '0 14px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#0f172a',
-                background: '#ffffff',
-                cursor: 'pointer'
-              }}
-              value={selectedBranch}
-              onChange={e => setSelectedBranch(e.target.value)}
-            >
-              <option value="">All branches</option>
-              <option value="CSM">CSM</option>
-              <option value="CAI">CAI</option>
-              <option value="CSD">CSD</option>
-              <option value="AIDS">AIDS</option>
-              <option value="CSC">CSC</option>
-            </select>
+            <Select value={selectedBranch || 'ALL'} onValueChange={value => setSelectedBranch(value === 'ALL' ? '' : value)}>
+              <SelectTrigger className="h-[42px] w-full"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All branches</SelectItem><SelectItem value="CSM">CSM</SelectItem><SelectItem value="CAI">CAI</SelectItem><SelectItem value="CSD">CSD</SelectItem><SelectItem value="AIDS">AIDS</SelectItem><SelectItem value="CSC">CSC</SelectItem></SelectContent>
+            </Select>
           </div>
 
           {/* Select permission type */}
@@ -295,29 +261,10 @@ export default function AdminRequests() {
               <FileText size={16} color="#3b82f6" />
               <span>Select permission type</span>
             </label>
-            <select
-              className="form-input form-select"
-              style={{
-                width: '100%',
-                height: '42px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                padding: '0 14px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#0f172a',
-                background: '#ffffff',
-                cursor: 'pointer'
-              }}
-              value={selectedType}
-              onChange={e => setSelectedType(e.target.value)}
-            >
-              <option value="all">All requests</option>
-              <option value="OUTPASS">Outpass</option>
-              <option value="MESS_FEE">Mess fee</option>
-              <option value="INTERNSHIP">Internship</option>
-              <option value="LIBRARY">Library</option>
-            </select>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="h-[42px] w-full"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="all">All requests</SelectItem><SelectItem value="OUTPASS">Outpass</SelectItem><SelectItem value="MESS_FEE">Mess fee</SelectItem><SelectItem value="INTERNSHIP">Internship</SelectItem><SelectItem value="LIBRARY">Library</SelectItem></SelectContent>
+            </Select>
           </div>
 
           {/* Select status */}
@@ -334,61 +281,23 @@ export default function AdminRequests() {
               <CheckCircle2 size={16} color="#3b82f6" />
               <span>Select status</span>
             </label>
-            <select
-              className="form-input form-select"
-              style={{
-                width: '100%',
-                height: '42px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                padding: '0 14px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#0f172a',
-                background: '#ffffff',
-                cursor: 'pointer'
-              }}
-              value={selectedStatus}
-              onChange={e => setSelectedStatus(e.target.value)}
-            >
-              <option value="all">All status</option>
-              <option value="APPROVED">Approved</option>
-              <option value="PENDING">Pending</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="h-[42px] w-full"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="APPROVED">Approved</SelectItem><SelectItem value="PENDING">Pending</SelectItem><SelectItem value="REJECTED">Rejected</SelectItem></SelectContent>
+            </Select>
           </div>
 
           {/* Export Button */}
           <div className="admin-filter-action" style={{ marginBottom: 0 }}>
-            <button
+            <Button
               onClick={handleExport}
               disabled={exporting}
-              style={{
-                height: '42px',
-                padding: '0 20px',
-                borderRadius: '10px',
-                border: '1px solid #2563eb',
-                background: '#ffffff',
-                color: '#2563eb',
-                fontSize: '14px',
-                fontWeight: 600,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: exporting ? 'not-allowed' : 'pointer',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = '#eff6ff';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = '#ffffff';
-              }}
+              variant="outline"
+              className="h-10 border-blue-200 bg-white text-blue-600 hover:bg-blue-50"
             >
               <Download size={16} color="#2563eb" />
               <span>{exporting ? 'Exporting...' : 'Export'}</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -438,95 +347,87 @@ export default function AdminRequests() {
           </div>
         ) : (
           <div className="table-wrapper" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+            <Table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <TableHeader>
+                <TableRow style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <TableHead style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Roll number <ChevronsUpDown size={14} color="#94a3b8" />
                     </div>
-                  </th>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  </TableHead>
+                  <TableHead style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Name <ChevronsUpDown size={14} color="#94a3b8" />
                     </div>
-                  </th>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  </TableHead>
+                  <TableHead style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Branch <ChevronsUpDown size={14} color="#94a3b8" />
                     </div>
-                  </th>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  </TableHead>
+                  <TableHead style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Year <ChevronsUpDown size={14} color="#94a3b8" />
                     </div>
-                  </th>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  </TableHead>
+                  <TableHead style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Type <ChevronsUpDown size={14} color="#94a3b8" />
                     </div>
-                  </th>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  </TableHead>
+                  <TableHead style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Status <ChevronsUpDown size={14} color="#94a3b8" />
                     </div>
-                  </th>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                  </TableHead>
+                  <TableHead style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Requested on <ChevronsUpDown size={14} color="#94a3b8" />
                     </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '48px 20px', color: '#94a3b8', fontSize: '14px' }}>
+                  <TableRow>
+                    <TableCell colSpan="7" style={{ textAlign: 'center', padding: '48px 20px', color: '#94a3b8', fontSize: '14px' }}>
                       No permission requests found for the selected filter criteria.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredRequests.map((req) => {
                     const badge = getStatusBadge(req.status);
                     return (
-                      <tr key={req._id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
-                        <td style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
+                      <TableRow key={req._id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
+                        <TableCell style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
                           {req.studentId?.rollNo || '21KT1A0501'}
-                        </td>
-                        <td style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 500, color: '#334155' }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 500, color: '#334155' }}>
                           {req.studentId?.name || 'S. Kavya'}
-                        </td>
-                        <td style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>
                           {getBranchLabel(req)}
-                        </td>
-                        <td style={{ padding: '16px 20px', fontSize: '14px', color: '#475569' }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '16px 20px', fontSize: '14px', color: '#475569' }}>
                           {getYearLabel(req)}
-                        </td>
-                        <td style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 500, color: '#334155' }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '16px 20px', fontSize: '14px', fontWeight: 500, color: '#334155' }}>
                           {getTypeLabel(req.requestType)}
-                        </td>
-                        <td style={{ padding: '16px 20px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            background: badge.bg,
-                            color: badge.color,
-                            padding: '4px 12px',
-                            borderRadius: '9999px',
-                            fontSize: '12px',
-                            fontWeight: 600
-                          }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '16px 20px' }}>
+                          <Badge variant={badge.label === 'Approved' ? 'success' : badge.label === 'Rejected' ? 'destructive' : 'secondary'} className="text-[11px] font-semibold px-2.5 py-1 rounded-full">
                             {badge.label}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', fontSize: '14px', color: '#64748b' }}>
+                          </Badge>
+                        </TableCell>
+                        <TableCell style={{ padding: '16px 20px', fontSize: '14px', color: '#64748b' }}>
                           {formatDate(req.createdAt || req.requestDate)}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

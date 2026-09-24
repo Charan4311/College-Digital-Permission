@@ -3,24 +3,28 @@ import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../lib/api';
 import {
-  ShieldCheck,
-  ShieldAlert,
-  QrCode,
-  Scan,
-  Clock,
-  User,
-  XCircle,
-  History,
-  RefreshCw,
-  Search,
-  Filter,
-  Camera,
-  X,
-  ChevronDown,
-  CalendarDays,
-  Users,
-  CheckCircle2
-} from 'lucide-react';
+  LuShieldCheck as ShieldCheck,
+  LuShieldAlert as ShieldAlert,
+  LuQrCode as QrCode,
+  LuScan as Scan,
+  LuClock as Clock,
+  LuUser as User,
+  LuCircleX as XCircle,
+  LuHistory as History,
+  LuRefreshCw as RefreshCw,
+  LuSearch as Search,
+  LuFilter as Filter,
+  LuCamera as Camera,
+  LuX as X,
+  LuChevronDown as ChevronDown,
+  LuCalendarDays as CalendarDays,
+  LuUsers as Users,
+  LuCircleCheck as CheckCircle2
+} from 'react-icons/lu';
+
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 function ScanResult({ result, data, errorMsg }) {
   if (!result) return null;
@@ -218,7 +222,7 @@ function NativeQRScanner({ onScan, onClose }) {
         boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)'
       }}></div>
 
-      <button
+      <Button
         type="button"
         onClick={onClose}
         style={{
@@ -238,7 +242,7 @@ function NativeQRScanner({ onScan, onClose }) {
         }}
       >
         <X size={20} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -699,7 +703,7 @@ export default function SecurityScanner() {
                       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary, #64748b)', marginBottom: '8px' }}>
                         <span>Enter or Scan QR Token</span>
                       </label>
-                      <input
+                      <Input
                         className="form-input"
                         style={{ width: '100%', padding: '12px', fontSize: '16px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)' }}
                         placeholder="Paste QR pass token or scan with gate scanner..."
@@ -708,10 +712,10 @@ export default function SecurityScanner() {
                       />
                     </div>
 
-                    <button
+                    <Button
                       type="submit"
                       disabled={!token.trim() || scanning}
-                      style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--accent, #3b82f6)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: token.trim() && !scanning ? 'pointer' : 'not-allowed', opacity: token.trim() && !scanning ? 1 : 0.7 }}
+                      className="w-full h-12 gap-2 text-base font-semibold disabled:opacity-70"
                     >
                       {scanning ? (
                         <>
@@ -724,7 +728,7 @@ export default function SecurityScanner() {
                           <span>Verify Pass & Allow Entry</span>
                         </>
                       )}
-                    </button>
+                    </Button>
                   </form>
                 </div>
 
@@ -751,13 +755,13 @@ export default function SecurityScanner() {
                       <div style={{ fontSize: '15px', color: 'var(--text-secondary, #64748b)', marginBottom: '16px' }}>
                         Click "Scan Now" to start scanning
                       </div>
-                      <button
+                      <Button
                         onClick={() => setIsCameraOpen(true)}
-                        style={{ padding: '10px 24px', background: 'var(--accent, #3b82f6)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                        className="px-6 gap-2"
                       >
                         <Scan size={16} />
                         Scan Now
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -782,33 +786,16 @@ export default function SecurityScanner() {
                   <div className="security-filters" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
                     <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
                       <Search size={16} color="var(--text-muted, #94a3b8)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                      <input
+                      <Input
                         type="text"
                         placeholder="Search by student name or roll number..."
                         value={activeSearch}
                         onChange={e => setActiveSearch(e.target.value)}
-                        style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px' }}
+                        className="w-full pl-9 h-10"
                       />
                     </div>
-                    <select
-                      value={activeYearFilter}
-                      onChange={e => setActiveYearFilter(e.target.value)}
-                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px', background: '#fff', cursor: 'pointer' }}
-                    >
-                      <option value="All Years">All Years</option>
-                      <option value="1st Year">1st Year</option>
-                      <option value="2nd Year">2nd Year</option>
-                      <option value="3rd Year">3rd Year</option>
-                      <option value="4th Year">4th Year</option>
-                    </select>
-                    <select
-                      value={activeSort}
-                      onChange={e => setActiveSort(e.target.value)}
-                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px', background: '#fff', cursor: 'pointer' }}
-                    >
-                      <option value="Latest to Oldest">Latest to Oldest</option>
-                      <option value="Oldest to Latest">Oldest to Latest</option>
-                    </select>
+                    <Select value={activeYearFilter} onValueChange={setActiveYearFilter}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="All Years">All Years</SelectItem><SelectItem value="1st Year">1st Year</SelectItem><SelectItem value="2nd Year">2nd Year</SelectItem><SelectItem value="3rd Year">3rd Year</SelectItem><SelectItem value="4th Year">4th Year</SelectItem></SelectContent></Select>
+                    <Select value={activeSort} onValueChange={setActiveSort}><SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Latest to Oldest">Latest to Oldest</SelectItem><SelectItem value="Oldest to Latest">Oldest to Latest</SelectItem></SelectContent></Select>
                   </div>
 
                   {loadingActive ? (
@@ -829,13 +816,13 @@ export default function SecurityScanner() {
                               Out: {p.outDate ? formatDate(p.outDate) : 'N/A'}, {p.outTime || 'N/A'} · {p.studentType?.replace('_', ' ') || 'DAY SCHOLAR'}
                             </div>
                           </div>
-                          <button
+                          <Button
                             onClick={() => setIsCameraOpen(true)}
                             style={{ padding: '8px 16px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
                           >
                             <Scan size={14} />
                             Scan Now
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -865,23 +852,14 @@ export default function SecurityScanner() {
                     {['Today', 'This Week', 'This Month'].map(tab => {
                       const isActive = historyDateFilter === tab;
                       return (
-                        <button
+                        <Button
                           key={tab}
                           onClick={() => setHistoryDateFilter(tab)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            padding: '0 0 12px 0',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: isActive ? 600 : 500,
-                            color: isActive ? '#2563eb' : '#64748b',
-                            borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
-                            marginBottom: '-1px'
-                          }}
+                          variant="ghost"
+                          className={isActive ? 'px-0 pb-3 text-primary border-b-2 border-primary rounded-none' : 'px-0 pb-3 text-muted-foreground border-b-2 border-transparent rounded-none'}
                         >
                           {tab}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -890,22 +868,15 @@ export default function SecurityScanner() {
                   <div className="security-filters" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
                     <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
                       <Search size={16} color="var(--text-muted, #94a3b8)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                      <input
+                      <Input
                         type="text"
                         placeholder="Search by student name or roll number..."
                         value={historySearch}
                         onChange={e => setHistorySearch(e.target.value)}
-                        style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px' }}
+                        className="w-full pl-9 h-10"
                       />
                     </div>
-                    <select
-                      value={historySort}
-                      onChange={e => setHistorySort(e.target.value)}
-                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px', background: '#fff', cursor: 'pointer' }}
-                    >
-                      <option value="Latest to Oldest">Latest to Oldest</option>
-                      <option value="Oldest to Latest">Oldest to Latest</option>
-                    </select>
+                    <Select value={historySort} onValueChange={setHistorySort}><SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Latest to Oldest">Latest to Oldest</SelectItem><SelectItem value="Oldest to Latest">Oldest to Latest</SelectItem></SelectContent></Select>
                   </div>
 
                   {/* History Records */}

@@ -4,16 +4,21 @@ import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
 
 import {
-    Search,
-    RefreshCw,
-    Loader2,
-    Eye,
-    AlertCircle,
-    ChevronLeft,
-    ChevronRight,
-    ClipboardCheck,
-    CalendarDays,
-} from 'lucide-react';
+  LuSearch as Search,
+  LuRefreshCw as RefreshCw,
+  LuLoaderCircle as Loader2,
+  LuEye as Eye,
+  LuCircleAlert as AlertCircle,
+  LuChevronLeft as ChevronLeft,
+  LuChevronRight as ChevronRight,
+  LuClipboardCheck as ClipboardCheck,
+  LuCalendarDays as CalendarDays
+} from 'react-icons/lu';
+
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Table } from '../../components/ui/table';
 
 /* =========================================================
    HELPERS
@@ -547,7 +552,7 @@ export default function HODApprovals() {
                             {error}
                         </span>
 
-                        <button
+                        <Button
                             type="button"
                             onClick={() =>
                                 fetchApprovals(true)
@@ -555,7 +560,7 @@ export default function HODApprovals() {
                             style={styles.errorRetry}
                         >
                             Retry
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -574,7 +579,7 @@ export default function HODApprovals() {
                             }
                         />
 
-                        <input
+                        <Input
                             type="text"
                             value={search}
                             onChange={(event) =>
@@ -583,7 +588,7 @@ export default function HODApprovals() {
                                 )
                             }
                             placeholder="Search by student name or roll number..."
-                            style={styles.searchInput}
+                            className="pl-10 h-11 w-full"
                         />
 
                     </div>
@@ -592,30 +597,16 @@ export default function HODApprovals() {
                     {/* TYPE */}
                     <div style={styles.filterField}>
 
-                        <select
-                            value={typeFilter}
-                            onChange={(event) =>
-                                setTypeFilter(
-                                    event.target.value
-                                )
-                            }
-                            style={styles.select}
-                        >
-                            {REQUEST_TYPES.map(
-                                (type) => (
-                                    <option
-                                        key={
-                                            type.value
-                                        }
-                                        value={
-                                            type.value
-                                        }
-                                    >
-                                        {type.label}
-                                    </option>
-                                )
-                            )}
-                        </select>
+                        <Select value={typeFilter} onValueChange={setTypeFilter}>
+                            <SelectTrigger className="h-11 w-full min-w-[170px]">
+                                <SelectValue placeholder="Request type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {REQUEST_TYPES.map((type) => (
+                                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
                     </div>
 
@@ -628,7 +619,7 @@ export default function HODApprovals() {
                             color="#64748b"
                         />
 
-                        <input
+                        <Input
                             type="date"
                             value={fromDate}
                             onChange={(event) =>
@@ -636,7 +627,7 @@ export default function HODApprovals() {
                                     event.target.value
                                 )
                             }
-                            style={styles.dateInput}
+                            className="h-11"
                         />
 
                     </div>
@@ -650,7 +641,7 @@ export default function HODApprovals() {
                             color="#64748b"
                         />
 
-                        <input
+                        <Input
                             type="date"
                             value={toDate}
                             onChange={(event) =>
@@ -658,20 +649,21 @@ export default function HODApprovals() {
                                     event.target.value
                                 )
                             }
-                            style={styles.dateInput}
+                            className="h-11"
                         />
 
                     </div>
 
 
                     {/* CLEAR */}
-                    <button
+                    <Button
                         type="button"
                         onClick={clearFilters}
-                        style={styles.clearButton}
+                        variant="outline"
+                        className="h-11"
                     >
                         Clear
-                    </button>
+                    </Button>
 
                 </div>
 
@@ -755,7 +747,7 @@ export default function HODApprovals() {
                                             </div>
                                         </div>
 
-                                        <button
+                                        <Button
                                             type="button"
                                             className="hod-mobile-view-button"
                                             onClick={() =>
@@ -763,10 +755,11 @@ export default function HODApprovals() {
                                                     `/outpass/${id}?mode=approval`
                                                 )
                                             }
+                                            variant="default"
                                         >
                                             <Eye size={15} />
                                             View Request
-                                        </button>
+                                        </Button>
                                     </div>
                                 );
                             })}
@@ -821,7 +814,7 @@ export default function HODApprovals() {
                                     styles.tableScroll
                                 }
                             >
-                                <table
+                                <Table
                                     style={
                                         styles.table
                                     }
@@ -1104,16 +1097,17 @@ export default function HODApprovals() {
                                                                 textAlign: 'center',
                                                             }}
                                                         >
-                                                            <button
+                                                            <Button
                                                                 type="button"
                                                                 onClick={() =>
                                                                     navigate(`/outpass/${id}?mode=approval`)
                                                                 }
-                                                                style={styles.viewButton}
+                                                                variant="outline"
+                                                                className="gap-2"
                                                             >
                                                                 <Eye size={15} />
                                                                 View
-                                                            </button>
+                                                            </Button>
                                                         </td>
 
                                                     </tr>
@@ -1123,7 +1117,7 @@ export default function HODApprovals() {
 
                                     </tbody>
 
-                                </table>
+                                </Table>
                             </div>
 
 
@@ -1166,7 +1160,7 @@ export default function HODApprovals() {
                                     }
                                 >
 
-                                    <button
+                                    <Button
                                         type="button"
                                         disabled={
                                             page === 1
@@ -1192,7 +1186,7 @@ export default function HODApprovals() {
                                         <ChevronLeft
                                             size={16}
                                         />
-                                    </button>
+                                    </Button>
 
 
                                     {Array.from(
@@ -1204,7 +1198,7 @@ export default function HODApprovals() {
                                             index + 1
                                     ).map(
                                         (pageNumber) => (
-                                            <button
+                                            <Button
                                                 key={
                                                     pageNumber
                                                 }
@@ -1225,12 +1219,12 @@ export default function HODApprovals() {
                                                 {
                                                     pageNumber
                                                 }
-                                            </button>
+                                            </Button>
                                         )
                                     )}
 
 
-                                    <button
+                                    <Button
                                         type="button"
                                         disabled={
                                             page ===
@@ -1258,7 +1252,7 @@ export default function HODApprovals() {
                                         <ChevronRight
                                             size={16}
                                         />
-                                    </button>
+                                    </Button>
 
                                 </div>
 
@@ -1585,7 +1579,7 @@ function EmptyState({
                 when they reach your approval stage.
             </p>
 
-            <button
+            <Button
                 type="button"
                 onClick={onRefresh}
                 disabled={refreshing}
@@ -1607,7 +1601,7 @@ function EmptyState({
                     ? 'Refreshing...'
                     : 'Refresh'}
 
-            </button>
+            </Button>
 
         </div>
     );
@@ -1644,13 +1638,13 @@ function NoResults({
                 current search or filters.
             </p>
 
-            <button
+            <Button
                 type="button"
                 onClick={onClear}
                 style={styles.emptyRefreshButton}
             >
                 Clear Filters
-            </button>
+            </Button>
 
         </div>
     );

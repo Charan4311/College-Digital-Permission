@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
+import { Button } from '../../components/ui/button';
 
 import {
     BarChart,
@@ -21,17 +22,22 @@ import {
 } from 'recharts';
 
 import {
-    ClipboardList,
-    Clock,
-    CheckCircle2,
-    XCircle,
-    Building2,
-    FileText,
-    ChevronRight,
-    RefreshCw,
-    BarChart3,
-    ArrowRight,
-} from 'lucide-react';
+    LuClipboardList,
+    LuClock,
+    LuCircleCheck,
+    LuCircleX,
+    LuBuilding2,
+    LuFileText,
+    LuChevronRight,
+    LuRefreshCw,
+    LuChartColumn,
+    LuArrowRight,
+} from 'react-icons/lu';
+
+const Building2 = LuBuilding2;
+const ChevronRight = LuChevronRight;
+const BarChart3 = LuChartColumn;
+const FileText = LuFileText;
 
 // ============================================================
 // STUDENT REQUESTS ROUTE
@@ -233,26 +239,6 @@ export default function HODDashboard() {
             (request) =>
                 isApproved(request)
         ).length;
-
-    // ========================================================
-    // KPI NAVIGATION
-    // ========================================================
-
-    const handleKpiClick = (status) => {
-        if (status === 'ALL') {
-            navigate(
-                STUDENT_REQUESTS_ROUTE
-            );
-
-            return;
-        }
-
-        navigate(
-            `${STUDENT_REQUESTS_ROUTE}?status=${encodeURIComponent(
-                status
-            )}`
-        );
-    };
 
     // ========================================================
     // BRANCH OVERVIEW
@@ -515,18 +501,13 @@ export default function HODDashboard() {
                                 : totalRequests
                         }
                         icon={
-                            <ClipboardList
+                            <LuClipboardList
                                 size={20}
                             />
                         }
                         iconBackground="#eff6ff"
                         iconColor="#2563eb"
                         valueColor="#172554"
-                        onClick={() =>
-                            handleKpiClick(
-                                'ALL'
-                            )
-                        }
                     />
 
                     <DashboardStatCard
@@ -537,18 +518,13 @@ export default function HODDashboard() {
                                 : pendingCount
                         }
                         icon={
-                            <Clock
+                            <LuClock
                                 size={20}
                             />
                         }
                         iconBackground="#fff7ed"
                         iconColor="#f59e0b"
                         valueColor="#d97706"
-                        onClick={() =>
-                            handleKpiClick(
-                                'PENDING'
-                            )
-                        }
                     />
 
                     <DashboardStatCard
@@ -559,18 +535,13 @@ export default function HODDashboard() {
                                 : approvedCount
                         }
                         icon={
-                            <CheckCircle2
+                            <LuCircleCheck
                                 size={20}
                             />
                         }
                         iconBackground="#ecfdf5"
                         iconColor="#059669"
                         valueColor="#059669"
-                        onClick={() =>
-                            handleKpiClick(
-                                'APPROVED'
-                            )
-                        }
                     />
 
                     <DashboardStatCard
@@ -581,18 +552,13 @@ export default function HODDashboard() {
                                 : rejectedCount
                         }
                         icon={
-                            <XCircle
+                            <LuCircleX
                                 size={20}
                             />
                         }
                         iconBackground="#fef2f2"
                         iconColor="#ef4444"
                         valueColor="#dc2626"
-                        onClick={() =>
-                            handleKpiClick(
-                                'REJECTED'
-                            )
-                        }
                     />
                 </div>
 
@@ -967,7 +933,7 @@ export default function HODDashboard() {
                                             }
                                         </div>
 
-                                        <button
+                                        <Button
                                             type="button"
                                             onClick={() =>
                                                 handleViewRequests(
@@ -1003,135 +969,12 @@ export default function HODDashboard() {
                                             <ChevronRight
                                                 size={12}
                                             />
-                                        </button>
+                                        </Button>
                                     </div>
                                 )
                             )}
                         </div>
                     </div>
-                </div>
-
-                {/* ==================================================
-                    GET DETAILED INSIGHTS
-                ================================================== */}
-
-                <div
-                    className="hod-insights-card"
-                    style={{
-                        borderRadius: 10,
-                        border:
-                            '1px solid #e4e7ff',
-                        background:
-                            'linear-gradient(100deg, #f5f7ff 0%, #fafaff 55%, #f4f1ff 100%)',
-                        padding:
-                            '15px 18px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent:
-                            'space-between',
-                        gap: 15,
-                    }}
-                >
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems:
-                                'center',
-                            gap: 11,
-                            minWidth: 0,
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 10,
-                                background:
-                                    '#e9e7ff',
-                                color:
-                                    '#5b4ee5',
-                                display:
-                                    'flex',
-                                alignItems:
-                                    'center',
-                                justifyContent:
-                                    'center',
-                                flexShrink: 0,
-                            }}
-                        >
-                            <BarChart3
-                                size={21}
-                            />
-                        </div>
-
-                        <div>
-                            <div
-                                style={{
-                                    fontSize: 14,
-                                    fontWeight: 800,
-                                    color:
-                                        '#172554',
-                                }}
-                            >
-                                Get Detailed
-                                Insights
-                            </div>
-
-                            <div
-                                style={{
-                                    marginTop: 3,
-                                    fontSize: 11,
-                                    color:
-                                        '#64748b',
-                                }}
-                            >
-                                View detailed
-                                analytics and
-                                download department
-                                reports.
-                            </div>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={() =>
-                            navigate(
-                                '/hod/reports'
-                            )
-                        }
-                        style={{
-                            border: 'none',
-                            borderRadius: 7,
-                            background:
-                                '#5145e5',
-                            color:
-                                '#ffffff',
-                            padding:
-                                '9px 14px',
-                            fontSize: 11,
-                            fontWeight: 800,
-                            cursor:
-                                'pointer',
-                            display:
-                                'inline-flex',
-                            alignItems:
-                                'center',
-                            justifyContent:
-                                'center',
-                            gap: 6,
-                            whiteSpace:
-                                'nowrap',
-                            boxShadow:
-                                '0 2px 6px rgba(81,69,229,0.18)',
-                        }}
-                    >
-                        Go to Reports
-
-                        <ArrowRight
-                            size={14}
-                        />
-                    </button>
                 </div>
 
                 {/* ==================================================
@@ -1263,30 +1106,10 @@ function DashboardStatCard({
     iconBackground,
     iconColor,
     valueColor,
-    onClick,
 }) {
-    const handleKeyDown = (event) => {
-        if (!onClick) {
-            return;
-        }
-
-        if (
-            event.key === 'Enter' ||
-            event.key === ' '
-        ) {
-            event.preventDefault();
-
-            onClick();
-        }
-    };
-
     return (
         <div
             className="card"
-            onClick={onClick}
-            onKeyDown={handleKeyDown}
-            role={onClick ? 'button' : undefined}
-            tabIndex={onClick ? 0 : undefined}
             style={{
                 background: '#ffffff',
                 border:
@@ -1296,40 +1119,9 @@ function DashboardStatCard({
                 minHeight: 112,
                 boxShadow:
                     '0 1px 2px rgba(15,23,42,0.04)',
-                cursor:
-                    onClick
-                        ? 'pointer'
-                        : 'default',
+                cursor: 'default',
                 transition:
                     'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseEnter={(event) => {
-                if (!onClick) {
-                    return;
-                }
-
-                event.currentTarget.style.transform =
-                    'translateY(-2px)';
-
-                event.currentTarget.style.boxShadow =
-                    '0 6px 18px rgba(15,23,42,0.08)';
-
-                event.currentTarget.style.borderColor =
-                    '#c7d2fe';
-            }}
-            onMouseLeave={(event) => {
-                if (!onClick) {
-                    return;
-                }
-
-                event.currentTarget.style.transform =
-                    'translateY(0)';
-
-                event.currentTarget.style.boxShadow =
-                    '0 1px 2px rgba(15,23,42,0.04)';
-
-                event.currentTarget.style.borderColor =
-                    '#e2e8f0';
             }}
         >
             <div

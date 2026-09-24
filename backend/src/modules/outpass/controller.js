@@ -5,7 +5,7 @@ const OutpassRequest = require('../../models/OutpassRequest');
 const ApprovalStep = require('../../models/ApprovalStep');
 const QRPass = require('../../models/QRPass');
 const User = require('../../models/User');
-const crypto = require('crypto');
+const { generateUniqueReferenceId } = require('../../config/ensureUniqueReferenceIds');
 const path = require('path');
 const fs = require('fs');
 
@@ -95,12 +95,16 @@ exports.createRequest = async (req, res) => {
       });
     }
 
+    const referenceId = await generateUniqueReferenceId();
+
     const request = await OutpassRequest.create({
       ...otherFields,
 
       studentId: userId,
 
       requestType: type,
+
+      referenceId,
 
       studentType:
         studentType ||

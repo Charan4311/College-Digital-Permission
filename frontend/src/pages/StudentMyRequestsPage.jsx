@@ -2,11 +2,23 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../lib/api';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Badge } from '../components/ui/badge';
+import { Card } from '../components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from '../components/ui/table';
 import {
   FaMagnifyingGlass,
   FaCalendarDays,
   FaChevronDown,
-  FaEye,
   FaClock,
   FaCircleCheck,
   FaCircleXmark,
@@ -172,40 +184,39 @@ export default function StudentMyRequestsPage() {
 
   return (
     <DashboardLayout>
-      <div className="card" style={{ maxWidth: '1180px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.05)', overflow: 'hidden', background: '#ffffff' }}>
+      <header className="page-header" style={{ marginBottom: '18px' }}>
+        <div className="eyebrow">Student Requests</div>
+        <h1 className="page-title">My Permission History</h1>
+        <p className="page-subtitle">View all your permission requests and their current status.</p>
+      </header>
+
+      <Card className="student-requests-card" style={{ maxWidth: '1180px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.05)', overflow: 'hidden', background: '#ffffff' }}>
         <div style={{ padding: '20px 18px 12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #6D28D9 0%, #60a5fa 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 8px 18px rgba(109,40,217,0.2)' }}>
                 <FaBuildingColumns size={18} />
               </div>
-              <div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#1f2937', lineHeight: 1.2 }}>My Permission History</div>
-                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>View all your permission requests and their current status.</div>
-              </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', minWidth: '260px' }}>
                 <FaMagnifyingGlass size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                <input
+                <Input
                   type="text"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Search by purpose, place or status..."
-                  style={{ width: '100%', border: '1px solid #dfe6f2', borderRadius: '12px', padding: '10px 14px 10px 38px', fontSize: '14px', color: '#334155', background: '#fff', outline: 'none', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.02)' }}
+                  className="h-10 pl-9 pr-3 text-sm rounded-xl border-slate-200 bg-white shadow-sm focus-visible:ring-violet-500"
                 />
               </div>
 
               <div style={{ position: 'relative', minWidth: '150px' }}>
                 <FaCalendarDays size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} style={{ width: '100%', appearance: 'none', border: '1px solid #dfe6f2', borderRadius: '12px', padding: '10px 34px 10px 34px', fontSize: '14px', color: '#334155', background: '#fff', outline: 'none' }}>
-                  <option value="all">All Time</option>
-                  <option value="today">Today</option>
-                  <option value="last_week">Last Week</option>
-                  <option value="this_week">This Week</option>
-                  <option value="last_month">Last Month</option>
-                </select>
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">All Time</SelectItem><SelectItem value="today">Today</SelectItem><SelectItem value="last_week">Last Week</SelectItem><SelectItem value="this_week">This Week</SelectItem><SelectItem value="last_month">Last Month</SelectItem></SelectContent>
+                </Select>
                 <FaChevronDown size={12} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               </div>
             </div>
@@ -216,24 +227,15 @@ export default function StudentMyRequestsPage() {
               {TYPE_OPTIONS.map((option) => {
                 const active = option.value === historyFilter;
                 return (
-                  <button
+                  <Button
                     key={option.value}
                     type="button"
+                    variant={active ? 'default' : 'outline'}
                     onClick={() => setHistoryFilter(option.value)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '999px',
-                      border: active ? '1px solid transparent' : '1px solid #dfe6f2',
-                      background: active ? 'linear-gradient(135deg, #6D28D9 0%, #2563eb 100%)' : '#f8fafc',
-                      color: active ? '#fff' : '#475569',
-                      fontSize: '13px',
-                      fontWeight: active ? 700 : 600,
-                      boxShadow: active ? '0 8px 18px rgba(109,40,217,0.18)' : 'none',
-                      cursor: 'pointer'
-                    }}
+                    className={active ? 'rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-md' : 'rounded-full border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}
                   >
                     {option.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -241,10 +243,10 @@ export default function StudentMyRequestsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '13px' }}>
               <span style={{ fontWeight: 600, color: '#334155' }}>Sort by</span>
               <div style={{ position: 'relative' }}>
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ appearance: 'none', border: '1px solid #dfe6f2', borderRadius: '10px', background: '#f8fafc', color: '#334155', padding: '8px 32px 8px 12px', fontWeight: 600, outline: 'none' }}>
-                  <option value="latest">Latest First</option>
-                  <option value="oldest">Oldest First</option>
-                </select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="latest">Latest First</SelectItem><SelectItem value="oldest">Oldest First</SelectItem></SelectContent>
+                </Select>
                 <FaChevronDown size={12} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               </div>
             </div>
@@ -263,40 +265,38 @@ export default function StudentMyRequestsPage() {
         ) : (
           <>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1040px' }}>
-                <thead>
-                  <tr style={{ background: '#eef2ff', color: '#334155' }}>
+              <Table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1040px' }}>
+                <TableHeader>
+                  <TableRow style={{ background: '#eef2ff', color: '#334155' }}>
                     {['#', 'Type', 'Purpose / Title', 'Details', 'Date & Time', 'Status', 'Action'].map((heading) => (
-                      <th key={heading} style={{ textAlign: 'left', fontSize: '13px', fontWeight: 800, padding: '14px 16px', borderBottom: '1px solid #e5e7eb' }}>{heading}</th>
+                      <TableHead key={heading} style={{ textAlign: 'left', fontSize: '13px', fontWeight: 800, padding: '14px 16px', borderBottom: '1px solid #e5e7eb' }}>{heading}</TableHead>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {paginatedRequests.map((request, index) => {
                     const reqType = request.requestType || 'OUTPASS';
                     const typeDetails = getTypeDetails(reqType);
                     const statusDetails = getStatusDetails(request.status);
-                    const Icon = typeDetails.icon;
                     const StatusIcon = statusDetails.icon;
                     const purpose = request.reason || 'Permission Request';
                     const subPurpose = request.companyName || request.place || request.role || 'N/A';
                     const startDate = formatDate(request.outDate || request.startDate || request.requestDate || request.createdAt);
-                    const endDate = formatDate(request.expectedReturnDate || request.endDate || request.createdAt);
                     const eventTime = request.outTime || request.createdAt ? (request.outTime || new Date(request.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })) : 'N/A';
 
                     return (
-                      <tr key={request._id} style={{ borderBottom: '1px solid #edf2f7', background: '#fff' }}>
-                        <td style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>{String(startIndex + index + 1).padStart(2, '0')}</td>
-                        <td style={{ padding: '14px 16px' }}>
+                      <TableRow key={request._id} style={{ borderBottom: '1px solid #edf2f7', background: '#fff' }}>
+                        <TableCell style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>{String(startIndex + index + 1).padStart(2, '0')}</TableCell>
+                        <TableCell style={{ padding: '14px 16px' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 700, fontSize: '13px', lineHeight: 1.2 }}>
                             {typeDetails.label}
                           </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', color: '#0f172a' }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '14px 16px', color: '#0f172a' }}>
                           <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>{purpose}</div>
                           <div style={{ color: '#64748b', fontSize: '12px' }}>{subPurpose}</div>
-                        </td>
-                        <td style={{ padding: '14px 16px', color: '#475569', fontSize: '13px' }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '14px 16px', color: '#475569', fontSize: '13px' }}>
                           {reqType === 'INTERNSHIP' ? (
                             <div style={{ display: 'grid', gap: '4px' }}>
                               <div>{request.companyName || 'Company'} / {request.role || 'Role'}</div>
@@ -305,8 +305,8 @@ export default function StudentMyRequestsPage() {
                           ) : (
                             <div>{request.reason || 'N/A'}</div>
                           )}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: '#475569' }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '14px 16px', color: '#475569' }}>
                           <div style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span>{startDate}</span>
@@ -315,28 +315,29 @@ export default function StudentMyRequestsPage() {
                               <span>{eventTime}</span>
                             </div>
                           </div>
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: statusDetails.bg, color: statusDetails.text, border: `1px solid ${statusDetails.border}`, borderRadius: '999px', padding: '6px 12px', fontSize: '12px', fontWeight: 700 }}>
+                        </TableCell>
+                        <TableCell style={{ padding: '14px 16px' }}>
+                          <Badge variant={statusDetails.bg.includes('dcfce7') ? 'success' : statusDetails.bg.includes('fee2e2') ? 'destructive' : 'secondary'} className="gap-1.5 px-2.5 py-1 text-[11px] font-semibold">
                             <StatusIcon size={12} />
                             {statusDetails.label}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <button
+                          </Badge>
+                        </TableCell>
+                        <TableCell style={{ padding: '14px 16px' }}>
+                          <Button
                             type="button"
+                            variant="outline"
                             onClick={() => navigate(`/student/request/${request._id}`)}
-                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #dfe6f2', background: '#fff', color: '#6D28D9', cursor: 'pointer', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)' }}
+                            className="h-8 px-3 text-xs font-semibold text-violet-700 border-violet-200 hover:bg-violet-50"
                             aria-label="View request"
                           >
-                            <FaEye size={14} />
-                          </button>
-                        </td>
-                      </tr>
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px 18px', gap: '12px', flexWrap: 'wrap' }}>
@@ -345,35 +346,39 @@ export default function StudentMyRequestsPage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="icon"
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  style={{ width: '32px', height: '32px', border: '1px solid #dfe6f2', borderRadius: '8px', background: currentPage === 1 ? '#f8fafc' : '#fff', color: currentPage === 1 ? '#a0aec0' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                  className="h-8 w-8 rounded-md border-slate-200 bg-white disabled:opacity-50"
                 >
                   <FaArrowLeft size={12} />
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
-                  style={{ minWidth: '38px', height: '32px', borderRadius: '8px', border: '1px solid #6D28D9', background: '#6D28D9', color: '#fff', fontWeight: 700, padding: '0 12px' }}
+                  className="h-8 min-w-10 rounded-md bg-violet-600 hover:bg-violet-700 text-white px-3"
                 >
                   {currentPage}
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="icon"
                   disabled={currentPage >= totalPages}
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  style={{ width: '32px', height: '32px', border: '1px solid #dfe6f2', borderRadius: '8px', background: currentPage >= totalPages ? '#f8fafc' : '#fff', color: currentPage >= totalPages ? '#a0aec0' : '#334155', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+                  className="h-8 w-8 rounded-md border-slate-200 bg-white disabled:opacity-50"
                 >
                   <FaArrowRight size={12} />
-                </button>
+                </Button>
               </div>
             </div>
           </>
         )}
-      </div>
+      </Card>
     </DashboardLayout>
   );
 }

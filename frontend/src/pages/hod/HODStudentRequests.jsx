@@ -2,7 +2,19 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
-import { Search, ChevronLeft, ChevronRight, Eye, ChevronDown, CalendarDays, ClipboardList } from 'lucide-react';
+import {
+    LuSearch as Search,
+    LuChevronLeft as ChevronLeft,
+    LuChevronRight as ChevronRight,
+    LuEye as Eye,
+    LuChevronDown as ChevronDown,
+    LuCalendarDays as CalendarDays,
+    LuClipboardList as ClipboardList,
+} from 'react-icons/lu';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Table } from '../../components/ui/table';
 
 const PAGE_SIZE = 10;
 
@@ -309,7 +321,7 @@ export default function HODStudentRequests() {
                         const active = activeStatus === tab.key;
 
                         return (
-                            <button
+                            <Button
                                 key={tab.key}
                                 type="button"
                                 onClick={() => changeStatus(tab.key)}
@@ -327,12 +339,13 @@ export default function HODStudentRequests() {
                                     cursor: 'pointer',
                                     whiteSpace: 'nowrap'
                                 }}
-                            >
+                                                            variant={active ? 'default' : 'ghost'}
+                                                        >
                                 {tab.label}
                                 <span style={{ marginLeft: 7 }}>
                                     ({countFor(tab.key)})
                                 </span>
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>
@@ -359,52 +372,28 @@ export default function HODStudentRequests() {
                                     color: '#94a3b8'
                                 }}
                             />
-                            <input
+                            <Input
                                 value={search}
                                 onChange={e => {
                                     setSearch(e.target.value);
                                     setCurrentPage(1);
                                 }}
                                 placeholder="Search by name or roll number..."
-                                style={{
-                                    width: '100%',
-                                    height: 40,
-                                    padding: '0 12px 0 36px',
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: 8,
-                                    outline: 'none',
-                                    fontSize: 12,
-                                    boxSizing: 'border-box'
-                                }}
+                                className="h-10 w-full pl-9"
                             />
                         </div>
 
                         <div style={{ position: 'relative' }}>
-                            <select
-                                value={typeFilter}
-                                onChange={e => {
-                                    setTypeFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    height: 40,
-                                    padding: '0 34px 0 12px',
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: 8,
-                                    outline: 'none',
-                                    fontSize: 12,
-                                    color: '#475569',
-                                    background: '#fff',
-                                    appearance: 'none'
-                                }}
-                            >
-                                <option value="ALL">All Types</option>
-                                <option value="OUTPASS">Out-Pass</option>
-                                <option value="MESS_FEE">Mess Fee</option>
-                                <option value="INTERNSHIP">Internship</option>
-                                <option value="LIBRARY">Library</option>
-                            </select>
+                            <Select value={typeFilter} onValueChange={value => { setTypeFilter(value); setCurrentPage(1); }}>
+                                <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">All Types</SelectItem>
+                                    <SelectItem value="OUTPASS">Out-Pass</SelectItem>
+                                    <SelectItem value="MESS_FEE">Mess Fee</SelectItem>
+                                    <SelectItem value="INTERNSHIP">Internship</SelectItem>
+                                    <SelectItem value="LIBRARY">Library</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <ChevronDown
                                 size={15}
                                 style={{
@@ -434,14 +423,14 @@ export default function HODStudentRequests() {
                             }}
                         />
 
-                        <button
+                        <Button
                             type="button"
-                            className="btn btn-ghost"
+                            variant="outline"
                             onClick={clearFilters}
-                            style={{ height: 40 }}
+                            className="h-10"
                         >
                             Clear
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
@@ -500,10 +489,10 @@ export default function HODStudentRequests() {
                     </div>
 
                     <div style={{ width: '100%', overflowX: 'auto' }}>
-                        <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
+                        <Table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                    {['#', 'Student', 'Roll No', 'Branch', 'Year', 'Request Type', 'Date', 'Status', 'Action']
+                                    {['#', 'Reference ID', 'Student', 'Roll No', 'Branch', 'Year', 'Request Type', 'Date', 'Status', 'Action']
                                         .map(h => (
                                             <th
                                                 key={h}
@@ -527,13 +516,13 @@ export default function HODStudentRequests() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>
+                                        <td colSpan={10} style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>
                                             Loading student requests...
                                         </td>
                                     </tr>
                                 ) : pageRequests.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} style={{ padding: 52, textAlign: 'center', color: '#64748b', fontSize: 12 }}>
+                                        <td colSpan={10} style={{ padding: 52, textAlign: 'center', color: '#64748b', fontSize: 12 }}>
                                             No student requests found for the selected filters.
                                         </td>
                                     </tr>
@@ -547,6 +536,7 @@ export default function HODStudentRequests() {
                                                 style={{ borderBottom: '1px solid #f1f5f9' }}
                                             >
                                                 <Cell>{(currentPage - 1) * PAGE_SIZE + index + 1}</Cell>
+                                                <Cell bold>{request?.referenceId || '—'}</Cell>
                                                 <Cell bold>{studentName(request)}</Cell>
                                                 <Cell>{rollNo(request)}</Cell>
                                                 <Cell>{branchName(request)}</Cell>
@@ -572,34 +562,23 @@ export default function HODStudentRequests() {
                                                 </td>
 
                                                 <td style={{ padding: 12 }}>
-                                                    <button
+                                                    <Button
                                                         type="button"
-                                                        onClick={() => navigate(`/outpass/${request?._id}`)}
-                                                        style={{
-                                                            height: 32,
-                                                            padding: '0 10px',
-                                                            border: '1px solid #dbeafe',
-                                                            borderRadius: 7,
-                                                            background: '#eff6ff',
-                                                            color: '#2563eb',
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            cursor: 'pointer',
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            gap: 5
-                                                        }}
+                                                        onClick={() => navigate(`/outpass/${request?._id}?mode=approval`)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="gap-1"
                                                     >
                                                         <Eye size={14} />
                                                         View
-                                                    </button>
+                                                    </Button>
                                                 </td>
                                             </tr>
                                         );
                                     })
                                 )}
                             </tbody>
-                        </table>
+                        </Table>
                     </div>
 
                     {!loading && filteredRequests.length > 0 && (
@@ -686,22 +665,11 @@ function DateInput({ value, onChange }) {
                     pointerEvents: 'none'
                 }}
             />
-            <input
+            <Input
                 type="date"
                 value={value}
                 onChange={e => onChange(e.target.value)}
-                style={{
-                    width: '100%',
-                    height: 40,
-                    padding: '0 10px 0 34px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: 8,
-                    outline: 'none',
-                    fontSize: 11,
-                    color: '#475569',
-                    background: '#fff',
-                    boxSizing: 'border-box'
-                }}
+                className="h-10 w-full pl-9"
             />
         </div>
     );
@@ -725,7 +693,7 @@ function Cell({ children, bold = false }) {
 
 function PageButton({ children, active = false, disabled = false, onClick }) {
     return (
-        <button
+        <Button
             type="button"
             disabled={disabled}
             onClick={onClick}
@@ -746,6 +714,6 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
             }}
         >
             {children}
-        </button>
+        </Button>
     );
 }

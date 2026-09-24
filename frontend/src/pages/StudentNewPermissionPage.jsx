@@ -2,31 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../lib/api';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
-  FileText,
-  Calendar,
-  Clock,
-  PlusCircle,
-  QrCode,
-  CheckCircle2,
-  AlertCircle,
-  Building,
-  User,
-  Home,
-  GraduationCap,
-  ShieldCheck,
-  Sparkles,
-  Briefcase,
-  BookOpen,
-  Receipt,
-  UploadCloud,
-  Trash2,
-  DollarSign,
-  MapPin,
-  Laptop,
-  Check,
-  Phone
-} from 'lucide-react';
+  LuFileText as FileText,
+  LuCalendar as Calendar,
+  LuClock as Clock,
+  LuCirclePlus as PlusCircle,
+  LuQrCode as QrCode,
+  LuCircleCheck as CheckCircle2,
+  LuCircleAlert as AlertCircle,
+  LuBuilding as Building,
+  LuUser as User,
+  LuHouse as Home,
+  LuGraduationCap as GraduationCap,
+  LuShieldCheck as ShieldCheck,
+  LuSparkles as Sparkles,
+  LuBriefcase as Briefcase,
+  LuBookOpen as BookOpen,
+  LuReceipt as Receipt,
+  LuCloudUpload as UploadCloud,
+  LuTrash2 as Trash2,
+  LuDollarSign as DollarSign,
+  LuMapPin as MapPin,
+  LuLaptop as Laptop,
+  LuCheck as Check,
+  LuPhone as Phone
+} from 'react-icons/lu';
 
 const OUTPASS_REASONS = [
   'Going Home for Weekend',
@@ -75,7 +79,7 @@ const getInitialFormState = (studentType = 'DAY_SCHOLAR') => ({
   reason: '',
   documentUrl: '',
   documentName: '',
-  emergencyContact: '',
+  parentNumber: '',
   outDate: new Date().toISOString().split('T')[0],
   outTime: '17:00',
   expectedReturnDate: new Date().toISOString().split('T')[0],
@@ -98,7 +102,7 @@ const getPermissionFormState = (tab, studentType = 'DAY_SCHOLAR') => ({
   reason: '',
   documentUrl: '',
   documentName: '',
-  emergencyContact: '',
+  parentNumber: '',
   outDate: new Date().toISOString().split('T')[0],
   outTime: '17:00',
   expectedReturnDate: new Date().toISOString().split('T')[0],
@@ -222,8 +226,8 @@ export default function StudentNewPermissionPage() {
 
     let dateError = '';
     if (activeTab === 'OUTPASS') {
-      if (!/^\d{10}$/.test(form.emergencyContact)) {
-        setError('Phone number must be exactly 10 digits.');
+      if (!/^\d{10}$/.test(form.parentNumber)) {
+        setError('Parent number must be exactly 10 digits.');
         return;
       }
       dateError = validateLeaveDateRange(form.outDate, form.expectedReturnDate);
@@ -260,26 +264,14 @@ export default function StudentNewPermissionPage() {
 
   return (
     <DashboardLayout>
-      <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 0 32px' }}>
-        <div style={{ marginBottom: '22px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 18px rgba(109, 40, 217, 0.12)' }}>
-                <GraduationCap size={22} color="#7C3AED" />
-              </div>
-              <div>
-                <h1 style={{ margin: 0, fontSize: '26px', lineHeight: 1.2, fontWeight: 800, letterSpacing: '-0.03em', color: '#1f2937' }}>
-                  Digital Permissions & Clearance Hub
-                </h1>
-                <div style={{ marginTop: '4px', fontSize: '15px', color: '#475569', fontWeight: 500 }}>
-                  Logged in as <strong style={{ color: '#0f172a' }}>{user?.name}</strong> ({user?.rollNo || user?.username})
-                </div>
-              </div>
-            </div>
-
-            {/* Simple Requests card removed */}
-          </div>
-        </div>
+      <div className="student-permission-page" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <header className="page-header" style={{ marginBottom: '18px' }}>
+          <div className="eyebrow">Student Portal</div>
+          <h1 className="page-title">Digital Permissions & Clearance Hub</h1>
+          <p className="page-subtitle">
+            Logged in as <strong style={{ color: '#0f172a' }}>{user?.name}</strong> ({user?.rollNo || user?.username})
+          </p>
+        </header>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[8px]" style={{ marginBottom: '20px', padding: '6px', background: '#f2f5fa', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
           {[
@@ -290,39 +282,22 @@ export default function StudentNewPermissionPage() {
           ].map(({ key, label, icon: Icon, color, activeBg }) => {
             const isActive = activeTab === key;
             return (
-              <button
+              <Button
                 key={key}
                 type="button"
                 onClick={() => handleTabChange(key)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px 10px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: isActive ? activeBg : '#eef2ff',
-                  color: isActive ? '#fff' : '#475569',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  boxShadow: isActive ? '0 6px 12px rgba(109, 40, 217, 0.18)' : 'none',
-                  transition: 'all 0.2s ease'
-                }}
+                className={isActive ? 'flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white shadow-md' : 'flex items-center justify-center gap-2 rounded-xl bg-violet-50 text-slate-700 hover:bg-violet-100'}
               >
                 <Icon size={15} />
                 <span>{label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', alignItems: 'start', width: '100%' }}>
           <div>
-            {/* Banner and timeline removed */}
-
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '20px', boxShadow: '0 10px 24px rgba(109, 40, 217, 0.04)' }}>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 18px 20px', boxShadow: '0 10px 24px rgba(109, 40, 217, 0.04)' }}>
               {error && <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderRadius: '10px', padding: '10px 12px' }}><AlertCircle size={16} /><span>{error}</span></div>}
               {success && <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderRadius: '10px', padding: '10px 12px' }}><CheckCircle2 size={16} /><span>{success}</span></div>}
 
@@ -367,7 +342,7 @@ export default function StudentNewPermissionPage() {
                       </div>
 
                       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><FileText size={14} color="#6D28D9" /> Reason for Leaving Campus</label>
-                      <textarea required rows={3} className="form-input" placeholder="Explain the specific reason you need to leave campus..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '76px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                      <Textarea required rows={3} className="form-input" placeholder="Explain the specific reason you need to leave campus..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-[8px] mt-[12px]">
                         {/* Quick reasons removed */}
                       </div>
@@ -385,15 +360,15 @@ export default function StudentNewPermissionPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
                         <div>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Out Date</label>
-                          <input type="date" required className="form-input" min={getTodayDateString()} value={form.outDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.expectedReturnDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, outDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                          <Input type="date" required min={getTodayDateString()} value={form.outDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.expectedReturnDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, outDate: value })); }} />
                         </div>
                         <div>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Clock size={13} color="#6D28D9" /> Out Time</label>
-                          <input type="time" required className="form-input" value={form.outTime} onChange={e => setForm(f => ({ ...f, outTime: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                          <Input type="time" required value={form.outTime} onChange={e => setForm(f => ({ ...f, outTime: e.target.value }))} />
                         </div>
                         <div style={{ gridColumn: '1 / -1' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Return Date</label>
-                          <input type="date" required className="form-input" min={form.outDate || getTodayDateString()} value={form.expectedReturnDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.outDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, expectedReturnDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                          <Input type="date" required min={form.outDate || getTodayDateString()} value={form.expectedReturnDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.outDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, expectedReturnDate: value })); }} />
                         </div>
                       </div>
                     </div>
@@ -402,13 +377,13 @@ export default function StudentNewPermissionPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
                         <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#f3e8ff', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>4</div>
                         <div>
-                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Emergency Contact</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>Provide parent/guardian contact number for emergency communication</div>
+                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Parent Number</div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>Provide parent/guardian contact number</div>
                         </div>
                       </div>
 
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Phone size={13} color="#6D28D9" /> Emergency Contact / Parent Phone</label>
-                      <input type="tel" required className="form-input" placeholder="e.g. 9392393340" value={form.emergencyContact} onChange={e => setForm(f => ({ ...f, emergencyContact: e.target.value.replace(/\D/g, '').slice(0, 10) }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Phone size={13} color="#6D28D9" /> Parent Phone Number</label>
+                      <Input type="tel" required placeholder="e.g. 9392393340" value={form.parentNumber} onChange={e => setForm(f => ({ ...f, parentNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))} />
                     </div>
                   </>
                 )}
@@ -432,7 +407,7 @@ export default function StudentNewPermissionPage() {
                         {sectionIndex === 0 && (
                           <>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Receipt size={14} color="#059669" /> Clearance Reason / Purpose</label>
-                            <textarea required rows={2} className="form-input" placeholder="e.g. Mess Fee Settlement for Fall Semester 2026..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '70px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                            <Textarea required rows={2} placeholder="e.g. Mess Fee Settlement for Fall Semester 2026..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />
                             {/* Quick reasons removed */}
                           </>
                         )}
@@ -441,11 +416,11 @@ export default function StudentNewPermissionPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
                             <div>
                               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#059669" /> Joining Date</label>
-                              <input type="date" required className="form-input" min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                              <Input type="date" required min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} />
                             </div>
                             <div>
                               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#059669" /> Vacating Date</label>
-                              <input type="date" required className="form-input" min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                              <Input type="date" required min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} />
                             </div>
                           </div>
                         )}
@@ -454,11 +429,11 @@ export default function StudentNewPermissionPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
                             <div>
                               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><DollarSign size={13} color="#059669" /> Mess Fee Amount (₹)</label>
-                              <input type="number" required min="0" step="1" placeholder="e.g. 5200" className="form-input" value={form.messAmount} onChange={e => setForm(f => ({ ...f, messAmount: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                              <Input type="number" required min="0" step="1" placeholder="e.g. 5200" value={form.messAmount} onChange={e => setForm(f => ({ ...f, messAmount: e.target.value }))} />
                             </div>
                             <div>
                               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><CheckCircle2 size={13} color="#059669" /> Payment Status</label>
-                              <select className="form-input" value={form.paidStatus} onChange={e => setForm(f => ({ ...f, paidStatus: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }}><option value="Paid">Paid (Full Payment Done)</option><option value="Partially Paid">Partially Paid</option><option value="Not Paid">Not Paid (Pending Verification)</option></select>
+                              <Select value={form.paidStatus} onValueChange={value => setForm(f => ({ ...f, paidStatus: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Paid">Paid (Full Payment Done)</SelectItem><SelectItem value="Partially Paid">Partially Paid</SelectItem><SelectItem value="Not Paid">Not Paid (Pending Verification)</SelectItem></SelectContent></Select>
                             </div>
                           </div>
                         )}
@@ -474,7 +449,7 @@ export default function StudentNewPermissionPage() {
                       {form.documentUrl ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}><Check size={16} color="#059669" /><span style={{ fontSize: '13px', fontWeight: 600, color: '#065f46', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form.documentName || 'Attached Document'}</span></div>
-                          <button type="button" onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }} title="Remove file"><Trash2 size={14} /></button>
+                          <Button type="button" variant="ghost" size="icon" onClick={handleRemoveFile} title="Remove file"><Trash2 size={14} /></Button>
                         </div>
                       ) : (
                         <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '10px', border: '2px dashed #dfe7f1', background: '#f8fafc', cursor: uploadingDoc ? 'wait' : 'pointer', transition: 'border-color 0.2s' }}>
@@ -492,20 +467,20 @@ export default function StudentNewPermissionPage() {
                     {[
                       { title: 'Company Information', body: (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
-                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Building size={13} color="#6D28D9" /> Company Name</label><input type="text" required placeholder="e.g. Google, TCS, Infosys" className="form-input" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
-                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><MapPin size={13} color="#6D28D9" /> Company Location</label><input type="text" required placeholder="e.g. Hyderabad, Bangalore, Remote" className="form-input" value={form.companyLocation} onChange={e => setForm(f => ({ ...f, companyLocation: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Building size={13} color="#6D28D9" /> Company Name</label><Input type="text" required placeholder="e.g. Google, TCS, Infosys" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><MapPin size={13} color="#6D28D9" /> Company Location</label><Input type="text" required placeholder="e.g. Hyderabad, Bangalore, Remote" value={form.companyLocation} onChange={e => setForm(f => ({ ...f, companyLocation: e.target.value }))} /></div>
                         </div>
                       ) },
                       { title: 'Role & Mode', body: (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
-                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Briefcase size={13} color="#6D28D9" /> Role</label><input type="text" required placeholder="e.g. Software Engineer Intern" className="form-input" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
-                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Laptop size={13} color="#6D28D9" /> Internship Mode</label><select className="form-input" value={form.internshipMode} onChange={e => setForm(f => ({ ...f, internshipMode: e.target.value }))} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }}><option value="Offline">Offline (Onsite)</option><option value="Online">Online (Work from Home)</option><option value="Hybrid">Hybrid</option></select></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Briefcase size={13} color="#6D28D9" /> Role</label><Input type="text" required placeholder="e.g. Software Engineer Intern" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Laptop size={13} color="#6D28D9" /> Internship Mode</label><Select value={form.internshipMode} onValueChange={value => setForm(f => ({ ...f, internshipMode: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Offline">Offline (Onsite)</SelectItem><SelectItem value="Online">Online (Work from Home)</SelectItem><SelectItem value="Hybrid">Hybrid</SelectItem></SelectContent></Select></div>
                         </div>
                       ) },
                       { title: 'Internship Duration', body: (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
-                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Internship Start Date</label><input type="date" required className="form-input" min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
-                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Internship End Date</label><input type="date" required className="form-input" min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Internship Start Date</label><Input type="date" required min={getTodayDateString()} value={form.startDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, form.endDate); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, startDate: value })); }} /></div>
+                          <div><label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#6D28D9" /> Internship End Date</label><Input type="date" required min={form.startDate || getTodayDateString()} value={form.endDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(form.startDate, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, endDate: value })); }} /></div>
                         </div>
                       ) }
                     ].map(({ title, body }, idx) => (
@@ -530,7 +505,7 @@ export default function StudentNewPermissionPage() {
                       {form.documentUrl ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: '#f3e8ff', border: '1px solid #e9d5ff' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}><Check size={16} color="#6D28D9" /><span style={{ fontSize: '13px', fontWeight: 600, color: '#1e40af', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form.documentName || 'Attached Offer Letter'}</span></div>
-                          <button type="button" onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }} title="Remove file"><Trash2 size={14} /></button>
+                          <Button type="button" onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }} title="Remove file"><Trash2 size={14} /></Button>
                         </div>
                       ) : (
                         <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '10px', border: '2px dashed #dfe7f1', background: '#f8fafc', cursor: uploadingDoc ? 'wait' : 'pointer', transition: 'border-color 0.2s' }}>
@@ -558,15 +533,15 @@ export default function StudentNewPermissionPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px] mb-[14px]">
                         <div>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><User size={13} color="#d97706" /> Student Roll Number</label>
-                          <input type="text" disabled className="form-input" value={user?.rollNo || user?.username || ''} style={{ background: '#f8fafc', cursor: 'not-allowed', borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', width: '100%' }} />
+                          <Input type="text" disabled value={user?.rollNo || user?.username || ''} />
                         </div>
                         <div>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><Calendar size={13} color="#d97706" /> Access / Clearance Date</label>
-                          <input type="date" required className="form-input" min={getTodayDateString()} value={form.requestDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, requestDate: value })); }} style={{ borderRadius: '10px', padding: '10px 12px', height: '44px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                          <Input type="date" required min={getTodayDateString()} value={form.requestDate} onChange={e => { const value = e.target.value; const validationError = validateLeaveDateRange(value, value); if (validationError) { setError(validationError); return; } setError(''); setForm(f => ({ ...f, requestDate: value })); }} />
                         </div>
                       </div>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}><FileText size={14} color="#d97706" /> Purpose</label>
-                      <textarea required rows={2} className="form-input" placeholder="Specify books to borrow, reading hall hours, or no-dues requirement..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} style={{ borderRadius: '10px', padding: '12px 14px', minHeight: '70px', border: '1px solid #dfe7f1', background: '#f8fafc', width: '100%' }} />
+                      <Textarea required rows={2} placeholder="Specify books to borrow, reading hall hours, or no-dues requirement..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />
                       {/* Quick reasons removed */}
                     </div>
                   </>
@@ -575,22 +550,21 @@ export default function StudentNewPermissionPage() {
                 {/* Final workflow summary removed */}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button type="button" onClick={handleReset} style={{ minWidth: '110px', padding: '12px 18px', borderRadius: '10px', minHeight: '46px', fontSize: '14px', border: '1px solid #dfe7f1', background: '#fff', color: '#334155', cursor: 'pointer' }}>
+                  <Button type="button" variant="outline" onClick={handleReset} className="min-w-[110px] min-h-[46px]">
                     Reset
-                  </button>
-                  <button type="submit" disabled={submitting || uploadingDoc} style={{ minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 18px', borderRadius: '10px', minHeight: '46px', fontSize: '14px', background: 'linear-gradient(135deg, #6D28D9 0%, #2563eb 100%)', color: '#fff', border: 'none', cursor: submitting || uploadingDoc ? 'not-allowed' : 'pointer', opacity: submitting || uploadingDoc ? 0.8 : 1 }}>
+                  </Button>
+                  <Button type="submit" disabled={submitting || uploadingDoc} className="min-w-[220px] min-h-[46px] gap-2">
                     {submitting ? (
                       <><span style={{ width: 15, height: 15, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)', borderTopColor: '#fff', display: 'inline-block', animation: 'spin 1s linear infinite' }} /> <span>Submitting Request...</span></>
                     ) : (
                       <><Sparkles size={16} /><span>{activeTab === 'OUTPASS' && 'Submit Out-Pass Request'}{activeTab === 'MESS_FEE' && 'Submit Mess Fee Clearance'}{activeTab === 'INTERNSHIP' && 'Submit Internship Permission'}{activeTab === 'LIBRARY' && 'Submit Library Request'}</span></>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
           </div>
 
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: '18px' }} />
         </div>
       </div>
     </DashboardLayout>

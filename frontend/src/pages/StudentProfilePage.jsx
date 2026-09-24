@@ -1,22 +1,25 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../lib/api';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Card } from '../components/ui/card';
 import {
-  Camera,
-  User,
-  Building2,
-  GraduationCap,
-  Lock,
-  UploadCloud,
-  AlertCircle,
-  CheckCircle2,
-  Save,
-  Trash2,
-  Pencil,
-  ShieldCheck,
-  IdCard
-} from 'lucide-react';
+  LuCamera as Camera,
+  LuUser as User,
+  LuBuilding2 as Building2,
+  LuGraduationCap as GraduationCap,
+  LuLock as Lock,
+  LuCloudUpload as UploadCloud,
+  LuCircleAlert as AlertCircle,
+  LuCircleCheck as CheckCircle2,
+  LuSave as Save,
+  LuTrash2 as Trash2,
+  LuPencil as Pencil,
+  LuShieldCheck as ShieldCheck,
+  LuIdCard as IdCard
+} from 'react-icons/lu';
 
 const COLLEGE_NAME = 'Kakinada Institute of Engineering and Technology';
 
@@ -144,14 +147,13 @@ export default function StudentProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="page-header" style={{ marginBottom: '24px' }}>
-        <div>
-          <h1 className="page-title">My Profile</h1>
-          <p className="page-subtitle">Student account and profile details</p>
-        </div>
-      </div>
+      <header className="page-header" style={{ marginBottom: '18px' }}>
+        <div className="eyebrow">Student Profile</div>
+        <h1 className="page-title">My Profile</h1>
+        <p className="page-subtitle">Student account and profile details</p>
+      </header>
 
-      <div className="card" style={{ maxWidth: '1180px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.05)', overflow: 'hidden' }}>
+      <Card className="student-profile-card" style={{ maxWidth: '1180px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.05)', overflow: 'hidden' }}>
         <div className="grid grid-cols-1 md:grid-cols-[minmax(280px,320px)_1fr] gap-0">
           <aside style={{ background: 'linear-gradient(rgb(243, 255, 255) 0%, rgb(243, 255, 255) 100%)', borderRight: '1px solid rgb(233, 213, 255)', padding: '22px 18px 18px' }}>
             <div style={{ background: 'linear-gradient(135deg, #6D28D9 0%, #60a5fa 100%)', borderRadius: '18px 18px 0 0', padding: '20px 16px 18px', minHeight: '220px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -248,43 +250,43 @@ export default function StudentProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[18px] gap-y-[16px]">
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Full Name *</label>
-                  <input className="form-input" value={profileForm.name} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={profileForm.name} readOnly />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Student Category *</label>
-                  <input className="form-input" value={displayStudentType} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={displayStudentType} readOnly />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Roll Number *</label>
-                  <input className="form-input" value={rollNumber} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={rollNumber} readOnly />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>College *</label>
-                  <input className="form-input" value={COLLEGE_NAME} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={COLLEGE_NAME} readOnly />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Username *</label>
-                  <input className="form-input" value={rollNumber} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={rollNumber} readOnly />
                   <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748b' }}>Username is your roll number and cannot be changed.</div>
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Year (Department) *</label>
-                  <input className="form-input" value={profileForm.year ? `${profileForm.year} Year` : 'N/A'} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={profileForm.year ? `${profileForm.year} Year` : 'N/A'} readOnly />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Branch *</label>
-                  <input className="form-input" value={displayBranch} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={displayBranch} readOnly />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Username</label>
-                  <input className="form-input" value={rollNumber} readOnly style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed' }} />
+                  <Input className="bg-slate-50 text-slate-700 cursor-not-allowed" value={rollNumber} readOnly />
                 </div>
               </div>
             </section>
@@ -302,17 +304,17 @@ export default function StudentProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-[18px] gap-y-[16px]">
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Current Password *</label>
-                    <input type="password" className="form-input" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((f) => ({ ...f, currentPassword: e.target.value }))} style={{ background: '#fff' }} />
+                    <Input type="password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((f) => ({ ...f, currentPassword: e.target.value }))} className="bg-white" />
                   </div>
 
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>New Password *</label>
-                    <input type="password" className="form-input" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((f) => ({ ...f, newPassword: e.target.value }))} style={{ background: '#fff' }} />
+                    <Input type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((f) => ({ ...f, newPassword: e.target.value }))} className="bg-white" />
                   </div>
 
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Confirm New Password *</label>
-                    <input type="password" className="form-input" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((f) => ({ ...f, confirmPassword: e.target.value }))} style={{ background: '#fff' }} />
+                    <Input type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((f) => ({ ...f, confirmPassword: e.target.value }))} className="bg-white" />
                   </div>
                 </div>
 
@@ -329,16 +331,16 @@ export default function StudentProfilePage() {
                 </div>
 
                 <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button type="submit" disabled={savingPassword} style={{ background: '#6D28D9', color: '#fff', border: 'none', borderRadius: '10px', padding: '12px 18px', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 8px 18px rgba(109,40,217,0.18)' }}>
+                  <Button type="submit" disabled={savingPassword} className="bg-violet-600 hover:bg-violet-700 text-white shadow-md">
                     <Lock size={15} />
                     {savingPassword ? 'Updating...' : 'Update Password'}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </section>
           </main>
         </div>
-      </div>
+      </Card>
     </DashboardLayout>
   );
 }

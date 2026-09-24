@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
+import { Table } from '../../components/ui/table';
 import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, LabelList
 } from 'recharts';
 import {
-  Users,
-  GraduationCap,
-  BarChart2,
-  PieChart as PieChartIcon,
-  Layers
-} from 'lucide-react';
+  LuUsers as Users,
+  LuGraduationCap as GraduationCap,
+  LuChartBar as BarChart2,
+  LuChartPie as PieChartIcon,
+  LuLayers as Layers
+} from 'react-icons/lu';
 
 const BRANCH_FALLBACKS = {
   'CSM': { code: 'CSM', sub: '(AI & ML)', full: 'CSM (AI & ML)' },
@@ -96,29 +97,53 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout>
       {/* Top Header Bar */}
-      <div className="admin-header-row">
+      <div className="admin-header-row" style={{
+        marginBottom: '20px',
+        padding: '6px 2px 0'
+      }}>
         <div>
           <h1 style={{
-            fontSize: '22px',
+            fontSize: '28px',
             fontWeight: 800,
-            color: '#1E293B',
+            color: '#0F172A',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
+            gap: '12px',
             margin: 0,
-            letterSpacing: '-0.3px'
+            letterSpacing: '-0.5px'
           }}>
-            <BarChart2 size={24} color="#3B82F6" />
-            <span>students overview and analytics</span>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)'
+            }}>
+              <BarChart2 size={20} color="#3B82F6" />
+            </span>
+            <span>System Overview</span>
           </h1>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+          <p style={{
+            margin: '8px 0 0 0',
+            fontSize: '13px',
+            color: '#64748B',
+            lineHeight: 1.5
+          }}>
             Real-time campus statistics and student distribution across years and branches.
           </p>
         </div>
       </div>
 
       {/* Top 4 Metrics Cards */}
-      <div className="admin-summary-grid">
+      <div className="admin-summary-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+        gap: '16px',
+        marginBottom: '18px'
+      }}>
         {/* Card 1: Total Students */}
         <div style={{
           background: '#F8FAFC',
@@ -249,7 +274,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Charts Row */}
-      <div className="admin-charts-grid">
+      <div className="admin-charts-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)',
+        gap: '18px'
+      }}>
         {/* Left Chart: Branch-wise Student Distribution (By Year) */}
         <div style={{
           background: '#FFFFFF',
@@ -446,7 +475,7 @@ export default function AdminDashboard() {
 
             {/* Detailed Branch Legend Table */}
             <div style={{ flex: 1, overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <Table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{
@@ -505,11 +534,56 @@ export default function AdminDashboard() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        .admin-summary-grid > div {
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .admin-summary-grid > div:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .admin-donut-wrap {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+        }
+
+        @media (max-width: 1200px) {
+          .admin-charts-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .admin-summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .admin-summary-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .admin-donut-wrap {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .admin-header-row h1 {
+            font-size: 22px !important;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 }

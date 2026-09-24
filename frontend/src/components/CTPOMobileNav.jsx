@@ -1,10 +1,17 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Menu, X, LogOut, Sparkles,
-  LayoutDashboard, Clock, ClipboardList, FileText,
-} from 'lucide-react';
+  LuMenu as Menu,
+  LuX as X,
+  LuLogOut as LogOut,
+  LuSparkles as Sparkles,
+  LuLayoutDashboard as LayoutDashboard,
+  LuClock as Clock,
+  LuClipboardList as ClipboardList,
+  LuFileText as FileText
+} from 'react-icons/lu';
+import { Button } from './ui/button';
 
 const CTPO_NAV = [
   { label: 'Overview',         icon: LayoutDashboard, path: '/ctpo/dashboard' },
@@ -28,14 +35,14 @@ export default function CTPOMobileNav() {
 
   return (
     <>
-      <button
+      <Button
         type="button"
         className="ctpo-mob-hamburger"
         onClick={() => setOpen(true)}
         aria-label="Open navigation menu"
       >
         <Menu size={22} />
-      </button>
+      </Button>
 
       {open && (
         <div className="ctpo-mob-overlay" onClick={close} aria-hidden="true" />
@@ -69,16 +76,16 @@ export default function CTPOMobileNav() {
           <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>
             College Approval Platform
           </p>
-          <button className="ctpo-mob-drawer-close" onClick={close} type="button" aria-label="Close navigation">
+          <Button variant="ghost" size="icon" className="ctpo-mob-drawer-close" onClick={close} type="button" aria-label="Close navigation">
             <X size={20} />
-          </button>
+          </Button>
         </div>
 
         <div className="ctpo-mob-nav-label">Navigation</div>
 
         <nav className="ctpo-mob-nav">
           {CTPO_NAV.map(({ label, icon: Icon, path }) => (
-            <button
+            <Button
               key={path}
               type="button"
               className={`ctpo-mob-nav-item${location.pathname === path ? ' ctpo-mob-nav-item--active' : ''}`}
@@ -86,7 +93,7 @@ export default function CTPOMobileNav() {
             >
               <Icon size={18} />
               {label}
-            </button>
+            </Button>
           ))}
         </nav>
 
@@ -96,14 +103,14 @@ export default function CTPOMobileNav() {
             <div className="ctpo-mob-user-name" title={user?.name}>{user?.name || 'User'}</div>
             <div className="ctpo-mob-user-role">CTPO Approver</div>
           </div>
-          <button
+          <Button
             type="button"
             className="ctpo-mob-logout"
             onClick={() => { close(); logout(); }}
             title="Logout"
           >
             <LogOut size={16} />
-          </button>
+          </Button>
         </div>
       </div>
     </>

@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  Clock,
-  CheckCircle2,
-  XCircle,
-  QrCode,
-  CheckCheck,
-  Ban
-} from 'lucide-react';
+  LuClock as Clock,
+  LuCircleCheck as CheckCircle2,
+  LuCircleX as XCircle,
+  LuQrCode as QrCode,
+  LuCheckCheck as CheckCheck,
+  LuBan as Ban
+} from 'react-icons/lu';
 
 const STATUS_CONFIG = {
   PENDING_CTPO: { label: 'Pending', icon: Clock, className: 'badge-pending_ctpo' },

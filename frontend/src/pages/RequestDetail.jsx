@@ -4,35 +4,40 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import StatusBadge from '../components/StatusBadge';
 import api from '../lib/api';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent } from '../components/ui/dialog';
 import {
-  ArrowLeft,
-  QrCode,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Calendar,
-  User,
-  Building,
-  Home,
-  FileText,
-  ShieldCheck,
-  AlertTriangle,
-  Sparkles,
-  Receipt,
-  Briefcase,
-  BookOpen,
-  DollarSign,
-  MapPin,
-  Laptop,
-  Paperclip,
-  Printer,
-  Edit3,
-  UploadCloud,
-  Check,
-  Trash2,
-  X,
-  Phone
-} from 'lucide-react';
+  LuArrowLeft as ArrowLeft,
+  LuQrCode as QrCode,
+  LuCircleCheck as CheckCircle2,
+  LuCircleX as XCircle,
+  LuClock as Clock,
+  LuCalendar as Calendar,
+  LuUser as User,
+  LuBuilding as Building,
+  LuHouse as Home,
+  LuFileText as FileText,
+  LuShieldCheck as ShieldCheck,
+  LuTriangleAlert as AlertTriangle,
+  LuSparkles as Sparkles,
+  LuReceipt as Receipt,
+  LuBriefcase as Briefcase,
+  LuBookOpen as BookOpen,
+  LuDollarSign as DollarSign,
+  LuMapPin as MapPin,
+  LuLaptop as Laptop,
+  LuPaperclip as Paperclip,
+  LuPrinter as Printer,
+  LuPenLine as Edit3,
+  LuCloudUpload as UploadCloud,
+  LuCheck as Check,
+  LuTrash2 as Trash2,
+  LuX as X,
+  LuPhone as Phone
+} from 'react-icons/lu';
 
 const ROLE_STEP_LABELS = {
   CTPO: 'CTPO Verification',
@@ -229,7 +234,7 @@ export default function RequestDetail() {
       expectedReturnDate: req.expectedReturnDate ? new Date(req.expectedReturnDate).toISOString().split('T')[0] : '',
       expectedReturnTime: req.expectedReturnTime || '20:00',
       studentType: req.studentType || 'DAY_SCHOLAR',
-      emergencyContact: req.emergencyContact || '',
+      parentNumber: req.parentNumber || req.emergencyContact || '',
       startDate: req.startDate ? new Date(req.startDate).toISOString().split('T')[0] : '',
       endDate: req.endDate ? new Date(req.endDate).toISOString().split('T')[0] : '',
       messAmount: req.messAmount ?? '',
@@ -403,30 +408,30 @@ export default function RequestDetail() {
       {/* Top Navigation Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
+          <Button
             className="btn btn-ghost btn-sm"
             onClick={() => navigate(-1)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <ArrowLeft size={16} />
             <span>Back</span>
-          </button>
+          </Button>
           <div className="page-title" style={{ margin: 0 }}>
             {getPermissionTypeLabel()} Details
           </div>
           <StatusBadge status={request.status} />
         </div>
 
-        {/* Action Button: View Official Slip Modal (Available whenever Approved or Issued) */}
-        {isApprovedOrIssued && (
-          <button
+        {/* Action Button: View Official Slip Modal (Available whenever Approved or Issued, hidden for student and HOD views) */}
+        {isApprovedOrIssued && !['HOD', 'STUDENT', 'PLACEMENT_OFFICER'].includes(String(user?.role || '').toUpperCase()) && (
+          <Button
             className="btn btn-primary btn-sm"
             onClick={() => setPrintModalOpen(true)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <Printer size={15} />
             <span>View Official Permission Document</span>
-          </button>
+          </Button>
         )}
       </div>
 
@@ -468,14 +473,14 @@ export default function RequestDetail() {
           </div>
 
           {isOwner && (
-            <button
+            <Button
               className="btn btn-primary btn-sm"
               onClick={handleOpenResubmit}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#dc2626', borderColor: '#b91c1c' }}
             >
               <Edit3 size={14} />
               <span>Edit & Resubmit Request</span>
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -505,8 +510,8 @@ export default function RequestDetail() {
                 <>
                   <Row icon={Calendar} label="Out Date & Time" value={`${new Date(request.outDate).toLocaleDateString('en-IN')} at ${request.outTime}`} />
                   <Row icon={Clock} label="Return Date & Time" value={`${new Date(request.expectedReturnDate).toLocaleDateString('en-IN')} at ${request.expectedReturnTime}`} />
-                  {request.emergencyContact && (
-                    <Row icon={Phone} label="Emergency Contact" value={request.emergencyContact} />
+                  {(request.parentNumber || request.emergencyContact) && (
+                    <Row icon={Phone} label="Parent Number" value={request.parentNumber || request.emergencyContact} />
                   )}
                 </>
               )}
@@ -598,7 +603,7 @@ export default function RequestDetail() {
                   </div>
                 </div>
               ) : (
-                <button className="btn btn-primary" onClick={fetchQR}>Generate / Load QR Code</button>
+                <Button onClick={fetchQR}>Generate / Load QR Code</Button>
               )}
             </div>
           )}
@@ -679,7 +684,7 @@ export default function RequestDetail() {
               }}
             >
               {/* APPROVE BUTTON */}
-              <button
+              <Button
                 type="button"
                 className="btn"
                 onClick={handleApproverApprove}
@@ -718,10 +723,10 @@ export default function RequestDetail() {
                 <span>
                   {approverActionLoading ? 'Processing...' : 'Approve'}
                 </span>
-              </button>
+              </Button>
 
               {/* REJECT BUTTON */}
-              <button
+              <Button
                 type="button"
                 className="btn"
                 onClick={() => {
@@ -750,29 +755,20 @@ export default function RequestDetail() {
               >
                 <XCircle size={15} />
                 <span>Reject</span>
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Reject Remarks Popup */}
           {rejectModalOpen && (
-            <div
-              className="modal-overlay"
-              onClick={(e) => {
-                if (e.target === e.currentTarget && !approverActionLoading) {
-                  setRejectModalOpen(false);
-                  setApproverRemarks('');
-                  setApproverActionError('');
-                }
-              }}
-              style={{
-                zIndex: 1000,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <div
+            <Dialog open={rejectModalOpen} onOpenChange={(open) => {
+              if (!open && !approverActionLoading) {
+                setRejectModalOpen(false);
+                setApproverRemarks('');
+                setApproverActionError('');
+              }
+            }}>
+              <DialogContent
                 className="modal"
                 style={{
                   width: 'min(520px, calc(100vw - 32px))',
@@ -833,7 +829,7 @@ export default function RequestDetail() {
                     </div>
                   </div>
 
-                  <button
+                  <Button
                     type="button"
                     onClick={() => {
                       if (approverActionLoading) return;
@@ -855,7 +851,7 @@ export default function RequestDetail() {
                     aria-label="Close"
                   >
                     <X size={20} />
-                  </button>
+                  </Button>
                 </div>
 
                 {approverActionError && (
@@ -878,7 +874,7 @@ export default function RequestDetail() {
                     Rejection Remarks <span style={{ color: '#dc2626' }}>*</span>
                   </label>
 
-                  <textarea
+                  <Textarea
                     className="form-input"
                     rows={5}
                     autoFocus
@@ -903,7 +899,7 @@ export default function RequestDetail() {
                     gap: '10px'
                   }}
                 >
-                  <button
+                  <Button
                     type="button"
                     className="btn btn-ghost"
                     onClick={() => {
@@ -915,9 +911,9 @@ export default function RequestDetail() {
                     disabled={approverActionLoading}
                   >
                     Cancel
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     type="button"
                     className="btn"
                     onClick={handleApproverReject}
@@ -949,29 +945,29 @@ export default function RequestDetail() {
                     <span>
                       {approverActionLoading ? 'Rejecting...' : 'Confirm Reject'}
                     </span>
-                  </button>
+                  </Button>
                 </div>
-              </div>
-            </div>
+              </DialogContent>
+            </Dialog>
           )}
         </>
       )}
       {/* ─── Edit & Resubmit Modal ─── */}
       {resubmitModalOpen && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setResubmitModalOpen(false)}>
-          <div className="modal" style={{ maxWidth: '540px' }}>
+        <Dialog open={resubmitModalOpen} onOpenChange={(open) => !open && setResubmitModalOpen(false)}>
+          <DialogContent className="modal" style={{ maxWidth: '540px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                 <Edit3 size={18} color="var(--accent)" />
                 <span>Edit & Resubmit Request</span>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={() => setResubmitModalOpen(false)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
               >
                 <X size={18} />
-              </button>
+              </Button>
             </div>
 
             {resubmitError && (
@@ -986,7 +982,7 @@ export default function RequestDetail() {
                 <>
                   <div className="form-group" style={{ marginBottom: '12px' }}>
                     <label className="form-label">Reason</label>
-                    <textarea
+                    <Textarea
                       required
                       rows={2}
                       className="form-input"
@@ -1039,13 +1035,13 @@ export default function RequestDetail() {
                     </div>
                   </div>
                   <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">Emergency Contact Number</label>
+                    <label className="form-label">Parent Number</label>
                     <input
                       type="text"
                       className="form-input"
                       placeholder="e.g. 9392393340"
-                      value={resubmitForm.emergencyContact}
-                      onChange={e => setResubmitForm(f => ({ ...f, emergencyContact: e.target.value }))}
+                      value={resubmitForm.parentNumber || ''}
+                      onChange={e => setResubmitForm(f => ({ ...f, parentNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                     />
                   </div>
                 </>
@@ -1056,7 +1052,7 @@ export default function RequestDetail() {
                 <>
                   <div className="form-group" style={{ marginBottom: '12px' }}>
                     <label className="form-label">Clearance Reason</label>
-                    <textarea
+                    <Textarea
                       required
                       rows={2}
                       className="form-input"
@@ -1077,15 +1073,14 @@ export default function RequestDetail() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Payment Status</label>
-                      <select
+                      <Select
                         className="form-input"
                         value={resubmitForm.paidStatus}
-                        onChange={e => setResubmitForm(f => ({ ...f, paidStatus: e.target.value }))}
+                        onValueChange={value => setResubmitForm(f => ({ ...f, paidStatus: value }))}
                       >
-                        <option value="Paid">Paid</option>
-                        <option value="Partially Paid">Partially Paid</option>
-                        <option value="Not Paid">Not Paid</option>
-                      </select>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="Paid">Paid</SelectItem><SelectItem value="Partially Paid">Partially Paid</SelectItem><SelectItem value="Not Paid">Not Paid</SelectItem></SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="form-grid" style={{ marginBottom: '12px' }}>
@@ -1151,15 +1146,14 @@ export default function RequestDetail() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Mode</label>
-                      <select
+                      <Select
                         className="form-input"
                         value={resubmitForm.internshipMode}
-                        onChange={e => setResubmitForm(f => ({ ...f, internshipMode: e.target.value }))}
+                        onValueChange={value => setResubmitForm(f => ({ ...f, internshipMode: value }))}
                       >
-                        <option value="Offline">Offline</option>
-                        <option value="Online">Online</option>
-                        <option value="Hybrid">Hybrid</option>
-                      </select>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="Offline">Offline</SelectItem><SelectItem value="Online">Online</SelectItem><SelectItem value="Hybrid">Hybrid</SelectItem></SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="form-grid" style={{ marginBottom: '12px' }}>
@@ -1192,7 +1186,7 @@ export default function RequestDetail() {
                 <>
                   <div className="form-group" style={{ marginBottom: '12px' }}>
                     <label className="form-label">Purpose / Reason</label>
-                    <textarea
+                    <Textarea
                       required
                       rows={2}
                       className="form-input"
@@ -1219,9 +1213,9 @@ export default function RequestDetail() {
                 {resubmitForm.documentUrl ? (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: '6px', border: '1px solid var(--border)' }}>
                     <span style={{ fontSize: '12px' }}>{resubmitForm.documentName || 'Document attached'}</span>
-                    <button type="button" onClick={() => setResubmitForm(f => ({ ...f, documentUrl: '', documentName: '' }))} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer' }}>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setResubmitForm(f => ({ ...f, documentUrl: '', documentName: '' }))}>
                       <Trash2 size={13} />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', borderRadius: '6px', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: '12px' }}>
@@ -1235,7 +1229,7 @@ export default function RequestDetail() {
               {/* Resubmission Remarks */}
               <div className="form-group" style={{ marginBottom: '18px' }}>
                 <label className="form-label">Note to Approver</label>
-                <input
+                <Input
                   type="text"
                   placeholder="e.g. Attached receipt with correct dates and updated parent contact."
                   className="form-input"
@@ -1245,21 +1239,21 @@ export default function RequestDetail() {
               </div>
 
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setResubmitModalOpen(false)}>Cancel</button>
-                <button type="submit" disabled={resubmitting || uploadingDoc} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Button type="button" variant="outline" onClick={() => setResubmitModalOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={resubmitting || uploadingDoc} className="gap-2">
                   {resubmitting ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Check size={14} />}
                   <span>Resubmit to CTPO</span>
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* ─── Official Digital Permission Document Modal (Exact Replica of Sample) ─── */}
       {printModalOpen && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setPrintModalOpen(false)}>
-          <div className="modal" style={{ maxWidth: '640px', padding: '24px', background: '#ffffff' }}>
+        <Dialog open={printModalOpen} onOpenChange={(open) => !open && setPrintModalOpen(false)}>
+          <DialogContent className="modal" style={{ maxWidth: '640px', padding: '24px', background: '#ffffff' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Printer size={18} color="var(--accent)" />
@@ -1267,13 +1261,13 @@ export default function RequestDetail() {
                   Official Digital Permission Slip
                 </span>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={() => setPrintModalOpen(false)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
               >
                 <X size={20} />
-              </button>
+              </Button>
             </div>
 
             {/* Printable Document Sheet matching user's exact uploaded sample */}
@@ -1325,8 +1319,8 @@ export default function RequestDetail() {
                   {reqType === 'OUTPASS' && (
                     <>
                       <div><strong>Date:</strong> {new Date(request.outDate).toLocaleDateString('en-GB')} ({request.outTime} to {request.expectedReturnTime})</div>
-                      {request.emergencyContact && (
-                        <div><strong>Emergency Contact:</strong> {request.emergencyContact}</div>
+                      {(request.parentNumber || request.emergencyContact) && (
+                        <div><strong>Parent Number:</strong> {request.parentNumber || request.emergencyContact}</div>
                       )}
                     </>
                   )}
@@ -1425,14 +1419,14 @@ export default function RequestDetail() {
 
             {/* Modal Controls */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
-              <button className="btn btn-ghost" onClick={() => setPrintModalOpen(false)}>Close</button>
-              <button className="btn btn-primary" onClick={handlePrint} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Button className="btn btn-ghost" onClick={() => setPrintModalOpen(false)}>Close</Button>
+              <Button className="btn btn-primary" onClick={handlePrint} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                 <Printer size={15} />
                 <span>Print / Save as PDF</span>
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </DashboardLayout>
   );

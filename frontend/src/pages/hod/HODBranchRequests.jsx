@@ -3,17 +3,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
 import {
-    ArrowLeft,
-    Building2,
-    Search,
-    ChevronLeft,
-    ChevronRight,
-    Eye,
-    ChevronDown,
-    CalendarDays,
-    RefreshCw,
-    ClipboardList,
-} from 'lucide-react';
+    LuArrowLeft as ArrowLeft,
+    LuBuilding2 as Building2,
+    LuSearch as Search,
+    LuChevronLeft as ChevronLeft,
+    LuChevronRight as ChevronRight,
+    LuEye as Eye,
+    LuChevronDown as ChevronDown,
+    LuCalendarDays as CalendarDays,
+    LuRefreshCw as RefreshCw,
+    LuClipboardList as ClipboardList,
+} from 'react-icons/lu';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 
 const PAGE_SIZE = 10;
 
@@ -566,15 +571,13 @@ export default function HODBranchRequests() {
     };
 
     const exportBranchReport = () => {
+        const doc = new jsPDF();
+        
+        doc.setFontSize(16);
+        doc.text(`${branch.name} (${branch.code}) - Requests Report`, 14, 22);
+        
         const headers = [
-            'S.No',
-            'Student',
-            'Roll No',
-            'Year',
-            'Student Type',
-            'Request Type',
-            'Date',
-            'Status',
+            ['S.No', 'Student', 'Roll No', 'Year', 'Type', 'Request Type', 'Date', 'Status'],
         ];
 
         const rows = branchRequests.map((request, index) => [
@@ -588,33 +591,16 @@ export default function HODBranchRequests() {
             statusLabel(statusOf(request)),
         ]);
 
-        const escapeCsv = value => {
-            const text = String(value ?? '');
-            return `"${text.replace(/"/g, '""')}"`;
-        };
+        doc.autoTable({
+            startY: 30,
+            head: headers,
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [37, 99, 235] },
+        });
 
-        const csv = [
-            headers,
-            ...rows,
-        ]
-            .map(row => row.map(escapeCsv).join(','))
-            .join('\n');
-
-        const blob = new Blob(
-            [csv],
-            { type: 'text/csv;charset=utf-8;' }
-        );
-
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-
-        link.href = url;
-        link.download = `${branch.code}_Branch_Report.csv`;
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        doc.save(`${branch.code}_Branch_Report.pdf`);
     };
 
     const countFor = key => {
@@ -672,7 +658,7 @@ export default function HODBranchRequests() {
                         exist.
                     </p>
 
-                    <button
+                    <Button
                         type="button"
                         className="btn btn-primary"
                         onClick={() =>
@@ -682,7 +668,7 @@ export default function HODBranchRequests() {
                         }
                     >
                         Back to Branches
-                    </button>
+                    </Button>
                 </div>
             </DashboardLayout>
         );
@@ -716,7 +702,7 @@ export default function HODBranchRequests() {
                                 gap: 12,
                             }}
                         >
-                            <button
+                            <Button
                                 type="button"
                                 className="btn btn-ghost"
                                 onClick={() =>
@@ -734,7 +720,7 @@ export default function HODBranchRequests() {
                                     size={16}
                                 />
                                 Back
-                            </button>
+                            </Button>
 
                             <div
                                 style={{
@@ -785,7 +771,7 @@ export default function HODBranchRequests() {
                             flexShrink: 0,
                         }}
                     >
-                        <button
+                        <Button
                             type="button"
                             className="btn btn-primary"
                             onClick={exportBranchReport}
@@ -805,7 +791,7 @@ export default function HODBranchRequests() {
                             }}
                         >
                             Export Report
-                        </button>
+                        </Button>
 
                     </div>
                 </div>
@@ -827,7 +813,7 @@ export default function HODBranchRequests() {
                             tab.key;
 
                         return (
-                            <button
+                            <Button
                                 key={tab.key}
                                 type="button"
                                 onClick={() =>
@@ -870,7 +856,7 @@ export default function HODBranchRequests() {
                                         tab.key
                                     )})
                                 </span>
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>
@@ -1023,7 +1009,7 @@ export default function HODBranchRequests() {
                         />
 
                         {/* CLEAR */}
-                        <button
+                        <Button
                             type="button"
                             className="btn btn-ghost"
                             onClick={
@@ -1034,7 +1020,7 @@ export default function HODBranchRequests() {
                             }}
                         >
                             Clear
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
@@ -1194,6 +1180,7 @@ export default function HODBranchRequests() {
                                 >
                                     {[
                                         '#',
+                                        'Reference ID',
                                         'Student',
                                         'Roll No',
                                         'Year',
@@ -1241,7 +1228,7 @@ export default function HODBranchRequests() {
                                     <tr>
                                         <td
                                             colSpan={
-                                                9
+                                                10
                                             }
                                             style={{
                                                 padding:
@@ -1266,7 +1253,7 @@ export default function HODBranchRequests() {
                                     <tr>
                                         <td
                                             colSpan={
-                                                9
+                                                10
                                             }
                                             style={{
                                                 padding:
@@ -1314,6 +1301,10 @@ export default function HODBranchRequests() {
                                                             PAGE_SIZE +
                                                             index +
                                                             1}
+                                                    </Cell>
+
+                                                    <Cell bold>
+                                                        {request?.referenceId || '—'}
                                                     </Cell>
 
                                                     <Cell
@@ -1391,11 +1382,11 @@ export default function HODBranchRequests() {
                                                             padding: 12,
                                                         }}
                                                     >
-                                                        <button
+                                                        <Button
                                                             type="button"
                                                             onClick={() =>
                                                                 navigate(
-                                                                    `/outpass/${request?._id}`
+                                                                    `/outpass/${request?._id}?mode=approval`
                                                                 )
                                                             }
                                                             style={{
@@ -1429,7 +1420,7 @@ export default function HODBranchRequests() {
                                                                 }
                                                             />
                                                             View
-                                                        </button>
+                                                        </Button>
                                                     </td>
                                                 </tr>
                                             );
@@ -1696,7 +1687,7 @@ function PageButton({
     onClick,
 }) {
     return (
-        <button
+        <Button
             type="button"
             disabled={disabled}
             onClick={onClick}
@@ -1729,6 +1720,6 @@ function PageButton({
             }}
         >
             {children}
-        </button>
+        </Button>
     );
 }

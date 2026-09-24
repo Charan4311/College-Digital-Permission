@@ -2,14 +2,18 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
-  Search,
-  Eye,
-  FileText,
-  CheckCircle2,
-} from 'lucide-react';
+  LuSearch,
+  LuEye,
+  LuFileText,
+  LuCircleCheck,
+  LuCircleX,
+} from 'react-icons/lu';
+
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Table } from '../components/ui/table';
 
 import DashboardLayout from '../components/DashboardLayout';
-import CTPOMobileNav from '../components/CTPOMobileNav';
 import api from '../lib/api';
 
 export default function CTPOPending() {
@@ -28,6 +32,8 @@ export default function CTPOPending() {
   const [typeFilter, setTypeFilter] = useState('ALL');
 
   const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
   // ============================================================
   // FETCH PENDING REQUESTS
@@ -442,7 +448,7 @@ export default function CTPOPending() {
     }
 
     navigate(
-      `/outpass/${id}`
+      `/outpass/${id}?mode=approval`
     );
   };
 
@@ -462,7 +468,6 @@ export default function CTPOPending() {
         <div className="ctpo-page-header">
 
           <div className="ctpo-pending-title-row">
-            <CTPOMobileNav />
             <div>
               <h1>
                 Pending Requests
@@ -512,7 +517,7 @@ export default function CTPOPending() {
 
             {/* LEFT SEARCH ICON REMOVED */}
 
-            <input
+            <Input
               type="text"
               placeholder="Search by student name or roll number..."
               value={searchInput}
@@ -522,53 +527,22 @@ export default function CTPOPending() {
               onKeyDown={
                 handleSearchKeyDown
               }
-              style={{
-                width: '100%',
-                height: '48px',
-
-                // Changed from 44px because
-                // there is no left search icon now
-                paddingLeft: '16px',
-
-                paddingRight: '58px',
-                borderRadius: '10px',
-                border:
-                  '1px solid #dbe3ef',
-                outline: 'none',
-                background: '#ffffff',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-              }}
+              className="pr-12 h-12"
             />
 
             {/* RIGHT SEARCH BUTTON */}
 
-            <button
+            <Button
               type="button"
               onClick={handleSearch}
               title="Search"
               aria-label="Search"
-              style={{
-                position: 'absolute',
-                right: '7px',
-                top: '50%',
-                transform:
-                  'translateY(-50%)',
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
-                borderRadius: '8px',
-                background: 'transparent',
-                color: '#475569',
-                cursor: 'pointer',
-                padding: 0,
-              }}
+              variant="ghost"
+              size="icon"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-9"
             >
-              <Search size={19} />
-            </button>
+              <LuSearch size={19} />
+            </Button>
 
           </div>
 
@@ -610,7 +584,7 @@ export default function CTPOPending() {
             ].map(
               (filter) => (
 
-                <button
+                <Button
                   key={
                     filter.value
                   }
@@ -618,44 +592,17 @@ export default function CTPOPending() {
                   className={
                     typeFilter ===
                     filter.value
-                      ? 'ctpo-filter active'
-                      : 'ctpo-filter'
+                      ? 'h-12 px-5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90'
+                      : 'h-12 px-5 rounded-lg border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   }
                   onClick={() =>
                     setTypeFilter(
                       filter.value
                     )
                   }
-                  style={{
-                    height: '48px',
-                    padding:
-                      '0 18px',
-                    borderRadius:
-                      '10px',
-                    border:
-                      typeFilter ===
-                      filter.value
-                        ? '1px solid #4f46e5'
-                        : '1px solid #dbe3ef',
-                    background:
-                      typeFilter ===
-                      filter.value
-                        ? '#4f46e5'
-                        : '#ffffff',
-                    color:
-                      typeFilter ===
-                      filter.value
-                        ? '#ffffff'
-                        : '#475569',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    whiteSpace:
-                      'nowrap',
-                  }}
                 >
                   {filter.label}
-                </button>
+                </Button>
 
               )
             )}
@@ -665,8 +612,29 @@ export default function CTPOPending() {
         </div>
 
         {/* ======================================================
-            MESSAGE
+            FEEDBACK & MESSAGES
         ====================================================== */}
+
+        {feedback.text && (
+          <div
+            style={{
+              marginBottom: '16px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              fontSize: '14px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              background: feedback.type === 'error' ? '#fef2f2' : '#ecfdf5',
+              border: feedback.type === 'error' ? '1px solid #fecaca' : '1px solid #a7f3d0',
+              color: feedback.type === 'error' ? '#991b1b' : '#065f46',
+            }}
+          >
+            {feedback.type === 'error' ? <LuCircleX size={18} /> : <LuCircleCheck size={18} />}
+            <span>{feedback.text}</span>
+          </div>
+        )}
 
         {message && (
           <div className="ctpo-message">
@@ -693,7 +661,7 @@ export default function CTPOPending() {
             <div className="ctpo-empty-state">
 
               <div className="ctpo-empty-icon">
-                <CheckCircle2 size={42} />
+                <LuCircleCheck size={42} />
               </div>
 
               <h2>
@@ -711,7 +679,7 @@ export default function CTPOPending() {
 
             <div className="ctpo-table-wrapper">
 
-              <table className="ctpo-request-table">
+              <Table className="ctpo-request-table">
 
                 <thead>
 
@@ -767,6 +735,8 @@ export default function CTPOPending() {
                           request
                         );
 
+                      const isBusy = actionLoadingId === id;
+
                       return (
 
                         <tr
@@ -810,7 +780,7 @@ export default function CTPOPending() {
 
                             <span className="ctpo-type-badge">
 
-                              <FileText
+                              <LuFileText
                                 size={14}
                               />
 
@@ -836,26 +806,32 @@ export default function CTPOPending() {
 
                           <td data-label="Action">
 
-                            <div className="ctpo-actions">
+                            <div
+                              className="ctpo-actions"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                flexWrap: 'wrap',
+                              }}
+                            >
 
-                              {/* ONLY VIEW BUTTON */}
-
-                              <button
+                              <Button
                                 type="button"
-                                className="ctpo-view-button"
+                                variant="outline"
+                                className="gap-2"
                                 onClick={() =>
                                   handleView(
                                     request
                                   )
                                 }
+                                title="View Details"
                               >
-                                <Eye
+                                <LuEye
                                   size={15}
                                 />
-
                                 View
-                              </button>
-
+                              </Button>
                             </div>
 
                           </td>
@@ -868,7 +844,7 @@ export default function CTPOPending() {
 
                 </tbody>
 
-              </table>
+              </Table>
 
             </div>
 
@@ -880,4 +856,4 @@ export default function CTPOPending() {
 
     </DashboardLayout>
   );
-}
+}

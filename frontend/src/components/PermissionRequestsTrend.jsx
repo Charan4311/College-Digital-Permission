@@ -9,8 +9,12 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { TrendingUp, Download } from "lucide-react";
+import {
+  LuTrendingUp as TrendingUp,
+  LuDownload as Download
+} from 'react-icons/lu';
 import api from "../lib/api";
+import { Button } from './ui/button';
 
 const TABS = [
     { label: "Last 7 days", value: "7days" },
@@ -144,7 +148,7 @@ export default function PermissionRequestsTrend() {
                     const active = range === tab.value;
 
                     return (
-                        <button
+                        <Button
                             key={tab.value}
                             type="button"
                             onClick={() => setRange(tab.value)}
@@ -165,13 +169,13 @@ export default function PermissionRequestsTrend() {
                             }}
                         >
                             {tab.label}
-                        </button>
+                        </Button>
                     );
                 })}
             </div>
 
             {/* Export Report Button */}
-            <button
+            <Button
                 onClick={handleExport}
                 disabled={exporting}
                 style={{
@@ -194,7 +198,7 @@ export default function PermissionRequestsTrend() {
             >
                 <Download size={14} color="#2563EB" />
                 <span>{exporting ? 'Exporting...' : 'Export Report'}</span>
-            </button>
+            </Button>
 
             {/* CHART */}
             {error ? (
