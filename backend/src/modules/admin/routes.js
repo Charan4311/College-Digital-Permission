@@ -31,8 +31,6 @@ router.patch('/users/:id/reactivate', c.reactivateUser);
 // Students
 router.get('/students/export', c.exportStudentsExcel);
 router.get('/students', c.getStudents);
-router.patch('/students', c.bulkUpdateStudentType);
-router.patch('/students/:id', c.updateStudent);
 
 // Permission Requests
 router.get('/requests/export', c.exportAdminRequestsExcel);

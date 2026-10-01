@@ -109,7 +109,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                 >
                     <TrendingUp
                         size={21}
-                        color="#2563eb"
+                        color="#10b981"
                     />
 
                     Permission Requests Trend
@@ -151,7 +151,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                             style={{
                                 border: "none",
                                 background: active
-                                    ? "#2563eb"
+                                    ? "#10b981"
                                     : "transparent",
                                 color: active
                                     ? "#ffffff"
@@ -193,7 +193,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                         marginBottom: '22px'
                     }}
                 >
-                    <Download size={14} color="#2563EB" />
+                    <Download size={14} color="#10b981" />
                     <span>{exporting ? 'Exporting...' : 'Export Report'}</span>
                 </button>
             )}
@@ -249,13 +249,13 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                             >
                                 <stop
                                     offset="5%"
-                                    stopColor="#3b82f6"
+                                    stopColor="#10b981"
                                     stopOpacity={0.25}
                                 />
 
                                 <stop
                                     offset="95%"
-                                    stopColor="#3b82f6"
+                                    stopColor="#10b981"
                                     stopOpacity={0}
                                 />
                             </linearGradient>
@@ -326,7 +326,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                         <Area
                             type="monotone"
                             dataKey="Total"
-                            stroke="#3b82f6"
+                            stroke="#10b981"
                             strokeWidth={2.5}
                             fill="url(#trendTotalGradient)"
                             fillOpacity={1}
@@ -378,7 +378,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                 }}
             >
                 <LegendItem
-                    color="#3b82f6"
+                    color="#10b981"
                     label="Total"
                 />
 

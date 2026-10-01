@@ -123,7 +123,6 @@ exports.getActivePasses = async (req, res) => {
       studentName: p.requestId?.studentId?.name,
       rollNo: p.requestId?.studentId?.rollNo,
       branch: p.requestId?.branchId?.name,
-      studentType: p.requestId?.studentType,
       outDate: p.requestId?.outDate,
       outTime: p.requestId?.outTime,
       expectedReturnDate: p.requestId?.expectedReturnDate,

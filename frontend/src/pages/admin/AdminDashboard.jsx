@@ -10,7 +10,8 @@ import {
   GraduationCap,
   BarChart2,
   PieChart as PieChartIcon,
-  Layers
+  Layers,
+  Calendar
 } from 'lucide-react';
 
 const BRANCH_FALLBACKS = {
@@ -26,7 +27,7 @@ const BRANCH_FALLBACKS = {
   '46': { code: 'CSC', sub: '(Cyber Security)', full: 'CSC (Cyber Security)' },
 };
 
-const DONUT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#06B6D4'];
+const DONUT_COLORS = ['#10b981', '#10B981', '#F59E0B', '#10b981', '#06B6D4'];
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -96,24 +97,27 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout>
       {/* Top Header Bar */}
-      <div className="admin-header-row">
-        <div>
-          <h1 style={{
-            fontSize: '22px',
-            fontWeight: 800,
-            color: '#1E293B',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            margin: 0,
-            letterSpacing: '-0.3px'
-          }}>
-            <BarChart2 size={24} color="#3B82F6" />
-            <span>System Overview</span>
-          </h1>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
-            Real-time campus statistics and student distribution across years and branches.
-          </p>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ color: '#475569', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+              Welcome back,
+            </div>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.5px' }}>
+              System <span style={{ color: '#10b981' }}>Administrator</span>
+            </h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+              <Calendar size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -128,19 +132,30 @@ export default function AdminDashboard() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: '110px'
+          minHeight: '110px',
+          transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+          e.currentTarget.style.borderColor = '#bfdbfe';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = '#E2E8F0';
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: '#EFF6FF',
+              backgroundColor: '#ecfdf5',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Users size={20} color="#3B82F6" />
+              <Users size={20} color="#10b981" />
             </div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Total Students</span>
           </div>
@@ -160,7 +175,18 @@ export default function AdminDashboard() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: '110px'
+          minHeight: '110px',
+          transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+          e.currentTarget.style.borderColor = '#bfdbfe';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = '#DCFCE7';
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -192,7 +218,18 @@ export default function AdminDashboard() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: '110px'
+          minHeight: '110px',
+          transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+          e.currentTarget.style.borderColor = '#bfdbfe';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = '#F3E8FF';
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -204,7 +241,7 @@ export default function AdminDashboard() {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <GraduationCap size={20} color="#8B5CF6" />
+              <GraduationCap size={20} color="#10b981" />
             </div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: '#6B21A8' }}>3rd Year Students</span>
           </div>
@@ -224,7 +261,18 @@ export default function AdminDashboard() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: '110px'
+          minHeight: '110px',
+          transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+          e.currentTarget.style.borderColor = '#bfdbfe';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = '#FEF3C7';
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -272,12 +320,12 @@ export default function AdminDashboard() {
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
-                backgroundColor: '#EFF6FF',
+                backgroundColor: '#ecfdf5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Layers size={18} color="#3B82F6" />
+                <Layers size={18} color="#10b981" />
               </div>
               <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1E293B' }}>
                 Branch-wise Student Distribution (By Year)
@@ -287,7 +335,7 @@ export default function AdminDashboard() {
             {/* Custom Legend */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', fontWeight: 600, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#3B82F6' }} />
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }} />
                 <span>2nd Year</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569' }}>
@@ -353,7 +401,7 @@ export default function AdminDashboard() {
                   name === 'year2' ? '2nd Year' : name === 'year3' ? '3rd Year' : '4th Year'
                 ]}
               />
-              <Bar dataKey="year2" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={32}>
+              <Bar dataKey="year2" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={32}>
                 {isDesktop && <LabelList className="chart-bar-label" dataKey="year2" position="top" style={{ fontSize: '11px', fontWeight: 700, fill: '#475569' }} />}
               </Bar>
               <Bar dataKey="year3" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32}>
@@ -382,12 +430,12 @@ export default function AdminDashboard() {
               width: '32px',
               height: '32px',
               borderRadius: '8px',
-              backgroundColor: '#EFF6FF',
+              backgroundColor: '#ecfdf5',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <PieChartIcon size={18} color="#3B82F6" />
+              <PieChartIcon size={18} color="#10b981" />
             </div>
             <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1E293B' }}>
               Branch Distribution (Total Students)

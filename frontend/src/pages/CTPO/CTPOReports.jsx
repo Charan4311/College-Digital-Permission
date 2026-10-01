@@ -1,21 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import {
-  ClipboardList,
-  CheckCircle,
-  Clock,
-  XCircle,
-  Download,
-  CalendarDays,
-  FileText,
-  TrendingUp,
-  PieChart as PieChartIcon,
-  CheckCircle2,
-  RefreshCw,
-  FileDown,
-  X,
-  FileSpreadsheet,
-} from "lucide-react";
+  FiClipboard as ClipboardList,
+  FiCheckCircle as CheckCircle,
+  FiClock as Clock,
+  FiXCircle as XCircle,
+  FiDownload as Download,
+  FiCalendar as CalendarDays,
+  FiFileText as FileText,
+  FiTrendingUp as TrendingUp,
+  FiPieChart as PieChartIcon,
+  FiCheckCircle as CheckCircle2,
+  FiRefreshCw as RefreshCw,
+  FiDownloadCloud as FileDown,
+  FiX as X,
+} from "react-icons/fi";
+import { FaFileExcel as FileSpreadsheet } from "react-icons/fa";
 
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -50,11 +50,6 @@ export default function CTPOReports() {
 
   const [period, setPeriod] = useState("Last 30 Days");
 
-  const [fromDate, setFromDate] = useState("2026-09-01");
-
-  const [toDate, setToDate] = useState("2026-09-30");
-
-  const [permissionType, setPermissionType] = useState("All Types");
 
   const [requests, setRequests] = useState([]);
 
@@ -71,8 +66,8 @@ export default function CTPOReports() {
 
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  // Chart period toggle (controls which slice of reportData.daily is shown)
-  const [chartPeriod, setChartPeriod] = useState("last7");
+  // Top report period and line-chart period are kept synchronized.
+  const [chartPeriod, setChartPeriod] = useState("last30");
 
   // ==========================================================
   // DATE HELPERS
@@ -187,10 +182,29 @@ export default function CTPOReports() {
   const handlePeriodChange = (selectedPeriod) => {
     setPeriod(selectedPeriod);
 
-    const dates = getPeriodDates(selectedPeriod);
+    const periodToChart = {
+      "Last 7 Days": "last7",
+      "Last 30 Days": "last30",
+      "Last 6 Months": "last6m",
+      "This Year": "year",
+    };
 
-    setFromDate(dates.from);
-    setToDate(dates.to);
+    setChartPeriod(periodToChart[selectedPeriod] || "last30");
+  };
+
+  const handleChartPeriodChange = (key) => {
+    const chartToPeriod = {
+      last7: "Last 7 Days",
+      last30: "Last 30 Days",
+      last6m: "Last 6 Months",
+      year: "This Year",
+    };
+
+    const selectedPeriod = chartToPeriod[key];
+    if (!selectedPeriod) return;
+
+    setChartPeriod(key);
+    setPeriod(selectedPeriod);
   };
 
   // ==========================================================
@@ -311,10 +325,10 @@ export default function CTPOReports() {
 
       const status = String(
         request?.status ||
-          request?.approvalStatus ||
-          request?.requestStatus ||
-          request?.currentStatus ||
-          "",
+        request?.approvalStatus ||
+        request?.requestStatus ||
+        request?.currentStatus ||
+        "",
       ).toUpperCase();
 
       // ----------------------------------------------------
@@ -421,50 +435,23 @@ export default function CTPOReports() {
   };
 
   // ==========================================================
-  // FILTER BY DATE + PERMISSION TYPE
+  // FILTER REQUESTS BY THE SELECTED REPORT PERIOD
   // ==========================================================
 
   const filteredRequests = useMemo(() => {
-    const start = fromDate ? new Date(`${fromDate}T00:00:00`) : null;
-
-    const end = toDate ? new Date(`${toDate}T23:59:59`) : null;
+    const dates = getPeriodDates(period);
+    const start = new Date(`${dates.from}T00:00:00`);
+    const end = new Date(`${dates.to}T23:59:59`);
 
     return normalizedRequests.filter((request) => {
-      // ----------------------------------------------------
-      // DATE FILTER
-      // ----------------------------------------------------
+      if (!request._submittedDate) return true;
 
-      let matchesDate = true;
+      const requestDate = new Date(request._submittedDate);
+      if (Number.isNaN(requestDate.getTime())) return true;
 
-      if (request._submittedDate) {
-        const requestDate = new Date(request._submittedDate);
-
-        if (!Number.isNaN(requestDate.getTime())) {
-          if (start && requestDate < start) {
-            matchesDate = false;
-          }
-
-          if (end && requestDate > end) {
-            matchesDate = false;
-          }
-        }
-      }
-
-      // ----------------------------------------------------
-      // PERMISSION TYPE FILTER
-      // ----------------------------------------------------
-
-      let matchesType = true;
-
-      if (permissionType !== "All Types") {
-        matchesType = request._permissionType
-          .toLowerCase()
-          .includes(permissionType.toLowerCase());
-      }
-
-      return matchesDate && matchesType;
+      return requestDate >= start && requestDate <= end;
     });
-  }, [normalizedRequests, fromDate, toDate, permissionType]);
+  }, [normalizedRequests, period]);
 
   // ==========================================================
   // CTPO DECISION HELPERS
@@ -505,12 +492,12 @@ export default function CTPOReports() {
   const getStageRole = (stage) =>
     String(
       stage?.approverRole ||
-        stage?.role ||
-        stage?.approver?.role ||
-        stage?.authorityRole ||
-        stage?.approver?.authorityRole ||
-        stage?.approverType ||
-        "",
+      stage?.role ||
+      stage?.approver?.role ||
+      stage?.authorityRole ||
+      stage?.approver?.authorityRole ||
+      stage?.approverType ||
+      "",
     )
       .trim()
       .toUpperCase();
@@ -518,9 +505,9 @@ export default function CTPOReports() {
   const getStageDecision = (stage) =>
     normalizeDecision(
       stage?.decision ||
-        stage?.action ||
-        stage?.status ||
-        stage?.approvalStatus,
+      stage?.action ||
+      stage?.status ||
+      stage?.approvalStatus,
     );
 
   // IMPORTANT:
@@ -537,9 +524,9 @@ export default function CTPOReports() {
     // --------------------------------------------------------
     const directDecision = normalizeDecision(
       request?.ctpoDecision ||
-        request?.ctpoStatus ||
-        request?.ctpoApprovalStatus ||
-        request?.ctpoDecisionStatus,
+      request?.ctpoStatus ||
+      request?.ctpoApprovalStatus ||
+      request?.ctpoDecisionStatus,
     );
 
     if (directDecision) {
@@ -568,11 +555,11 @@ export default function CTPOReports() {
     // --------------------------------------------------------
     const status = String(
       request?._status ||
-        request?.status ||
-        request?.requestStatus ||
-        request?.currentStatus ||
-        request?.approvalStatus ||
-        "",
+      request?.status ||
+      request?.requestStatus ||
+      request?.currentStatus ||
+      request?.approvalStatus ||
+      "",
     )
       .trim()
       .toUpperCase();
@@ -628,12 +615,12 @@ export default function CTPOReports() {
     ) {
       const rejectedByRole = String(
         request?.rejectedByRole ||
-          request?.rejectedBy?.role ||
-          request?.rejectedBy?.authorityRole ||
-          request?.lastActionByRole ||
-          request?.lastDecisionByRole ||
-          request?.lastApproverRole ||
-          "",
+        request?.rejectedBy?.role ||
+        request?.rejectedBy?.authorityRole ||
+        request?.lastActionByRole ||
+        request?.lastDecisionByRole ||
+        request?.lastApproverRole ||
+        "",
       )
         .trim()
         .toUpperCase();
@@ -880,8 +867,8 @@ export default function CTPOReports() {
   // ==========================================================
 
   const DONUT_COLORS = [
-    "#3b82f6",
     "#10b981",
+    "#3b82f6",
     "#f59e0b",
     "#ef4444",
     "#8b5cf6",
@@ -893,11 +880,8 @@ export default function CTPOReports() {
   // ==========================================================
   // CHART PERIOD DATA
   //
-  // This is INDEPENDENT of the date/type filter above.
-  // The chart period toggle (Last 7 days, Last 30 days, …)
-  // always operates on ALL normalizedRequests so the chart
-  // reflects a rolling time window regardless of what is
-  // selected in the Report Period / From-To / Type filters.
+  // The line chart and report totals use the SAME selected
+  // period. The top dropdown and chart buttons stay synchronized.
   //
   // Rules:
   //  - Each calendar day (or month for last6m/year) in the
@@ -979,7 +963,9 @@ export default function CTPOReports() {
     // --------------------------------------------------------
     // Bucket ALL requests by their submitted date
     // --------------------------------------------------------
-    normalizedRequests.forEach((request) => {
+    // Use the same filtered dataset as the HOD Reports graph.
+    // The chart-period buttons still control the rolling chart window.
+    filteredRequests.forEach((request) => {
       const dateValue = request._submittedDate;
       if (!dateValue) return;
 
@@ -1037,7 +1023,7 @@ export default function CTPOReports() {
 
       return { date: label, total, approved, pending, rejected };
     });
-  }, [normalizedRequests, chartPeriod]);
+  }, [filteredRequests, chartPeriod]);
 
   // ==========================================================
   // PIE / DONUT DATA
@@ -1089,28 +1075,28 @@ export default function CTPOReports() {
   // ==========================================================
   // EXPORT HANDLERS
   // ==========================================================
-  
+
   const getMappedRequest = (req) => {
     const rawStudent = req.student || req.studentId || req.user || req.userId || {};
     const branchObj = req.branchId || req.branch || rawStudent.branch || rawStudent.branchId || {};
-    
+
     let year = req.year || rawStudent.year || rawStudent.yearOfStudy || branchObj.year || 'Unknown Year';
     // ensure year is a string if it's an object with a name property
     if (typeof year === 'object' && year.name) year = year.name;
-    
+
     let branchName = branchObj.name || branchObj.code || branchObj.branchName || req.branchName || req.branchCode || req.branch || 'Unknown Branch';
     if (typeof branchName === 'object' && branchName.name) branchName = branchName.name;
-    
+
     const sectionName = req.section || rawStudent.section || '';
     const sectionBranch = `${branchName} ${sectionName}`.trim();
-    
+
     const studentName = req.studentName || rawStudent.name || rawStudent.fullName || '-';
     const rollNo = req.rollNo || req.rollNumber || rawStudent.rollNo || rawStudent.rollNumber || '-';
     const studentType = rawStudent.studentType || rawStudent.type || req.studentType || '-';
-    
+
     let permissionType = req.permissionType?.name || req.permissionType?.label || req.permissionTypeName || req.type || req.requestType || req.permissionType || '-';
     if (typeof permissionType === 'object') {
-       permissionType = permissionType.name || permissionType.label || '-';
+      permissionType = permissionType.name || permissionType.label || '-';
     }
 
     const details = req.reason || req.purpose || req.description || req.details || '-';
@@ -1134,10 +1120,10 @@ export default function CTPOReports() {
     const grouped = {};
     requests.forEach(req => {
       const mapped = getMappedRequest(req);
-      
+
       if (!grouped[mapped.year]) grouped[mapped.year] = {};
       if (!grouped[mapped.year][mapped.sectionBranch]) grouped[mapped.year][mapped.sectionBranch] = [];
-      
+
       grouped[mapped.year][mapped.sectionBranch].push(mapped);
     });
     return grouped;
@@ -1149,24 +1135,24 @@ export default function CTPOReports() {
       const doc = new jsPDF();
       doc.setFontSize(16);
       doc.text('CTPO Requests Report', 14, 15);
-      
+
       let currentY = 25;
       const grouped = groupRequestsByYearAndSection();
-      
+
       Object.keys(grouped).sort().forEach(year => {
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         doc.text(`Year: ${year}`, 14, currentY);
         currentY += 8;
-        
+
         Object.keys(grouped[year]).sort().forEach(section => {
           doc.setFontSize(12);
           doc.setFont("helvetica", "bold");
           doc.text(`Section/Branch: ${section}`, 18, currentY);
           currentY += 6;
-          
+
           const sectionRequests = grouped[year][section];
-          
+
           const headers = ['Type', 'Student', 'Roll No', 'Details', 'Date', 'Status'];
           const rows = sectionRequests.map(mapped => [
             mapped.permissionType,
@@ -1176,7 +1162,7 @@ export default function CTPOReports() {
             mapped.date,
             mapped.status
           ]);
-          
+
           autoTable(doc, {
             startY: currentY,
             head: [headers],
@@ -1186,7 +1172,7 @@ export default function CTPOReports() {
             headStyles: { fillColor: [37, 99, 235] },
             margin: { left: 18 }
           });
-          
+
           currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : currentY + 30;
           if (currentY > 270) {
             doc.addPage();
@@ -1195,7 +1181,7 @@ export default function CTPOReports() {
         });
         currentY += 5;
       });
-      
+
       doc.save('CTPO_Permission_Report.pdf');
     } catch (err) {
       console.error(err);
@@ -1210,7 +1196,7 @@ export default function CTPOReports() {
     try {
       const grouped = groupRequestsByYearAndSection();
       const excelRows = [];
-      
+
       Object.keys(grouped).sort().forEach(year => {
         Object.keys(grouped[year]).sort().forEach(section => {
           grouped[year][section].forEach(mapped => {
@@ -1227,7 +1213,7 @@ export default function CTPOReports() {
           });
         });
       });
-      
+
       const ws = XLSX.utils.json_to_sheet(excelRows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "CTPO Report");
@@ -1245,7 +1231,7 @@ export default function CTPOReports() {
     try {
       const grouped = groupRequestsByYearAndSection();
       const rows = [];
-      
+
       rows.push(['Year', 'Section/Branch', 'Student Name', 'Roll Number', 'Student Type', 'Permission Type', 'Request Date', 'Status']);
 
       const escapeCSV = (val) => {
@@ -1273,7 +1259,7 @@ export default function CTPOReports() {
           });
         });
       });
-      
+
       const csvContent = rows.map(r => r.join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
@@ -1377,7 +1363,6 @@ export default function CTPOReports() {
                   onChange={(e) => handlePeriodChange(e.target.value)}
                 >
                   {[
-                    "Today",
                     "Last 7 Days",
                     "Last 30 Days",
                     "Last 6 Months",
@@ -1420,12 +1405,6 @@ export default function CTPOReports() {
             {error}
           </div>
         )}
-
-        {/* =====================================================
-            REPORT FILTER
-        ===================================================== */}
-
-
 
         {/* =====================================================
             SUMMARY CARDS
@@ -1519,16 +1498,16 @@ export default function CTPOReports() {
 
               <div className="ctpo-chart-period-btns">
                 {[
-                  { key: "last7",  label: "Last 7 days" },
+                  { key: "last7", label: "Last 7 days" },
                   { key: "last30", label: "Last 30 days" },
                   { key: "last6m", label: "Last 6 months" },
-                  { key: "year",   label: "This year" },
+                  { key: "year", label: "This year" },
                 ].map(({ key, label }) => (
                   <button
                     key={key}
                     type="button"
                     className={chartPeriod === key ? "ctpo-cpbtn active" : "ctpo-cpbtn"}
-                    onClick={() => setChartPeriod(key)}
+                    onClick={() => handleChartPeriodChange(key)}
                   >
                     {label}
                   </button>
@@ -1594,9 +1573,9 @@ export default function CTPOReports() {
                     iconType="circle"
                     iconSize={8}
                   />
-                  <Area type="monotone" dataKey="total"    name="Total"    stroke="#3b82f6" strokeWidth={2} fill="url(#gradTotal)"    dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="total" name="Total" stroke="#3b82f6" strokeWidth={2} fill="url(#gradTotal)" dot={false} activeDot={{ r: 5 }} />
                   <Area type="monotone" dataKey="approved" name="Approved" stroke="#10b981" strokeWidth={2} fill="url(#gradApproved)" dot={false} activeDot={{ r: 5 }} />
-                  <Area type="monotone" dataKey="pending"  name="Pending"  stroke="#f59e0b" strokeWidth={2} fill="url(#gradPending)"  dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="pending" name="Pending" stroke="#f59e0b" strokeWidth={2} fill="url(#gradPending)" dot={false} activeDot={{ r: 5 }} />
                   <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#ef4444" strokeWidth={2} fill="url(#gradRejected)" dot={false} activeDot={{ r: 5 }} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -1701,6 +1680,7 @@ export default function CTPOReports() {
 
         .ctpo-reports-page {
           width: 100%;
+          overflow-x: hidden;
           max-width: 1600px;
           margin: 0 auto;
           padding: 28px 32px 40px;
@@ -1754,8 +1734,10 @@ export default function CTPOReports() {
         .ctpo-header-controls {
           display: flex;
           align-items: center;
+          justify-content: flex-end;
           gap: 10px;
-          flex-wrap: nowrap;
+          flex-wrap: wrap;
+          min-width: 0;
         }
 
         .ctpo-period-dropdown-wrap {
@@ -1799,9 +1781,9 @@ export default function CTPOReports() {
           justify-content: center;
           gap: 7px;
           padding: 0 16px;
-          border: 1px solid #2563eb;
+          border: 1px solid #10b981;
           border-radius: 8px;
-          background: #2563eb;
+          background: #10b981;
           color: #ffffff;
           font-size: 13px;
           font-weight: 700;
@@ -1821,55 +1803,6 @@ export default function CTPOReports() {
           transform: translateY(1px);
         }
 
-        /* ====== FILTER CARD ====== */
-
-        .ctpo-report-filter-card {
-          background: #fff;
-          border: 1px solid #e2e8f0;
-          border-radius: 14px;
-          padding: 16px 20px;
-          margin-bottom: 18px;
-          box-shadow: 0 1px 3px rgba(15,23,42,.04);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-
-        .ctpo-report-filter-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-weight: 700;
-          color: #334155;
-          font-size: 14px;
-        }
-
-        .ctpo-period-selected-label {
-          background: #eff6ff;
-          color: #2563eb;
-          border: 1px solid #bfdbfe;
-          border-radius: 20px;
-          padding: 2px 10px;
-          font-size: 11px;
-          font-weight: 700;
-          margin-left: 2px;
-        }
-
-        .ctpo-report-filter-action {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .ctpo-report-field {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .ctpo-report-field label {
           font-size: 11px;
           font-weight: 700;
           color: #94a3b8;
@@ -1911,9 +1844,9 @@ export default function CTPOReports() {
           justify-content: center;
           gap: 8px;
           padding: 0 18px;
-          border: 1px solid #2563eb;
+          border: 1px solid #10b981;
           border-radius: 8px;
-          background: #2563eb;
+          background: #10b981;
           color: #ffffff;
           font-size: 13px;
           font-weight: 700;
@@ -1964,8 +1897,8 @@ export default function CTPOReports() {
         }
 
         .ctpo-summary-icon.blue {
-          background: #eff6ff;
-          color: #2563eb;
+          background: #ecfdf5;
+          color: #10b981;
         }
 
         .ctpo-summary-icon.green {
@@ -2008,9 +1941,9 @@ export default function CTPOReports() {
           padding: 12px 15px;
           margin-bottom: 16px;
           border-radius: 9px;
-          background: #eff6ff;
+          background: #ecfdf5;
           color: #475569;
-          border: 1px solid #dbeafe;
+          border: 1px solid #d1fae5;
           font-size: 13px;
         }
 
@@ -2119,9 +2052,9 @@ export default function CTPOReports() {
         }
 
         .ctpo-cpbtn.active {
-          background: #2563eb;
+          background: #10b981;
           color: #fff;
-          border-color: #2563eb;
+          border-color: #10b981;
           box-shadow: 0 2px 6px rgba(37,99,235,0.22);
         }
 
@@ -2258,7 +2191,7 @@ export default function CTPOReports() {
         }
 
         .day-scholar-dot {
-          background: #2563eb;
+          background: #10b981;
         }
 
         .hosteller-dot {
@@ -2273,10 +2206,6 @@ export default function CTPOReports() {
         @media (max-width: 1200px) {
 
           .ctpo-report-summary-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .ctpo-report-filter-row {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
@@ -2364,7 +2293,6 @@ export default function CTPOReports() {
             justify-content: center;
           }
 
-          .ctpo-report-filter-card,
           .ctpo-report-card {
             border-radius: 12px;
             padding: 15px;
@@ -2379,7 +2307,6 @@ export default function CTPOReports() {
             width: 100%;
           }
 
-          .ctpo-report-filter-row,
           .ctpo-report-summary-grid {
             grid-template-columns: 1fr;
           }
@@ -2429,53 +2356,53 @@ export default function CTPOReports() {
       ==================================================== */}
       {showGenerateModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onMouseDown={(e) => { if (e.target === e.currentTarget) setShowGenerateModal(false); }}>
-            <div className="card" style={{ width: '100%', maxWidth: 490, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                        <div style={{ width: 35, height: 35, borderRadius: 9, background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <FileDown size={18} />
-                        </div>
-                        <div>
-                            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>Generate Report</h2>
-                            <p style={{ margin: '3px 0 0', fontSize: 10, color: 'var(--text-muted)' }}>Choose a format to download the selected report.</p>
-                        </div>
-                    </div>
-                    <button type="button" onClick={() => setShowGenerateModal(false)} style={{ border: 'none', background: '#f3f4f6', width: 29, height: 29, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}>
-                        <X size={15} />
-                    </button>
+          <div className="card" style={{ width: '100%', maxWidth: 490, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <div style={{ width: 35, height: 35, borderRadius: 9, background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileDown size={18} />
                 </div>
-
-                <div style={{ border: '1px solid var(--border)', borderRadius: 9, padding: 12, marginBottom: 15 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Report Scope</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>All CTPO Sections</span></div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Report Organization</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Year &amp; Section</span></div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Total Requests</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{requests.length}</span></div>
-                    </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>Generate Report</h2>
+                  <p style={{ margin: '3px 0 0', fontSize: 10, color: 'var(--text-muted)' }}>Choose a format to download the selected report.</p>
                 </div>
-
-                <div style={{ marginBottom: 15 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text)', marginBottom: 7 }}>Report Includes</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                        {['Year-wise Analysis', 'Section/Branch-wise Analysis', 'Request Details', 'Permission Type', 'Status'].map((item) => (
-                            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: 'var(--text-muted)' }}>
-                                <CheckCircle2 size={12} style={{ color: '#10b981' }} /> {item}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 9 }}>
-                    <button type="button" onClick={handleExportPDF} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#dc2626', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
-                        {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={15} />} Download PDF
-                    </button>
-                    <button type="button" onClick={handleExportExcel} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#16a34a', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
-                        {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileSpreadsheet size={15} />} Download Excel
-                    </button>
-                    <button type="button" onClick={handleExportCSV} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#0284c7', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
-                        {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={15} />} Download CSV
-                    </button>
-                </div>
+              </div>
+              <button type="button" onClick={() => setShowGenerateModal(false)} style={{ border: 'none', background: '#f3f4f6', width: 29, height: 29, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}>
+                <X size={15} />
+              </button>
             </div>
+
+            <div style={{ border: '1px solid var(--border)', borderRadius: 9, padding: 12, marginBottom: 15 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Report Scope</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>All CTPO Sections</span></div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Report Organization</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Year &amp; Section</span></div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Total Requests</span><span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{requests.length}</span></div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 15 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text)', marginBottom: 7 }}>Report Includes</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {['Year-wise Analysis', 'Section/Branch-wise Analysis', 'Request Details', 'Permission Type', 'Status'].map((item) => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: 'var(--text-muted)' }}>
+                    <CheckCircle2 size={12} style={{ color: '#10b981' }} /> {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 9 }}>
+              <button type="button" onClick={handleExportPDF} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#dc2626', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
+                {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={15} />} Download PDF
+              </button>
+              <button type="button" onClick={handleExportExcel} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#16a34a', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
+                {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileSpreadsheet size={15} />} Download Excel
+              </button>
+              <button type="button" onClick={handleExportCSV} disabled={exporting} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '11px 8px', color: '#0284c7', fontSize: 10, fontWeight: 800, cursor: exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: exporting ? 0.6 : 1 }}>
+                {exporting ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={15} />} Download CSV
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

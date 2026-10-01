@@ -18,6 +18,7 @@ import {
   X,
   ChevronDown,
   CalendarDays,
+  Calendar,
   Users,
   CheckCircle2
 } from 'lucide-react';
@@ -28,7 +29,7 @@ function ScanResult({ result, data, errorMsg }) {
 
   const config = {
     VALID: {
-      title: 'ENTRY ALLOWED — PASS VALID',
+      title: 'ENTRY ALLOWED â€” PASS VALID',
       subtitle: 'Student authorized to leave/enter campus gate',
       icon: ShieldCheck,
       color: 'var(--green, #10b981)',
@@ -36,7 +37,7 @@ function ScanResult({ result, data, errorMsg }) {
       border: 'var(--green, #10b981)'
     },
     ALREADY_USED: {
-      title: 'ENTRY DENIED — ALREADY USED',
+      title: 'ENTRY DENIED â€” ALREADY USED',
       subtitle: 'This single-use QR pass has already been scanned at the gate',
       icon: ShieldAlert,
       color: 'var(--red, #ef4444)',
@@ -44,7 +45,7 @@ function ScanResult({ result, data, errorMsg }) {
       border: 'var(--red, #ef4444)'
     },
     EXPIRED: {
-      title: 'ENTRY DENIED — PASS EXPIRED',
+      title: 'ENTRY DENIED â€” PASS EXPIRED',
       subtitle: 'The valid time window for this out-pass has expired',
       icon: Clock,
       color: 'var(--yellow, #f59e0b)',
@@ -52,7 +53,7 @@ function ScanResult({ result, data, errorMsg }) {
       border: 'var(--yellow, #f59e0b)'
     },
     INVALID: {
-      title: 'ENTRY DENIED — INVALID PASS',
+      title: 'ENTRY DENIED â€” INVALID PASS',
       subtitle: errorMsg || 'Unrecognized QR token or forged digital pass',
       icon: XCircle,
       color: 'var(--red, #ef4444)',
@@ -109,7 +110,7 @@ function ScanResult({ result, data, errorMsg }) {
           margin: '0 auto'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={15} color="var(--accent, #3b82f6)" />
+            <User size={15} color="var(--accent, #10b981)" />
             <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary, #0f172a)' }}>
               {data.studentId?.name || 'Unknown Student'}
             </span>
@@ -136,7 +137,7 @@ function ScanResult({ result, data, errorMsg }) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
             <span style={{ color: 'var(--text-muted, #94a3b8)' }}>Student Type:</span>
-            <span style={{ fontWeight: 600, color: 'var(--purple, #8b5cf6)' }}>{data.studentType?.replace('_', ' ') || 'N/A'}</span>
+            <span style={{ fontWeight: 600, color: 'var(--purple, #10b981)' }}>{data.studentType?.replace('_', ' ') || 'N/A'}</span>
           </div>
         </div>
       )}
@@ -452,7 +453,7 @@ export default function SecurityScanner() {
   return (
     <DashboardLayout>
       <style>{`
-      /* Responsive layout for Security Scanner — desktop styles and functionality remain unchanged */
+      /* Responsive layout for Security Scanner â€” desktop styles and functionality remain unchanged */
       .security-dashboard-page {
         min-width: 0;
         max-width: 100%;
@@ -666,18 +667,27 @@ export default function SecurityScanner() {
       <div className="security-dashboard-page" style={{ width: '100%', paddingBottom: 24 }}>
 
         {/* Header */}
-        <div className="security-header" style={{ marginBottom: 20 }}>
-          <div className="security-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10, fontSize: 28, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>
-                <ShieldCheck size={28} color="#6366f1" />
-                Campus Gate Security Scanner
+              <div style={{ color: '#475569', fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+                Welcome back,
+              </div>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                Campus Gate <span style={{ color: '#10b981' }}>Security</span>
               </h1>
-              <p style={{ margin: '6px 0 0', fontSize: 14, color: '#64748b' }}>
-                Real-time gate verification & digital out-pass expiry logging
-              </p>
             </div>
-
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                <Calendar size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -716,7 +726,7 @@ export default function SecurityScanner() {
                     <button
                       type="submit"
                       disabled={!token.trim() || scanning}
-                      style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--accent, #3b82f6)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: token.trim() && !scanning ? 'pointer' : 'not-allowed', opacity: token.trim() && !scanning ? 1 : 0.7 }}
+                      style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--accent, #10b981)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: token.trim() && !scanning ? 'pointer' : 'not-allowed', opacity: token.trim() && !scanning ? 1 : 0.7 }}
                     >
                       {scanning ? (
                         <>
@@ -758,7 +768,7 @@ export default function SecurityScanner() {
                       </div>
                       <button
                         onClick={() => setIsCameraOpen(true)}
-                        style={{ padding: '10px 24px', background: 'var(--accent, #3b82f6)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                        style={{ padding: '10px 24px', background: 'var(--accent, #10b981)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                       >
                         <Scan size={16} />
                         Scan Now
@@ -778,7 +788,7 @@ export default function SecurityScanner() {
                         <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Active Issued Passes at Gate</h2>
                       </div>
                     </div>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#2563eb', background: '#eff6ff', padding: '4px 10px', borderRadius: '12px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#10b981', background: '#ecfdf5', padding: '4px 10px', borderRadius: '12px' }}>
                       {filteredActivePasses.length} ready to scan
                     </span>
                   </div>
@@ -831,12 +841,12 @@ export default function SecurityScanner() {
                               {p.studentName || 'Unknown Student'} ({p.rollNo || 'N/A'})
                             </div>
                             <div style={{ fontSize: '13px', color: '#64748b' }}>
-                              <strong style={{color: '#475569'}}>Ref ID:</strong> {p.referenceId || 'N/A'} &middot; Out: {p.outDate ? formatDate(p.outDate) : 'N/A'}, {p.outTime || 'N/A'} &middot; {p.studentType?.replace('_', ' ') || 'DAY SCHOLAR'}
+                              <strong style={{color: '#475569'}}>Ref ID:</strong> {(p.referenceId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'} &middot; Out: {p.outDate ? formatDate(p.outDate) : 'N/A'}, {p.outTime || 'N/A'} &middot; {p.studentType?.replace('_', ' ') || 'DAY SCHOLAR'}
                             </div>
                           </div>
                           <button
                             onClick={() => setIsCameraOpen(true)}
-                            style={{ padding: '8px 16px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
+                            style={{ padding: '8px 16px', background: '#ecfdf5', color: '#10b981', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
                           >
                             <Scan size={14} />
                             Scan Now
@@ -880,8 +890,8 @@ export default function SecurityScanner() {
                             cursor: 'pointer',
                             fontSize: '14px',
                             fontWeight: isActive ? 600 : 500,
-                            color: isActive ? '#2563eb' : '#64748b',
-                            borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
+                            color: isActive ? '#10b981' : '#64748b',
+                            borderBottom: isActive ? '2px solid #10b981' : '2px solid transparent',
                             marginBottom: '-1px'
                           }}
                         >
@@ -931,7 +941,7 @@ export default function SecurityScanner() {
                                 {scan.requestId?.studentId?.name || 'Unknown Student'}
                               </div>
                               <div style={{ fontSize: '13px', color: '#64748b' }}>
-                                <strong style={{color: '#475569'}}>Ref ID:</strong> {scan.requestId?.referenceId || 'N/A'} &middot; Roll: {scan.requestId?.studentId?.rollNo || 'N/A'}
+                                <strong style={{color: '#475569'}}>Ref ID:</strong> {(scan.requestId?.referenceId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'} &middot; Roll: {scan.requestId?.studentId?.rollNo || 'N/A'}
                               </div>
                             </div>
                           </div>
@@ -959,3 +969,4 @@ export default function SecurityScanner() {
     </DashboardLayout>
   );
 }
+

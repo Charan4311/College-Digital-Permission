@@ -145,8 +145,8 @@ exports.createUser = async (req, res) => {
     if (role === 'CTPO' && !branchId) {
       return res.status(400).json({ success: false, message: 'branchId required for CTPO' });
     }
-    if (role === 'HOD' && (!authorityScope?.yearTier || !authorityScope?.studentType)) {
-      return res.status(400).json({ success: false, message: 'authorityScope.yearTier and authorityScope.studentType required for HOD' });
+    if (role === 'HOD' && (!authorityScope?.yearTier)) {
+      return res.status(400).json({ success: false, message: 'authorityScope.yearTier required for HOD' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -197,7 +197,7 @@ exports.reactivateUser = async (req, res) => {
 
 exports.getStudents = async (req, res) => {
   try {
-    const { branchId, branch, studentType, yearTier, year, page = 1, limit = 50 } = req.query;
+    const { branchId, branch, yearTier, year, page = 1, limit = 50 } = req.query;
     
     // Strictly filter for students only (role: STUDENT and valid rollNo)
     const filter = {
@@ -227,7 +227,7 @@ exports.getStudents = async (req, res) => {
       }
     }
 
-    if (studentType && studentType !== 'all' && studentType !== '') filter.studentType = studentType;
+    
     if (yearTier && yearTier !== 'all' && yearTier !== '') filter.yearTier = yearTier;
     if (year && year !== 'all' && year !== '') filter.year = parseInt(year);
 
@@ -250,7 +250,7 @@ exports.getStudents = async (req, res) => {
 
 exports.exportStudentsExcel = async (req, res) => {
   try {
-    const { branchId, branch, studentType, yearTier, year } = req.query;
+    const { branchId, branch, yearTier, year } = req.query;
 
     const filter = {
       role: 'STUDENT',
@@ -279,7 +279,7 @@ exports.exportStudentsExcel = async (req, res) => {
       }
     }
 
-    if (studentType && studentType !== 'all' && studentType !== '') filter.studentType = studentType;
+    
     if (yearTier && yearTier !== 'all' && yearTier !== '') filter.yearTier = yearTier;
     if (year && year !== 'all' && year !== '') filter.year = parseInt(year);
 
@@ -355,44 +355,6 @@ exports.exportStudentsExcel = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error exporting students' });
   }
 };
-
-exports.bulkUpdateStudentType = async (req, res) => {
-  try {
-    const { studentIds, studentType } = req.body;
-    if (!studentIds?.length || !studentType) {
-      return res.status(400).json({ success: false, message: 'studentIds array and studentType required' });
-    }
-    if (!['DAY_SCHOLAR', 'HOSTELER'].includes(studentType)) {
-      return res.status(400).json({ success: false, message: 'studentType must be DAY_SCHOLAR or HOSTELER' });
-    }
-    const result = await Student.updateMany(
-      { _id: { $in: studentIds }, role: 'STUDENT' },
-      { studentType }
-    );
-    res.json({ success: true, data: { modifiedCount: result.modifiedCount } });
-  } catch (e) { res.status(500).json({ success: false, message: 'Server error' }); }
-};
-
-exports.updateStudent = async (req, res) => {
-  try {
-    const { studentType } = req.body;
-    if (!studentType || !['DAY_SCHOLAR', 'HOSTELER'].includes(studentType)) {
-      return res.status(400).json({ success: false, message: 'studentType must be DAY_SCHOLAR or HOSTELER' });
-    }
-    const student = await Student.findOneAndUpdate(
-      { _id: req.params.id, role: 'STUDENT' },
-      { studentType },
-      { new: true }
-    ).select('-passwordHash').populate('branchId', 'name code');
-
-    if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
-    res.json({ success: true, data: student });
-  } catch (e) {
-    console.error('updateStudent error:', e);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-
 
 // ─── OVERVIEW ──────────────────────────────────────────────────────────────
 
@@ -1049,7 +1011,6 @@ exports.exportReportsExcel = async (req, res) => {
           'Student Name': r.studentId?.name || 'N/A',
           'Branch': normalizeBranch(r),
           'Year': yearStr,
-          'Student Type': r.studentId?.studentType === 'HOSTELER' ? 'Hosteler' : 'Day Scholar',
           'Permission Type': TYPE_NAME_MAP[r.requestType] || r.requestType || 'N/A',
           'Status': normalizeStatus(r.status),
           'Detailed Status': r.status || 'N/A',

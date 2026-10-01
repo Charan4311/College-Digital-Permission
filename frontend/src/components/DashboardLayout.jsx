@@ -28,19 +28,19 @@ export default function DashboardLayout({ children }) {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: '6px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff'
-          }}>
-            <Sparkles size={14} />
-          </div>
-          <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Digital Permission</span>
+          <img
+            src="/kiet_logo.jpg"
+            alt="KIET"
+            style={{
+              width: '120px',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: '4px'
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
         </div>
 
         <div style={{ width: '28px' }} />

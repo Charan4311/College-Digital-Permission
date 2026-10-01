@@ -173,12 +173,12 @@ export default function AdminRequests() {
             width: '42px',
             height: '42px',
             borderRadius: '12px',
-            background: '#eff6ff',
-            border: '1px solid #dbeafe',
+            background: '#ecfdf5',
+            border: '1px solid #d1fae5',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#2563eb'
+            color: '#10b981'
           }}>
             <Shield size={22} />
           </div>
@@ -214,7 +214,7 @@ export default function AdminRequests() {
               color: '#475569',
               marginBottom: '8px'
             }}>
-              <Calendar size={16} color="#3b82f6" />
+              <Calendar size={16} color="#10b981" />
               <span>Select year</span>
             </label>
             <select
@@ -252,7 +252,7 @@ export default function AdminRequests() {
               color: '#475569',
               marginBottom: '8px'
             }}>
-              <Share2 size={16} color="#3b82f6" />
+              <Share2 size={16} color="#10b981" />
               <span>Select branch</span>
             </label>
             <select
@@ -292,7 +292,7 @@ export default function AdminRequests() {
               color: '#475569',
               marginBottom: '8px'
             }}>
-              <FileText size={16} color="#3b82f6" />
+              <FileText size={16} color="#10b981" />
               <span>Select permission type</span>
             </label>
             <select
@@ -331,7 +331,7 @@ export default function AdminRequests() {
               color: '#475569',
               marginBottom: '8px'
             }}>
-              <CheckCircle2 size={16} color="#3b82f6" />
+              <CheckCircle2 size={16} color="#10b981" />
               <span>Select status</span>
             </label>
             <select
@@ -367,9 +367,9 @@ export default function AdminRequests() {
                 height: '42px',
                 padding: '0 20px',
                 borderRadius: '10px',
-                border: '1px solid #2563eb',
-                background: '#ffffff',
-                color: '#2563eb',
+                border: 'none',
+                background: '#10b981',
+                color: '#ffffff',
                 fontSize: '14px',
                 fontWeight: 600,
                 display: 'inline-flex',
@@ -380,13 +380,13 @@ export default function AdminRequests() {
                 transition: 'all 0.15s ease'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = '#eff6ff';
+                e.currentTarget.style.background = '#059669';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.background = '#10b981';
               }}
             >
-              <Download size={16} color="#2563eb" />
+              <Download size={16} color="#ffffff" />
               <span>{exporting ? 'Exporting...' : 'Export'}</span>
             </button>
           </div>
@@ -413,11 +413,11 @@ export default function AdminRequests() {
             width: '36px',
             height: '36px',
             borderRadius: '10px',
-            background: '#eff6ff',
+            background: '#ecfdf5',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#2563eb'
+            color: '#10b981'
           }}>
             <ShieldCheck size={20} />
           </div>

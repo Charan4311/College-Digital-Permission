@@ -4,17 +4,17 @@
 @tailwind utilities;
 
 
-/* ─── CSS Variables (Refined Light Mode) ──────────────────────────── */
+/* â”€â”€â”€ CSS Variables (Refined Light Mode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
-  --bg-base: #f8fafc;
-  --bg-surface: #ffffff;
+  --bg-base: linear-gradient(135deg, #dff7f3 0%, #e4f5fd 35%, #eef9ff 65%, #f6fffe 100%);
+  --bg-surface: rgba(255, 255, 255, 0.82);
   --bg-elevated: #f1f5f9;
-  --bg-card: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.90);
 
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-glow: rgba(37, 99, 235, 0.15);
-  --accent-dim: rgba(37, 99, 235, 0.08);
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-glow: rgba(16, 185, 129, 0.15);
+  --accent-dim: rgba(16, 185, 129, 0.08);
 
   --green: #059669;
   --green-dim: rgba(5, 150, 105, 0.1);
@@ -42,7 +42,7 @@
   --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Reset ──────────────────────────────────────────────────── */
+/* â”€â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 *,
 *::before,
 *::after {
@@ -71,20 +71,48 @@ body {
   flex-direction: column;
 }
 
-/* ─── Layout ─────────────────────────────────────────────────── */
+/* â”€â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .layout {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-base);
+  background: linear-gradient(135deg, #dff7f3 0%, #e4f5fd 35%, #eef9ff 65%, #f6fffe 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.layout::before, .layout::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+  pointer-events: none;
+}
+.layout::before {
+  width: 560px; height: 500px; top: -120px; left: -100px;
+  background: radial-gradient(circle, rgba(134, 239, 172, 0.55) 0%, rgba(52, 211, 153, 0.20) 50%, transparent 75%);
+}
+.layout::after {
+  width: 600px; height: 520px; top: 20%; right: -130px;
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.50) 0%, rgba(96, 165, 250, 0.18) 52%, transparent 75%);
 }
 
 .main-content {
   flex: 1;
-  margin-left: 260px;
+  margin-left: 292px; /* 260 + 16 + 16 */
+  margin-top: 16px;
+  margin-right: 16px;
+  margin-bottom: 16px;
   padding: 32px;
-  min-height: 100vh;
-  background: var(--bg-base);
+  min-height: calc(100vh - 32px);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.07), 0 2px 8px rgba(15, 23, 42, 0.04);
   transition: margin-left var(--transition);
+  z-index: 10;
 }
 
 .screen-center {
@@ -114,20 +142,23 @@ body {
   margin-top: 4px;
 }
 
-/* ─── Sidebar ────────────────────────────────────────────────── */
+/* â”€â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sidebar {
   width: 260px;
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.07), 0 2px 8px rgba(15, 23, 42, 0.04);
   display: flex;
   flex-direction: column;
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
+  top: 16px;
+  left: 16px;
+  bottom: 16px;
   z-index: 100;
   overflow-y: auto;
-  box-shadow: var(--shadow-sm);
 }
 
 .sidebar-logo {
@@ -138,7 +169,7 @@ body {
 .sidebar-logo h1 {
   font-size: 19px;
   font-weight: 800;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: linear-gradient(135deg, #10b981, #14b8a6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -172,29 +203,31 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  border-radius: 14px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition);
   text-decoration: none;
-  border: none;
+  border: 1px solid transparent;
   background: none;
   width: 100%;
   text-align: left;
 }
 
 .nav-item:hover {
-  background: var(--bg-elevated);
-  color: var(--accent);
+  background: rgba(16, 185, 129, 0.08);
+  color: #065f46;
 }
 
 .nav-item.active {
-  background: var(--accent-dim);
-  color: var(--accent);
-  font-weight: 600;
+  background: linear-gradient(135deg, rgba(209, 250, 229, 0.90) 0%, rgba(167, 243, 208, 0.70) 100%);
+  color: #065f46;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(110, 231, 183, 0.35);
 }
 
 .nav-item .nav-icon {
@@ -215,7 +248,7 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: linear-gradient(135deg, #0d9488, #10b981);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,13 +295,14 @@ body {
   background: var(--red-dim);
 }
 
-/* ─── Cards ──────────────────────────────────────────────────── */
+/* â”€â”€â”€ Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(226, 232, 240, 0.65);
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(8px);
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
@@ -297,7 +331,7 @@ body {
   margin-top: 2px;
 }
 
-/* ─── Stats Grid ─────────────────────────────────────────────── */
+/* â”€â”€â”€ Stats Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -343,7 +377,7 @@ body {
   margin-bottom: 2px;
 }
 
-/* ─── Forms ──────────────────────────────────────────────────── */
+/* â”€â”€â”€ Forms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .form-group {
   margin-bottom: 18px;
 }
@@ -389,6 +423,15 @@ body {
   cursor: pointer;
 }
 
+.form-select option:hover,
+.form-select option:focus,
+.form-select option:checked,
+.form-select option:active {
+  background-color: #10b981 !important;
+  background: #10b981 !important;
+  color: white !important;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -408,7 +451,7 @@ body {
   margin-top: 5px;
 }
 
-/* ─── Buttons ────────────────────────────────────────────────── */
+/* â”€â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -490,7 +533,7 @@ body {
   border-radius: var(--radius-sm);
 }
 
-/* ─── Table ──────────────────────────────────────────────────── */
+/* â”€â”€â”€ Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .table-wrapper {
   overflow-x: auto;
 }
@@ -508,8 +551,8 @@ thead th {
   letter-spacing: 0.6px;
   color: var(--text-secondary);
   padding: 12px 16px;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border);
+  background: #f3fdf9;
+  border-bottom: 1px solid rgba(110, 231, 183, 0.3);
 }
 
 tbody tr {
@@ -522,7 +565,7 @@ tbody tr:last-child {
 }
 
 tbody tr:hover {
-  background: #f8fafc;
+  background: #ecfdf5;
 }
 
 tbody td {
@@ -536,7 +579,7 @@ tbody td {
   color: var(--text-secondary);
 }
 
-/* ─── Badges / Status ────────────────────────────────────────── */
+/* â”€â”€â”€ Badges / Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -609,19 +652,11 @@ tbody td {
   color: #b91c1c;
 }
 
-.badge-day_scholar {
-  background: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #c7d2fe;
-}
 
-.badge-hosteler {
-  background: #f3e8ff;
-  color: #6b21a8;
-  border: 1px solid #e9d5ff;
-}
 
-/* ─── Alert boxes ────────────────────────────────────────────── */
+
+
+/* â”€â”€â”€ Alert boxes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .alert {
   padding: 12px 16px;
   border-radius: var(--radius-sm);
@@ -654,7 +689,7 @@ tbody td {
   border: 1px solid #fde68a;
 }
 
-/* ─── Timeline ───────────────────────────────────────────────── */
+/* â”€â”€â”€ Timeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .timeline {
   display: flex;
   flex-direction: column;
@@ -739,7 +774,7 @@ tbody td {
   font-style: italic;
 }
 
-/* ─── QR Code area ───────────────────────────────────────────── */
+/* â”€â”€â”€ QR Code area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .qr-container {
   display: flex;
   flex-direction: column;
@@ -760,7 +795,7 @@ tbody td {
   border-radius: 8px;
 }
 
-/* ─── Scanner ────────────────────────────────────────────────── */
+/* â”€â”€â”€ Scanner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .scanner-result {
   padding: 28px;
   border-radius: var(--radius-lg);
@@ -808,7 +843,7 @@ tbody td {
   color: var(--text-secondary);
 }
 
-/* ─── Empty state ────────────────────────────────────────────── */
+/* â”€â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .empty-state {
   text-align: center;
   padding: 48px 20px;
@@ -832,7 +867,7 @@ tbody td {
   color: var(--text-secondary);
 }
 
-/* ─── Loading spinner ────────────────────────────────────────── */
+/* â”€â”€â”€ Loading spinner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .spinner {
   display: inline-block;
   width: 18px;
@@ -856,7 +891,7 @@ tbody td {
   min-height: 180px;
 }
 
-/* ─── Modal ──────────────────────────────────────────────────── */
+/* â”€â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -895,7 +930,7 @@ tbody td {
   margin-top: 20px;
 }
 
-/* ─── Login Page ─────────────────────────────────────────────── */
+/* â”€â”€â”€ Login Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-page {
   min-height: 100vh;
   display: flex;
@@ -937,7 +972,7 @@ tbody td {
   margin-top: 4px;
 }
 
-/* ─── Request card in list ───────────────────────────────────── */
+/* â”€â”€â”€ Request card in list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .request-card {
   background: #ffffff;
   border: 1px solid var(--border);
@@ -984,14 +1019,14 @@ tbody td {
   flex-shrink: 0;
 }
 
-/* ─── Divider ────────────────────────────────────────────────── */
+/* â”€â”€â”€ Divider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .divider {
   height: 1px;
   background: var(--border);
   margin: 20px 0;
 }
 
-/* ─── Tabs ───────────────────────────────────────────────────── */
+/* â”€â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .tabs {
   display: flex;
   gap: 4px;
@@ -1024,7 +1059,7 @@ tbody td {
   color: var(--text-primary);
 }
 
-/* ─── Animations ─────────────────────────────────────────────── */
+/* â”€â”€â”€ Animations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1077,7 +1112,7 @@ tbody td {
   }
 }
 
-/* ─── Responsive ─────────────────────────────────────────────── */
+/* â”€â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 900px) {
   .sidebar {
     transform: translateX(-100%);
@@ -1332,7 +1367,7 @@ tbody td {
   }
 }
 
-/* ─── Print Styles for Official Slip / Certificate ────────────── */
+/* â”€â”€â”€ Print Styles for Official Slip / Certificate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media print {
   body {
     background: #ffffff !important;
@@ -1379,7 +1414,7 @@ tbody td {
   }
 }
 
-/* ─── HOD Dashboard Table ─────────────────────────────────── */
+/* â”€â”€â”€ HOD Dashboard Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .table-th {
   padding: 10px 12px;
@@ -1456,7 +1491,7 @@ tbody td {
   }
 }
 
-/* ─── Mobile Responsive Sidebar ───────────────────────────────────── */
+/* â”€â”€â”€ Mobile Responsive Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .mobile-menu-button,
 .mobile-topbar,
@@ -1937,7 +1972,7 @@ tbody td {
    ADMIN DASHBOARD LAYOUT & RESPONSIVE STYLES
 ========================================================= */
 
-/* ─── Admin Responsive Layout Classes ────────────────────────── */
+/* â”€â”€â”€ Admin Responsive Layout Classes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .admin-header-row {
   display: flex;
   align-items: center;
@@ -2026,7 +2061,7 @@ tbody td {
   display: none;
 }
 
-/* ─── Responsive Breakpoints ─────────────────────────────────── */
+/* â”€â”€â”€ Responsive Breakpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 1200px) {
   .admin-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2226,7 +2261,7 @@ tbody td {
   }
 }
 
-/* ─── Print Styles for Official Slip / Certificate ────────────── */
+/* â”€â”€â”€ Print Styles for Official Slip / Certificate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media print {
   body {
     background: #ffffff !important;
@@ -2475,13 +2510,13 @@ tbody td {
 }
 
 .ctpo-filter:hover {
-  border-color: #6366f1;
+  border-color: #10b981;
 }
 
 .ctpo-filter.active {
-  background: #4f46e5;
+  background: #10b981;
   color: white;
-  border-color: #4f46e5;
+  border-color: #10b981;
 }
 
 
@@ -2493,10 +2528,10 @@ tbody td {
   margin-bottom: 15px;
   padding: 12px 16px;
 
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
 
-  color: #1d4ed8;
+  color: #065f46;
 
   border-radius: 8px;
 
@@ -2649,14 +2684,15 @@ tbody td {
 /* VIEW */
 
 .ctpo-view-button {
-  background: white;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
 }
 
 .ctpo-view-button:hover {
-  border-color: #6366f1;
-  color: #4f46e5;
+  border-color: #059669;
+  background: #d1fae5;
+  color: #047857;
 }
 
 
@@ -2774,17 +2810,17 @@ tbody td {
 }
 
 /* =========================================================
-   CTPO DASHBOARD — MOBILE RESPONSIVE
+   CTPO DASHBOARD â€” MOBILE RESPONSIVE
    Scoped entirely inside .ctpo-dashboard so NO other page
    or dashboard is affected.
 ========================================================= */
 
-/* ── Prevent horizontal scroll from the CTPO dashboard ─── */
+/* â”€â”€ Prevent horizontal scroll from the CTPO dashboard â”€â”€â”€ */
 .ctpo-dashboard {
   overflow-x: hidden;
 }
 
-/* ── Tablet / large-phone  (≤ 768 px) ──────────────────── */
+/* â”€â”€ Tablet / large-phone  (â‰¤ 768 px) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 768px) {
 
   /* Charts grid: stack bar-chart and pie-chart vertically  */
@@ -2824,7 +2860,7 @@ tbody td {
   }
 }
 
-/* ── Small phone  (≤ 640 px) ───────────────────────────── */
+/* â”€â”€ Small phone  (â‰¤ 640 px) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 640px) {
 
   /* KPI cards: 2 per row                                   */
@@ -2845,7 +2881,7 @@ tbody td {
   }
 }
 
-/* ── Very small phone  (≤ 380 px) ──────────────────────── */
+/* â”€â”€ Very small phone  (â‰¤ 380 px) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 380px) {
 
   /* KPI cards: single column on very narrow screens        */
@@ -2866,12 +2902,12 @@ tbody td {
 }
 
 /* =========================================================
-   CTPO DASHBOARD — MOBILE NAVIGATION DRAWER
+   CTPO DASHBOARD â€” MOBILE NAVIGATION DRAWER
    All selectors use ctpo-mob-* prefix.
    Zero impact on any other page or dashboard.
 ========================================================= */
 
-/* ── Hamburger button ──────────────────────────────────── */
+/* â”€â”€ Hamburger button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /* Hidden on desktop; shown on mobile via the block below  */
 .ctpo-mob-hamburger {
@@ -2894,7 +2930,7 @@ tbody td {
   border-color: #cbd5e1;
 }
 
-/* ── Backdrop overlay ──────────────────────────────────── */
+/* â”€â”€ Backdrop overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ctpo-mob-overlay {
   display: none;
@@ -2907,7 +2943,7 @@ tbody td {
   animation: ctpoFadeIn 0.2s ease;
 }
 
-/* ── Drawer panel ──────────────────────────────────────── */
+/* â”€â”€ Drawer panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ctpo-mob-drawer {
   display: none;
@@ -2932,7 +2968,7 @@ tbody td {
   transform: translateX(0);
 }
 
-/* ── Drawer logo / header area ─────────────────────────── */
+/* â”€â”€ Drawer logo / header area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ctpo-mob-drawer-logo {
   position: relative;
@@ -2963,7 +2999,7 @@ tbody td {
   color: #374151;
 }
 
-/* ── Navigation section label ──────────────────────────── */
+/* â”€â”€ Navigation section label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ctpo-mob-nav-label {
   font-size: 10px;
@@ -2974,7 +3010,7 @@ tbody td {
   padding: 14px 18px 6px;
 }
 
-/* ── Nav items ─────────────────────────────────────────── */
+/* â”€â”€ Nav items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ctpo-mob-nav {
   flex: 1;
@@ -3007,7 +3043,7 @@ tbody td {
   color: #2563eb;
 }
 
-/* ── User / logout section ─────────────────────────────── */
+/* â”€â”€ User / logout section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ctpo-mob-drawer-user {
   display: flex;
@@ -3070,7 +3106,7 @@ tbody td {
   background: #fef2f2;
 }
 
-/* ── Fade-in animation for overlay ────────────────────── */
+/* â”€â”€ Fade-in animation for overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 @keyframes ctpoFadeIn {
   from {
@@ -3082,7 +3118,7 @@ tbody td {
   }
 }
 
-/* ── Activate everything on mobile (≤ 900px) ────────────
+/* â”€â”€ Activate everything on mobile (â‰¤ 900px) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Matches the existing global sidebar breakpoint so the
    desktop sidebar hides exactly when our drawer appears. */
 
@@ -3104,7 +3140,7 @@ tbody td {
   }
 }
 
-/* ── Desktop: keep drawer completely hidden ─────────────  */
+/* â”€â”€ Desktop: keep drawer completely hidden â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€  */
 
 @media (min-width: 901px) {
 
@@ -3115,7 +3151,7 @@ tbody td {
   }
 }
 
-/* ── Active nav item in drawer ──────────────────────────── */
+/* â”€â”€ Active nav item in drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ctpo-mob-nav-item--active {
   background: #eff6ff !important;
@@ -3123,13 +3159,13 @@ tbody td {
 }
 
 /* =========================================================
-   CTPO PENDING PAGE — MOBILE RESPONSIVE
+   CTPO PENDING PAGE â€” MOBILE RESPONSIVE
    All selectors prefixed ctpo-pending-* or target existing
    class names scoped inside .ctpo-pending-page.
    Zero impact on other pages.
 ========================================================= */
 
-/* ── Page wrapper ─────────────────────────────────────── */
+/* â”€â”€ Page wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ctpo-pending-page {
   width: 100%;
   max-width: 100%;
@@ -3138,7 +3174,7 @@ tbody td {
   color: #0f172a;
 }
 
-/* ── Page header ─────────────────────────────────────── */
+/* â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ctpo-page-header {
   margin-bottom: 24px;
 }
@@ -3156,7 +3192,7 @@ tbody td {
   font-size: 14px;
 }
 
-/* Title row — hamburger sits to the left of title on mobile */
+/* Title row â€” hamburger sits to the left of title on mobile */
 .ctpo-pending-title-row {
   display: flex;
   align-items: flex-start;
@@ -3287,5 +3323,56 @@ tbody td {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+/* ===== Green highlight for opened <select> dropdowns (colour only) ===== */
+@supports (appearance: base-select) {
+  select {
+    appearance: base-select !important;
+  }
+
+  /* hide the browser's built-in arrow so pages that draw their own chevron don't show two */
+  select::picker-icon {
+    display: none;
+  }
+
+  /* the opened list */
+  ::picker(select) {
+    appearance: base-select;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  }
+
+  /* each option */
+  select option {
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  /* currently selected option */
+  select option:checked {
+    color: #059669;
+    font-weight: 600;
+  }
+
+  /* highlighted option (mouse hover or keyboard) = GREEN instead of grey */
+  select option:hover,
+  select option:focus,
+  select option:focus-visible {
+    background: #10b981;
+    color: #ffffff;
+  }
+
+  /* remove the tick mark icon */
+  select option::checkmark {
+    display: none;
   }
 }

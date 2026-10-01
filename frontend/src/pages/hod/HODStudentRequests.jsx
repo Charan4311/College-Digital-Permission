@@ -316,10 +316,10 @@ export default function HODStudentRequests() {
                                 style={{
                                     border: 'none',
                                     borderBottom: active
-                                        ? '3px solid #2563eb'
+                                        ? '3px solid #10b981'
                                         : '3px solid transparent',
-                                    background: active ? '#eff6ff' : 'transparent',
-                                    color: active ? '#2563eb' : '#64748b',
+                                    background: active ? '#ecfdf5' : 'transparent',
+                                    color: active ? '#10b981' : '#64748b',
                                     padding: '12px 18px',
                                     borderRadius: '8px 8px 0 0',
                                     fontSize: 13,
@@ -477,8 +477,8 @@ export default function HODStudentRequests() {
                                 width: 32,
                                 height: 32,
                                 borderRadius: 8,
-                                background: '#eff6ff',
-                                color: '#2563eb',
+                                background: '#ecfdf5',
+                                color: '#10b981',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
@@ -503,7 +503,7 @@ export default function HODStudentRequests() {
                         <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                    {['#', 'Student', 'Roll No', 'Branch', 'Year', 'Request Type', 'Date', 'Status', 'Action']
+                                    {['#', 'Student Name', 'Roll No', 'Branch', 'Type', 'Date', 'Status', 'Action']
                                         .map(h => (
                                             <th
                                                 key={h}
@@ -550,15 +550,7 @@ export default function HODStudentRequests() {
                                                 <Cell bold>{studentName(request)}</Cell>
                                                 <Cell>{rollNo(request)}</Cell>
                                                 <Cell>{branchName(request)}</Cell>
-                                                <Cell>{yearOf(request)}</Cell>
-                                                <Cell>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                        <span>{requestType(request)}</span>
-                                                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace' }}>
-                                                            Ref: {request?.referenceId || request?.refId || 'N/A'}
-                                                        </span>
-                                                    </div>
-                                                </Cell>
+                                                <Cell>{requestType(request)}</Cell>
                                                 <Cell>{formatDate(request)}</Cell>
 
                                                 <td style={{ padding: 12 }}>
@@ -585,10 +577,10 @@ export default function HODStudentRequests() {
                                                         style={{
                                                             height: 32,
                                                             padding: '0 10px',
-                                                            border: '1px solid #dbeafe',
+                                                            border: '1px solid #d1fae5',
                                                             borderRadius: 7,
-                                                            background: '#eff6ff',
-                                                            color: '#2563eb',
+                                                            background: '#f0fdf4',
+                                                            color: '#16a34a',
                                                             fontSize: 11,
                                                             fontWeight: 700,
                                                             cursor: 'pointer',
@@ -598,7 +590,7 @@ export default function HODStudentRequests() {
                                                         }}
                                                     >
                                                         <Eye size={14} />
-                                                        View
+                                                        Review
                                                     </button>
                                                 </td>
                                             </tr>
@@ -740,9 +732,9 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
                 minWidth: 32,
                 height: 32,
                 padding: '0 8px',
-                border: active ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                border: active ? '1px solid #10b981' : '1px solid #e2e8f0',
                 borderRadius: 7,
-                background: active ? '#2563eb' : '#fff',
+                background: active ? '#10b981' : '#fff',
                 color: active ? '#fff' : disabled ? '#cbd5e1' : '#475569',
                 fontSize: 11,
                 fontWeight: 700,

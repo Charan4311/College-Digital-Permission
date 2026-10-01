@@ -22,10 +22,10 @@ import {
 } from 'lucide-react';
 
 const TYPE_COLORS = {
-  'Outpass': '#3B82F6',
+  'Outpass': '#10b981',
   'Internship': '#10B981',
   'Mess Fee': '#F59E0B',
-  'Library': '#8B5CF6'
+  'Library': '#10b981'
 };
 
 export default function AdminReports() {
@@ -102,7 +102,7 @@ export default function AdminReports() {
 
   // Render trend badge
   const renderTrendBadge = (trendStr, isPositiveGood = true) => {
-    const isUp = trendStr.startsWith('+') || trendStr.includes('↑');
+    const isUp = trendStr.startsWith('+') || trendStr.includes('â†‘');
     const isPositive = (isUp && isPositiveGood) || (!isUp && !isPositiveGood);
     const color = isPositive ? '#166534' : '#991B1B';
     const bg = isPositive ? '#DCFCE7' : '#FEE2E2';
@@ -140,7 +140,7 @@ export default function AdminReports() {
             margin: 0,
             letterSpacing: '-0.3px'
           }}>
-            <BarChart2 size={24} color="#3B82F6" />
+            <BarChart2 size={24} color="#10b981" />
             <span>Reports & Analytics</span>
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
@@ -194,21 +194,21 @@ export default function AdminReports() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #CBD5E1',
+              backgroundColor: '#10b981',
+              border: 'none',
               borderRadius: '8px',
               padding: '8px 16px',
               fontSize: '13px',
               fontWeight: 700,
-              color: '#1E293B',
+              color: '#ffffff',
               cursor: exporting ? 'not-allowed' : 'pointer',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
               transition: 'all 0.15s ease'
             }}
-            onMouseOver={(e) => e.currentTarget.style.borderColor = '#3B82F6'}
-            onMouseOut={(e) => e.currentTarget.style.borderColor = '#CBD5E1'}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
           >
-            <Download size={15} color="#2563EB" />
+            <Download size={15} color="#ffffff" />
             <span>{exporting ? 'Exporting...' : 'Export Report'}</span>
           </button>
         </div>
@@ -218,8 +218,8 @@ export default function AdminReports() {
       <div className="admin-summary-grid">
         {/* Card 1: Total Requests */}
         <div style={{
-          background: '#EFF6FF',
-          border: '1px solid #DBEAFE',
+          background: '#ecfdf5',
+          border: '1px solid #d1fae5',
           borderRadius: '14px',
           padding: '20px 22px',
           display: 'flex',
@@ -233,12 +233,12 @@ export default function AdminReports() {
                 width: '36px',
                 height: '36px',
                 borderRadius: '10px',
-                backgroundColor: '#DBEAFE',
+                backgroundColor: '#d1fae5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <FileText size={18} color="#2563EB" />
+                <FileText size={18} color="#10b981" />
               </div>
               <span style={{ fontSize: '14px', fontWeight: 600, color: '#1E40AF' }}>Total Requests</span>
             </div>
@@ -439,22 +439,22 @@ export default function AdminReports() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #CBD5E1',
+            backgroundColor: '#10b981',
+            border: 'none',
             borderRadius: '8px',
             padding: '0 18px',
             fontSize: '13px',
             fontWeight: 700,
-            color: '#1E293B',
+            color: '#ffffff',
             cursor: exporting ? 'not-allowed' : 'pointer',
             boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             transition: 'all 0.15s ease',
             boxSizing: 'border-box'
           }}
-          onMouseOver={(e) => e.currentTarget.style.borderColor = '#3B82F6'}
-          onMouseOut={(e) => e.currentTarget.style.borderColor = '#CBD5E1'}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
         >
-          <Download size={16} color="#2563EB" />
+          <Download size={16} color="#ffffff" />
           <span>{exporting ? 'Exporting...' : 'Export Report'}</span>
         </button>
       </div>
@@ -487,7 +487,7 @@ export default function AdminReports() {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                <TrendingUp size={18} color="#2563EB" />
+                <TrendingUp size={18} color="#10b981" />
                 <span>Permission Requests Trend</span>
               </h2>
               <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#64748B' }}>
@@ -516,7 +516,7 @@ export default function AdminReports() {
                   onClick={() => setRange(t.val)}
                   style={{
                     border: 'none',
-                    backgroundColor: range === t.val ? '#2563EB' : 'transparent',
+                    backgroundColor: range === t.val ? '#10b981' : 'transparent',
                     color: range === t.val ? '#FFFFFF' : '#475569',
                     fontSize: '12px',
                     fontWeight: 600,
@@ -537,8 +537,8 @@ export default function AdminReports() {
             <AreaChart data={requestsTrend} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
@@ -557,7 +557,7 @@ export default function AdminReports() {
                   padding: '12px 16px'
                 }}
               />
-              <Area type="monotone" dataKey="Total" stroke="#3B82F6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTotal)" />
+              <Area type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTotal)" />
               <Area type="monotone" dataKey="Approved" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorApproved)" />
               <Line type="monotone" dataKey="Pending" stroke="#F59E0B" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="Rejected" stroke="#EF4444" strokeWidth={2} dot={false} />
@@ -577,7 +577,7 @@ export default function AdminReports() {
             flexWrap: 'wrap'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#3B82F6' }} />
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#3b82f6' }} />
               <span>Total</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -615,7 +615,7 @@ export default function AdminReports() {
               alignItems: 'center',
               gap: '8px'
             }}>
-              <PieChartIcon size={18} color="#2563EB" />
+              <PieChartIcon size={18} color="#10b981" />
               <span>Permission Type Distribution</span>
             </h2>
             <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#64748B' }}>
@@ -724,7 +724,7 @@ export default function AdminReports() {
               alignItems: 'center',
               gap: '8px'
             }}>
-              <Layers size={18} color="#2563EB" />
+              <Layers size={18} color="#10b981" />
               <span>Permission Status Analysis</span>
             </h2>
             <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#64748B' }}>
@@ -809,7 +809,7 @@ export default function AdminReports() {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                <BarChart2 size={18} color="#2563EB" />
+                <BarChart2 size={18} color="#10b981" />
                 <span>Requests by Permission Type</span>
               </h2>
               <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#64748B' }}>
@@ -857,3 +857,4 @@ export default function AdminReports() {
     </DashboardLayout>
   );
 }
+

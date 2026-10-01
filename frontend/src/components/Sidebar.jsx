@@ -75,8 +75,73 @@ export default function Sidebar({ isOpen = false, onClose }) {
   const location = useLocation();
   const navItems = NAV_CONFIG[user?.role] || [];
 
-  const initials = user?.name
-    ? user.name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  const getCTPODisplayName = (userObj) => {
+    if (userObj?.role !== 'CTPO') return userObj?.name || 'User';
+    
+    // Extract branch
+    const possibleBranches = [
+      userObj?.branchName, userObj?.branchCode, userObj?.branch?.name, userObj?.branch?.code,
+      userObj?.branch?.branchName, userObj?.branchId?.name, userObj?.branchId?.code,
+      userObj?.branchId?.branchName, userObj?.organization?.branch?.name,
+      userObj?.organization?.branch?.code, userObj?.organization?.branchName,
+      userObj?.department?.name, userObj?.department?.code,
+    ];
+    let branch = possibleBranches.find(v => typeof v === "string" && v.trim() && !/^[a-f\d]{20,}$/i.test(v.trim()));
+    if (branch) {
+      branch = String(branch).trim().toUpperCase();
+    } else {
+      const identifiers = [userObj?.username, userObj?.facultyId, userObj?.code, userObj?.name];
+      for (const id of identifiers) {
+        if (typeof id === 'string') {
+          const m = id.match(/(?:[1-4]kt|ctpo_|\b(?:1st|2nd|3rd|4th)\s+Year\s+)([a-z0-9]+)/i);
+          if (m && m[1]) { branch = m[1].toUpperCase(); break; }
+        }
+      }
+    }
+
+    // Extract year
+    let yearLabel = "";
+    const possibleYears = [
+      userObj?.assignedYear, userObj?.yearTier, userObj?.academicYear, userObj?.yearLabel,
+      userObj?.year?.name, userObj?.year?.label, userObj?.year?.value, userObj?.year,
+    ];
+    for (const val of possibleYears) {
+      if (!val) continue;
+      if (val === 1 || val === "1" || /1st|TIER_1ST/i.test(String(val))) { yearLabel = "1st Year"; break; }
+      if (val === 2 || val === "2" || /2nd|TIER_2ND/i.test(String(val))) { yearLabel = "2nd Year"; break; }
+      if (val === 3 || val === "3" || /3rd|TIER_3RD/i.test(String(val))) { yearLabel = "3rd Year"; break; }
+      if (val === 4 || val === "4" || /4th|TIER_4TH/i.test(String(val))) { yearLabel = "4th Year"; break; }
+    }
+    if (!yearLabel) {
+      const identifiers = [userObj?.username, userObj?.facultyId, userObj?.code, userObj?.name];
+      for (const id of identifiers) {
+        if (typeof id === 'string') {
+          const m = id.match(/^([1-4])kt/i);
+          if (m && m[1]) {
+            const y = parseInt(m[1], 10);
+            if (y === 1) { yearLabel = "1st Year"; break; }
+            if (y === 2) { yearLabel = "2nd Year"; break; }
+            if (y === 3) { yearLabel = "3rd Year"; break; }
+            if (y === 4) { yearLabel = "4th Year"; break; }
+          }
+          if (/1st\s*year/i.test(id)) { yearLabel = "1st Year"; break; }
+          if (/2nd\s*year/i.test(id)) { yearLabel = "2nd Year"; break; }
+          if (/3rd\s*year/i.test(id)) { yearLabel = "3rd Year"; break; }
+          if (/4th\s*year/i.test(id)) { yearLabel = "4th Year"; break; }
+        }
+      }
+    }
+
+    if (yearLabel || branch) {
+       return `${yearLabel ? yearLabel + ' ' : ''}${branch ? branch + ' ' : ''}CTPO`;
+    }
+    return userObj?.name || 'CTPO Approver';
+  };
+
+  const displayName = getCTPODisplayName(user);
+
+  const initials = displayName
+    ? displayName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : 'U';
 
   const handleNavClick = (path) => {
@@ -94,24 +159,21 @@ export default function Sidebar({ isOpen = false, onClose }) {
       />
 
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <div style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff'
-              }}>
-                <Sparkles size={16} />
-              </div>
-              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Digital Permission</h1>
-            </div>
-            <p style={{ margin: 0, fontSize: '11px' }}>College Approval Platform</p>
+        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <img
+              src="/kiet_logo.jpg"
+              alt="KIET"
+              style={{
+                width: '140px',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: '6px'
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
           </div>
 
           {/* Close button inside sidebar on mobile */}
@@ -133,7 +195,6 @@ export default function Sidebar({ isOpen = false, onClose }) {
         </div>
 
         <nav className="sidebar-nav">
-          <div className="nav-section-label">Navigation</div>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.path.includes('?') 
@@ -163,7 +224,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
             )}
           </div>
           <div className="sidebar-user-info">
-            <div className="sidebar-user-name" title={user?.name}>{user?.name || 'User'}</div>
+            <div className="sidebar-user-name" title={displayName}>{displayName}</div>
             <div className="sidebar-user-role">{ROLE_LABELS[user?.role] || user?.role}</div>
           </div>
           <button className="sidebar-logout" onClick={logout} title="Logout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -174,3 +235,4 @@ export default function Sidebar({ isOpen = false, onClose }) {
     </>
   );
 }
+

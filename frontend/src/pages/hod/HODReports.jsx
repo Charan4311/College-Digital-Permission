@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
-import PermissionRequestsTrend from "../../components/PermissionRequestsTrend";
 import api from '../../lib/api';
 
 import {
@@ -75,24 +74,20 @@ const REQUEST_TYPES = [
 
 const PERIODS = [
     {
-        value: 'TODAY',
-        label: 'Today',
+        value: '7DAYS',
+        label: 'Last 7 days',
     },
     {
-        value: 'THIS_WEEK',
-        label: 'This Week',
+        value: '30DAYS',
+        label: 'Last 30 days',
     },
     {
-        value: 'THIS_MONTH',
-        label: 'This Month',
-    },
-    {
-        value: 'LAST_MONTH',
-        label: 'Last Month',
+        value: '6MONTHS',
+        label: 'Last 6 months',
     },
     {
         value: 'THIS_YEAR',
-        label: 'This Year',
+        label: 'This year',
     },
 ];
 
@@ -218,8 +213,7 @@ const getStudentType = (request) => {
         .replace(/[\s-]+/g, '_');
 
     if (
-        value.includes('HOSTEL') ||
-        value.includes('HOSTELER')
+        value.includes('HOSTEL')
     ) {
         return 'Hosteler';
     }
@@ -354,127 +348,29 @@ const getPeriodRange = (period) => {
     const start = new Date(now);
     const end = new Date(now);
 
-    if (period === 'TODAY') {
+    if (period === '7DAYS') {
+        start.setDate(start.getDate() - 7);
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
     }
 
-    if (period === 'THIS_WEEK') {
-        const day = start.getDay();
-
-        const diff =
-            day === 0
-                ? -6
-                : 1 - day;
-
-        start.setDate(
-            start.getDate() + diff
-        );
-
+    if (period === '30DAYS') {
+        start.setDate(start.getDate() - 30);
         start.setHours(0, 0, 0, 0);
-
-        end.setDate(
-            start.getDate() + 6
-        );
-
-        end.setHours(
-            23,
-            59,
-            59,
-            999
-        );
+        end.setHours(23, 59, 59, 999);
     }
 
-    if (period === 'THIS_MONTH') {
-        start.setDate(1);
+    if (period === '6MONTHS') {
+        start.setMonth(start.getMonth() - 6);
         start.setHours(0, 0, 0, 0);
-
-        end.setMonth(
-            end.getMonth() + 1,
-            0
-        );
-
-        end.setHours(
-            23,
-            59,
-            59,
-            999
-        );
-    }
-
-    if (period === 'LAST_MONTH') {
-        start.setMonth(
-            start.getMonth() - 1,
-            1
-        );
-
-        start.setHours(0, 0, 0, 0);
-
-        end.setMonth(
-            end.getMonth(),
-            0
-        );
-
-        end.setHours(
-            23,
-            59,
-            59,
-            999
-        );
-    }
-
-    if (period === 'THIS_QUARTER') {
-        const quarter =
-            Math.floor(
-                now.getMonth() / 3
-            );
-
-        const firstMonth =
-            quarter * 3;
-
-        start.setMonth(
-            firstMonth,
-            1
-        );
-
-        start.setHours(
-            0,
-            0,
-            0,
-            0
-        );
-
-        end.setMonth(
-            firstMonth + 3,
-            0
-        );
-
-        end.setHours(
-            23,
-            59,
-            59,
-            999
-        );
+        end.setHours(23, 59, 59, 999);
     }
 
     if (period === 'THIS_YEAR') {
         start.setMonth(0, 1);
-
-        start.setHours(
-            0,
-            0,
-            0,
-            0
-        );
-
+        start.setHours(0, 0, 0, 0);
         end.setMonth(11, 31);
-
-        end.setHours(
-            23,
-            59,
-            59,
-            999
-        );
+        end.setHours(23, 59, 59, 999);
     }
 
     return {
@@ -500,7 +396,7 @@ export default function HODReports() {
         useState('');
 
     const [period, setPeriod] =
-        useState('THIS_MONTH');
+        useState('30DAYS');
 
     const [fromDate, setFromDate] =
         useState('');
@@ -527,9 +423,6 @@ export default function HODReports() {
 
     const [downloadLoading, setDownloadLoading] =
         useState('');
-
-    const [trendRange, setTrendRange] =
-        useState('30days');
 
     // ========================================================
     // FETCH DATA
@@ -756,30 +649,18 @@ export default function HODReports() {
     // These two dashboard sections use the filters that were
     // actually applied with "Generate Report". The Requests
     // Over Time chart is intentionally NOT connected to this
-    // data path and keeps its existing trendRange logic.
+    // data path and keeps its existing period logic.
     //
     const dashboardFilteredRequests = useMemo(() => {
-        const hasAppliedFilters =
-            Boolean(appliedFilters.fromDate) ||
-            Boolean(appliedFilters.toDate) ||
-            appliedFilters.branch !== 'ALL' ||
-            appliedFilters.type !== 'ALL';
-
-        const filterSet = hasAppliedFilters
-            ? appliedFilters
-            : {
-                fromDate,
-                toDate,
-                branch: branchFilter,
-                type: typeFilter,
-            };
-
-        const start = filterSet.fromDate
-            ? new Date(`${filterSet.fromDate}T00:00:00`)
+        // Keep the dashboard LIVE with the current filters.
+        // The Generate Report button only controls the download modal;
+        // it must not be required before KPI/chart values update.
+        const start = fromDate
+            ? new Date(`${fromDate}T00:00:00`)
             : null;
 
-        const end = filterSet.toDate
-            ? new Date(`${filterSet.toDate}T23:59:59.999`)
+        const end = toDate
+            ? new Date(`${toDate}T23:59:59.999`)
             : null;
 
         return requests.filter((request) => {
@@ -794,15 +675,15 @@ export default function HODReports() {
             }
 
             if (
-                filterSet.branch !== 'ALL' &&
-                getBranchName(request) !== filterSet.branch
+                branchFilter !== 'ALL' &&
+                getBranchName(request) !== branchFilter
             ) {
                 return false;
             }
 
             if (
-                filterSet.type !== 'ALL' &&
-                normalizeRequestType(request?.requestType) !== filterSet.type
+                typeFilter !== 'ALL' &&
+                normalizeRequestType(request?.requestType) !== typeFilter
             ) {
                 return false;
             }
@@ -811,17 +692,12 @@ export default function HODReports() {
         });
     }, [
         requests,
-        appliedFilters,
         fromDate,
         toDate,
         branchFilter,
         typeFilter,
     ]);
 
-
-    // ========================================================
-    // SUMMARY
-    // ========================================================
 
     const summary = useMemo(() => {
 
@@ -860,6 +736,91 @@ export default function HODReports() {
         };
 
     }, [dashboardFilteredRequests]);
+
+
+    // ========================================================
+    // PREVIOUS PERIOD SUMMARY FOR TREND
+    // ========================================================
+
+    const previousPeriodSummary = useMemo(() => {
+        const hasAppliedFilters =
+            Boolean(appliedFilters.fromDate) ||
+            Boolean(appliedFilters.toDate) ||
+            appliedFilters.branch !== 'ALL' ||
+            appliedFilters.type !== 'ALL';
+
+        const filterSet = hasAppliedFilters
+            ? appliedFilters
+            : {
+                fromDate,
+                toDate,
+                branch: branchFilter,
+                type: typeFilter,
+            };
+
+        const start = filterSet.fromDate
+            ? new Date(`${filterSet.fromDate}T00:00:00`)
+            : null;
+
+        const end = filterSet.toDate
+            ? new Date(`${filterSet.toDate}T23:59:59.999`)
+            : null;
+
+        let prevStart = null;
+        let prevEnd = null;
+
+        if (start && end) {
+            const diffTime = Math.abs(end - start);
+            prevStart = new Date(start.getTime() - diffTime - 1000); // 1 sec gap
+            prevEnd = new Date(end.getTime() - diffTime - 1000);
+        }
+
+        const prevRequests = requests.filter((request) => {
+            const requestDate = parseDate(getRequestDate(request));
+
+            if (prevStart && (!requestDate || requestDate < prevStart)) {
+                return false;
+            }
+
+            if (prevEnd && (!requestDate || requestDate > prevEnd)) {
+                return false;
+            }
+
+            if (
+                filterSet.branch !== 'ALL' &&
+                getBranchName(request) !== filterSet.branch
+            ) {
+                return false;
+            }
+
+            if (
+                filterSet.type !== 'ALL' &&
+                normalizeRequestType(request?.requestType) !== filterSet.type
+            ) {
+                return false;
+            }
+
+            return true;
+        });
+
+        const total = prevRequests.length;
+        const approved = prevRequests.filter(req => getStatusCategory(req) === 'Approved').length;
+        const pending = prevRequests.filter(req => getStatusCategory(req) === 'Pending').length;
+        const rejected = prevRequests.filter(req => getStatusCategory(req) === 'Rejected').length;
+
+        return { total, approved, pending, rejected };
+    }, [requests, appliedFilters, fromDate, toDate, branchFilter, typeFilter]);
+
+    const getTrend = (current, previous) => {
+        if (previous === 0) {
+            if (current === 0) return { trend: 'positive', text: '0% vs last month' };
+            return { trend: 'positive', text: '100% vs last month' };
+        }
+        const diff = current - previous;
+        const percent = Math.round((Math.abs(diff) / previous) * 100);
+        const trend = diff >= 0 ? 'positive' : 'negative';
+        return { trend, text: `${percent}% vs last month` };
+    };
 
 
     // ========================================================
@@ -1104,26 +1065,26 @@ export default function HODReports() {
         let groupType = 'DAY';
         const map = {};
 
-        if (trendRange === '7days') {
+        if (period === '7DAYS') {
             start.setDate(now.getDate() - 6);
             for (let d = new Date(start); d <= now; d.setDate(d.getDate() + 1)) {
                 const key = toDateInput(d);
                 map[key] = { date: new Date(d), total: 0, approved: 0, pending: 0, rejected: 0 };
             }
-        } else if (trendRange === '30days') {
+        } else if (period === '30DAYS') {
             start.setDate(now.getDate() - 29);
             for (let d = new Date(start); d <= now; d.setDate(d.getDate() + 1)) {
                 const key = toDateInput(d);
                 map[key] = { date: new Date(d), total: 0, approved: 0, pending: 0, rejected: 0 };
             }
-        } else if (trendRange === '6months') {
+        } else if (period === '6MONTHS') {
             start.setMonth(now.getMonth() - 5, 1);
             groupType = 'MONTH';
             for (let d = new Date(start); d <= now; d.setMonth(d.getMonth() + 1)) {
                 const key = `${d.getFullYear()}-${d.getMonth()}`;
                 map[key] = { date: new Date(d.getFullYear(), d.getMonth(), 1), total: 0, approved: 0, pending: 0, rejected: 0 };
             }
-        } else if (trendRange === 'thisyear') {
+        } else if (period === 'THIS_YEAR') {
             start.setMonth(0, 1);
             groupType = 'MONTH';
             for (let d = new Date(start); d <= now; d.setMonth(d.getMonth() + 1)) {
@@ -1172,7 +1133,7 @@ export default function HODReports() {
                 if (groupType === 'DAY') {
                     labelStr = item.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
                 } else {
-                    if (trendRange === 'thisyear') {
+                    if (period === 'THIS_YEAR') {
                         labelStr = item.date.toLocaleDateString('en-US', { month: 'short' });
                     } else {
                         labelStr = item.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -1186,7 +1147,7 @@ export default function HODReports() {
                     rejected: item.rejected,
                 };
             });
-    }, [requests, trendRange, branchFilter, typeFilter]);
+    }, [requests, period, branchFilter, typeFilter]);
 
 
     // ========================================================
@@ -1252,28 +1213,8 @@ export default function HODReports() {
         useMemo(() => {
 
             return [
-                {
-                    name: 'Day Scholar',
-                    value:
-                        filteredRequests.filter(
-                            (request) =>
-                                getStudentType(
-                                    request
-                                ) ===
-                                'Day Scholar'
-                        ).length,
-                },
-                {
-                    name: 'Hosteler',
-                    value:
-                        filteredRequests.filter(
-                            (request) =>
-                                getStudentType(
-                                    request
-                                ) ===
-                                'Hosteler'
-                        ).length,
-                },
+
+
             ];
 
         }, [filteredRequests]);
@@ -1889,7 +1830,7 @@ export default function HODReports() {
             <div
                 className="page-content"
                 style={{
-                    paddingBottom: 30,
+                    paddingBottom: 10,
                 }}
             >
 
@@ -1905,7 +1846,7 @@ export default function HODReports() {
                             'space-between',
                         alignItems:
                             'flex-start',
-                        marginBottom: 15,
+                        marginBottom: 10,
                     }}
                 >
 
@@ -1943,21 +1884,56 @@ export default function HODReports() {
 
                     <div
                         style={{
-                            fontSize: 9,
-                            color:
-                                'var(--text-muted)',
-                            marginTop: 3,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
                         }}
                     >
-                        Last updated:{' '}
-                        {new Date().toLocaleDateString(
-                            'en-GB',
-                            {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                            }
-                        )}
+                        <div style={{ position: 'relative' }}>
+                            <CalendarDays size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                            <select
+                                value={period}
+                                onChange={(e) => setPeriod(e.target.value)}
+                                style={{
+                                    height: 36,
+                                    padding: '0 32px 0 34px',
+                                    borderRadius: 6,
+                                    border: '1px solid #e2e8f0',
+                                    outline: 'none',
+                                    appearance: 'none',
+                                    background: '#fff',
+                                    fontSize: 13,
+                                    color: '#334155',
+                                    cursor: 'pointer',
+                                    fontWeight: 500
+                                }}
+                            >
+                                {PERIODS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGenerate}
+                            className="btn btn-primary"
+                            style={{
+                                height: 36,
+                                padding: '0 14px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                                fontSize: 13,
+                                whiteSpace: 'nowrap',
+                                borderRadius: 6,
+                            }}
+                        >
+                            <FileDown size={16} />
+                            Generate Report
+                        </button>
                     </div>
 
                 </div>
@@ -1971,18 +1947,18 @@ export default function HODReports() {
                     className="card"
                     style={{
                         padding:
-                            '12px 13px',
+                            '12px 16px',
                         marginBottom: 12,
                     }}
                 >
 
                     <div
                         style={{
-                            fontSize: 10,
-                            fontWeight: 800,
+                            fontSize: 13,
+                            fontWeight: 700,
                             color:
                                 'var(--text)',
-                            marginBottom: 7,
+                            marginBottom: 10,
                         }}
                     >
                         Filters
@@ -1997,8 +1973,8 @@ export default function HODReports() {
                             display:
                                 'grid',
                             gridTemplateColumns:
-                                '1fr 1fr 1fr 1fr auto',
-                            gap: 8,
+                                '1fr 1fr 1fr 1fr',
+                            gap: 10,
                             alignItems:
                                 'end',
                         }}
@@ -2009,9 +1985,10 @@ export default function HODReports() {
                             value={
                                 fromDate
                             }
-                            onChange={
-                                setFromDate
-                            }
+                            onChange={(val) => {
+                                setFromDate(val);
+                                setPeriod('CUSTOM');
+                            }}
                         />
 
                         <DateField
@@ -2019,9 +1996,10 @@ export default function HODReports() {
                             value={
                                 toDate
                             }
-                            onChange={
-                                setToDate
-                            }
+                            onChange={(val) => {
+                                setToDate(val);
+                                setPeriod('CUSTOM');
+                            }}
                         />
 
 
@@ -2069,7 +2047,7 @@ export default function HODReports() {
                         {/* BRANCH */}
 
                         <SelectField
-                            label="Branch"
+                            label=""
                             value={
                                 branchFilter
                             }
@@ -2104,35 +2082,6 @@ export default function HODReports() {
 
                         </SelectField>
 
-
-                        <button
-                            type="button"
-                            onClick={
-                                handleGenerate
-                            }
-                            className="btn btn-primary"
-                            style={{
-                                height: 36,
-                                padding:
-                                    '0 14px',
-                                display:
-                                    'inline-flex',
-                                alignItems:
-                                    'center',
-                                justifyContent:
-                                    'center',
-                                gap: 6,
-                                fontSize: 10,
-                                whiteSpace:
-                                    'nowrap',
-                            }}
-                        >
-                            <FileDown
-                                size={14}
-                            />
-
-                            Generate Report
-                        </button>
 
                     </div>
 
@@ -2173,8 +2122,8 @@ export default function HODReports() {
                             'grid',
                         gridTemplateColumns:
                             'repeat(4, 1fr)',
-                        gap: 9,
-                        marginBottom: 11,
+                        gap: 12,
+                        marginBottom: 12,
                     }}
                 >
 
@@ -2188,9 +2137,9 @@ export default function HODReports() {
                         value={
                             summary.total
                         }
-                        color="#2563eb"
+                        color="#3b82f6"
                         background="#eff6ff"
-                        subtitle="selected period"
+                        subtitle="Selected period"
                     />
 
                     <KpiCard
@@ -2364,15 +2313,65 @@ export default function HODReports() {
                                 display:
                                     'grid',
                                 gridTemplateColumns:
-                                    '1.45fr 1fr',
-                                gap: 10,
-                                marginBottom: 10,
+                                    '1.9fr 1fr',
+                                gap: 12,
+                                marginBottom: 0,
+                                alignItems: 'stretch',
                             }}
                         >
 
                             {/* REQUESTS OVER TIME */}
 
-                            <PermissionRequestsTrend hideExport={true} chartHeight={150} />
+                            <div className="card" style={{ padding: '12px 14px', minWidth: 0, minHeight: 300 }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 10,
+                                    marginBottom: 6,
+                                    flexWrap: 'wrap',
+                                }}>
+                                    <ChartHeader
+                                        title="Permission Requests Trend"
+                                        subtitle="Daily request count and status over time"
+                                    />
+
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 3,
+                                        background: '#F1F5F9',
+                                        padding: 3,
+                                        borderRadius: 8,
+                                        flexWrap: 'wrap',
+                                    }}>
+                                        {PERIODS.map((item) => (
+                                            <button
+                                                key={item.value}
+                                                type="button"
+                                                onClick={() => setPeriod(item.value)}
+                                                style={{
+                                                    border: 'none',
+                                                    background: period === item.value ? '#10b981' : 'transparent',
+                                                    color: period === item.value ? '#FFFFFF' : '#475569',
+                                                    fontSize: 9,
+                                                    fontWeight: 700,
+                                                    padding: '6px 9px',
+                                                    borderRadius: 6,
+                                                    cursor: 'pointer',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ height: 215 }}>
+                                    <DynamicTrendChart data={period === 'CUSTOM' ? trendData : rangeTrendData} />
+                                </div>
+                            </div>
 
 
                             {/* BRANCH */}
@@ -2381,9 +2380,11 @@ export default function HODReports() {
                                 className="card"
                                 style={{
                                     padding:
-                                        '11px 12px 6px',
+                                        '12px 14px',
                                     minWidth:
                                         0,
+                                    minHeight:
+                                        300,
                                 }}
                             >
 
@@ -2394,7 +2395,8 @@ export default function HODReports() {
 
                                 <div
                                     style={{
-                                        height: 180,
+                                        height: 215,
+                                        marginTop: 8,
                                     }}
                                 >
 
@@ -3055,33 +3057,39 @@ function KpiCard({
     value,
     color,
     background,
-    subtitle,
+    subtitle
 }) {
     return (
         <div
-            className="stat-card"
+            className="hod-report-kpi-card"
             style={{
-                minHeight: 68,
-                padding: '10px 12px',
+                minHeight: 112,
+                height: 112,
+                padding: '16px 18px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 13,
                 position: 'relative',
                 overflow: 'hidden',
+                background: '#ffffff',
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                boxSizing: 'border-box',
             }}
         >
             <div
-                className="stat-icon"
+                className="hod-report-kpi-icon"
                 style={{
-                    width: 34,
-                    height: 34,
-                    minWidth: 34,
-                    borderRadius: 9,
+                    width: 42,
+                    height: 42,
+                    minWidth: 42,
+                    borderRadius: 11,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color,
                     background,
+                    flexShrink: 0,
                 }}
             >
                 {icon}
@@ -3093,56 +3101,64 @@ function KpiCard({
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
-                    gap: 1,
+                    lineHeight: 1,
+                    flex: 1,
+                    overflow: 'visible',
                 }}
             >
                 <div
-                    className="stat-label"
+                    className="hod-report-kpi-label"
                     style={{
                         margin: 0,
-                        fontSize: 10,
-                        lineHeight: 1.15,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        lineHeight: 1.2,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.4px',
+                        color: 'var(--text-muted)',
+                        whiteSpace: 'nowrap',
+                        display: 'block',
+                        visibility: 'visible',
+                        opacity: 1,
                     }}
                 >
                     {label}
                 </div>
 
                 <div
+                    className="hod-report-kpi-value"
                     style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 6,
-                        whiteSpace: 'nowrap',
+                        margin: '7px 0 0',
+                        fontSize: 30,
+                        lineHeight: 1,
+                        fontWeight: 800,
+                        color: label === 'Total Requests'
+                            ? 'var(--text-primary)'
+                            : color,
+                        display: 'block',
+                        visibility: 'visible',
+                        opacity: 1,
+                        position: 'relative',
+                        zIndex: 1,
                     }}
                 >
+                    {value}
+                </div>
+
+                {subtitle && (
                     <div
-                        className="stat-value"
                         style={{
-                            margin: 0,
-                            fontSize: 22,
-                            lineHeight: 1,
-                            fontWeight: 800,
-                            color: label === 'Total Requests'
-                                ? 'var(--text-primary)'
-                                : color,
+                            fontSize: 9,
+                            lineHeight: 1.2,
+                            color: 'var(--text-muted)',
+                            whiteSpace: 'nowrap',
+                            marginTop: 6,
+                            display: 'block',
                         }}
                     >
-                        {value}
+                        {subtitle}
                     </div>
-
-                    {subtitle && (
-                        <span
-                            style={{
-                                fontSize: 8,
-                                lineHeight: 1.1,
-                                color: 'var(--text-muted)',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            {subtitle}
-                        </span>
-                    )}
-                </div>
+                )}
             </div>
         </div>
     );
@@ -3176,8 +3192,8 @@ function DynamicTrendChart({ data }) {
                     >
                         <defs>
                             <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.22} />
-                                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.22} />
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="approvedGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10B981" stopOpacity={0.22} />
@@ -3241,7 +3257,7 @@ function DynamicTrendChart({ data }) {
                             type="monotone"
                             dataKey="total"
                             name="total"
-                            stroke="#3B82F6"
+                            stroke="#3b82f6"
                             strokeWidth={2.5}
                             fillOpacity={1}
                             fill="url(#totalGradient)"
@@ -3296,7 +3312,7 @@ function DynamicTrendChart({ data }) {
                     { key: 'approved', label: 'Approved', color: '#10B981' },
                     { key: 'pending', label: 'Pending', color: '#F59E0B' },
                     { key: 'rejected', label: 'Rejected', color: '#EF4444' },
-                    { key: 'total', label: 'Total', color: '#3B82F6' },
+                    { key: 'total', label: 'Total', color: '#3b82f6' },
                 ].map((item) => (
                     <div
                         key={item.key}
@@ -3384,11 +3400,11 @@ function DateField({
                 style={{
                     display:
                         'block',
-                    fontSize: 9,
+                    fontSize: 12,
                     fontWeight: 700,
                     color:
                         'var(--text-muted)',
-                    marginBottom: 4,
+                    marginBottom: 6,
                 }}
             >
                 {label}
@@ -3402,11 +3418,11 @@ function DateField({
             >
 
                 <CalendarDays
-                    size={13}
+                    size={14}
                     style={{
                         position:
                             'absolute',
-                        left: 9,
+                        left: 10,
                         top: '50%',
                         transform:
                             'translateY(-50%)',
@@ -3428,17 +3444,17 @@ function DateField({
                     style={{
                         width:
                             '100%',
-                        height: 36,
+                        height: 38,
                         padding:
-                            '0 9px 0 29px',
+                            '0 12px 0 32px',
                         border:
                             '1px solid var(--border)',
-                        borderRadius: 7,
+                        borderRadius: 8,
                         background:
                             'var(--surface)',
                         color:
                             'var(--text)',
-                        fontSize: 10,
+                        fontSize: 13,
                         outline:
                             'none',
                     }}
@@ -3469,11 +3485,11 @@ function SelectField({
                 style={{
                     display:
                         'block',
-                    fontSize: 9,
+                    fontSize: 12,
                     fontWeight: 700,
                     color:
                         'var(--text-muted)',
-                    marginBottom: 4,
+                    marginBottom: 6,
                 }}
             >
                 {label}
@@ -3492,7 +3508,7 @@ function SelectField({
                         style={{
                             position:
                                 'absolute',
-                            left: 9,
+                            left: 10,
                             top: '50%',
                             transform:
                                 'translateY(-50%)',
@@ -3519,19 +3535,19 @@ function SelectField({
                     style={{
                         width:
                             '100%',
-                        height: 36,
+                        height: 38,
                         padding:
                             icon
-                                ? '0 27px 0 28px'
-                                : '0 27px 0 9px',
+                                ? '0 32px 0 32px'
+                                : '0 32px 0 12px',
                         border:
                             '1px solid var(--border)',
-                        borderRadius: 7,
+                        borderRadius: 8,
                         background:
                             'var(--surface)',
                         color:
                             'var(--text)',
-                        fontSize: 10,
+                        fontSize: 13,
                         outline:
                             'none',
                         appearance:
@@ -3542,11 +3558,11 @@ function SelectField({
                 </select>
 
                 <ChevronDown
-                    size={13}
+                    size={14}
                     style={{
                         position:
                             'absolute',
-                        right: 8,
+                        right: 12,
                         top: '50%',
                         transform:
                             'translateY(-50%)',

@@ -10,8 +10,7 @@ const resolveNextStage = (request, decision) => {
     if (request.status === 'PENDING_HOD') {
       if (decision === 'REJECTED') return 'REJECTED_HOD';
       if (decision === 'APPROVED') {
-        if (request.studentType === 'DAY_SCHOLAR') return 'ISSUED';
-        if (request.studentType === 'HOSTELER') return 'PENDING_HOSTEL_INCHARGE';
+        return 'ISSUED';
       }
     }
     if (request.status === 'PENDING_HOSTEL_INCHARGE') {

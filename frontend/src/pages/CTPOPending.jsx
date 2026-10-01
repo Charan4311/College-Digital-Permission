@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
-  Search,
-  Eye,
-  FileText,
-  CheckCircle2,
-} from 'lucide-react';
+  FiSearch as Search,
+  FiEye as Eye,
+  FiFileText as FileText,
+  FiCheckCircle as CheckCircle2,
+} from 'react-icons/fi';
 
 import DashboardLayout from '../components/DashboardLayout';
 import CTPOMobileNav from '../components/CTPOMobileNav';
@@ -84,7 +84,7 @@ export default function CTPOPending() {
 
       setMessage(
         error?.response?.data?.message ||
-          'Unable to load pending requests'
+        'Unable to load pending requests'
       );
     } finally {
       setLoading(false);
@@ -617,7 +617,7 @@ export default function CTPOPending() {
                   type="button"
                   className={
                     typeFilter ===
-                    filter.value
+                      filter.value
                       ? 'ctpo-filter active'
                       : 'ctpo-filter'
                   }
@@ -634,17 +634,17 @@ export default function CTPOPending() {
                       '10px',
                     border:
                       typeFilter ===
-                      filter.value
-                        ? '1px solid #4f46e5'
+                        filter.value
+                        ? '1px solid #10b981'
                         : '1px solid #dbe3ef',
                     background:
                       typeFilter ===
-                      filter.value
-                        ? '#4f46e5'
+                        filter.value
+                        ? '#10b981'
                         : '#ffffff',
                     color:
                       typeFilter ===
-                      filter.value
+                        filter.value
                         ? '#ffffff'
                         : '#475569',
                     fontSize: '14px',
@@ -841,11 +841,23 @@ export default function CTPOPending() {
                                     request
                                   )
                                 }
+                                style={{
+                                  height: '32px',
+                                  border: '1px solid #a7f3d0',
+                                  background: '#ecfdf5',
+                                  color: '#059669',
+                                  borderRadius: '7px',
+                                  padding: '0 12px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '5px',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
                               >
-                                <Eye
-                                  size={15}
-                                />
-
+                                <Eye size={15} />
                                 View
                               </button>
 
@@ -873,4 +885,6 @@ export default function CTPOPending() {
 
     </DashboardLayout>
   );
-}
+}
+
+

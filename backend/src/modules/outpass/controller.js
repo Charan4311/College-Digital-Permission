@@ -95,7 +95,6 @@ exports.createRequest = async (req, res) => {
     const {
       requestType,
       permissionType,
-      studentType,
       year,
       yearTier,
       branchId,
@@ -133,11 +132,6 @@ exports.createRequest = async (req, res) => {
       studentId: userId,
 
       requestType: type,
-
-      studentType:
-        studentType ||
-        student.studentType ||
-        'DAY_SCHOLAR',
 
       year:
         year ||
@@ -279,22 +273,14 @@ exports.getAllForMe = async (req, res) => {
     } else if (role === 'HOD') {
       const user = await User.findById(id);
 
-      if (user?.authorityScope?.studentType) {
-        filter.studentType =
-          user.authorityScope.studentType;
-      }
-
       if (user?.authorityScope?.yearTier) {
         filter.yearTier =
           user.authorityScope.yearTier;
       }
 
     } else if (role === 'HOSTEL_INCHARGE') {
-
-      filter.studentType = 'HOSTELER';
-
+      // Do nothing, studentType 'HOSTELER' was removed
     } else if (role === 'PLACEMENT_OFFICER') {
-
       filter.requestType = 'INTERNSHIP';
     }
 
@@ -360,11 +346,6 @@ exports.getPendingForMe = async (req, res) => {
         }
       };
 
-      if (user?.authorityScope?.studentType) {
-        filter.studentType =
-          user.authorityScope.studentType;
-      }
-
       if (user?.authorityScope?.yearTier) {
         filter.yearTier =
           user.authorityScope.yearTier;
@@ -422,22 +403,12 @@ function getWorkflowChain(request) {
     String(request.requestType || '')
       .toUpperCase();
 
-  const studentType =
-    String(request.studentType || '')
-      .toUpperCase();
-
   if (type === 'OUTPASS') {
 
-    return studentType === 'HOSTELER'
-      ? [
-        'CTPO',
-        'HOD',
-        'HOSTEL_INCHARGE'
-      ]
-      : [
-        'CTPO',
-        'HOD'
-      ];
+    return [
+      'CTPO',
+      'HOD'
+    ];
   }
 
   if (type === 'MESS_FEE') {
@@ -573,14 +544,7 @@ async function validateAuthority(request, user) {
       return 'This request is not in your year tier';
     }
 
-    if (
-      dbUser.authorityScope?.studentType &&
-      request.studentType &&
-      request.studentType !==
-      dbUser.authorityScope.studentType
-    ) {
-      return 'This request student type does not match your scope';
-    }
+
 
   } else if (role === 'HOSTEL_INCHARGE') {
 
@@ -939,19 +903,13 @@ exports.getDashboardStats = async (req, res) => {
           user.authorityScope.yearTier;
       }
 
-      if (
-        user?.authorityScope?.studentType
-      ) {
-        matchFilter.studentType =
-          user.authorityScope.studentType;
-      }
+
 
     } else if (
       role === 'HOSTEL_INCHARGE'
     ) {
 
-      matchFilter.studentType =
-        'HOSTELER';
+
 
     } else if (
       role === 'PLACEMENT_OFFICER'
@@ -1253,10 +1211,9 @@ exports.getProofFile = async (req, res) => {
         isAuthorized = !!request.branchId && actingUser.branchId && request.branchId.toString() === actingUser.branchId.toString() &&
           (!actingUser.assignedYear || !request.year || request.year === actingUser.assignedYear);
       } else if (req.user.role === 'HOD') {
-        isAuthorized = (!actingUser.authorityScope?.yearTier || request.yearTier === actingUser.authorityScope.yearTier) &&
-          (!actingUser.authorityScope?.studentType || request.studentType === actingUser.authorityScope.studentType);
+        isAuthorized = (!actingUser.authorityScope?.yearTier || request.yearTier === actingUser.authorityScope.yearTier);
       } else if (req.user.role === 'HOSTEL_INCHARGE') {
-        isAuthorized = request.studentType === 'HOSTELER';
+        isAuthorized = false;
       } else if (req.user.role === 'PLACEMENT_OFFICER') {
         isAuthorized = request.requestType === 'INTERNSHIP';
       }

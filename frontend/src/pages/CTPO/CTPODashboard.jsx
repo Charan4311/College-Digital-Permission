@@ -6,21 +6,23 @@ import CTPOMobileNav from "../../components/CTPOMobileNav";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 
-import {
-  ClipboardList,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Building,
-  BarChart3,
-  ArrowRight,
-  Download,
-  X,
-  FileDown,
-  RefreshCw,
-  FileText,
-  FileSpreadsheet
-} from "lucide-react";
+import { 
+  FiBarChart2 as BarChart3,
+  FiArrowRight as ArrowRight,
+  FiDownload as Download,
+  FiX as X,
+  FiDownloadCloud as FileDown,
+  FiRefreshCw as RefreshCw,
+  FiFileText as FileText,
+  FiCalendar as Calendar
+} from "react-icons/fi";
+import { 
+  FaClipboardList as ClipboardList,
+  FaClock as Clock,
+  FaCircleCheck as CheckCircle2,
+  FaCircleXmark as XCircle
+} from "react-icons/fa6";
+import { FaBuilding as Building, FaFileExcel as FileSpreadsheet } from "react-icons/fa";
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -102,10 +104,10 @@ const CTPODashboard = () => {
   const getStatus = (request) => {
     return String(
       request?.status ||
-        request?.requestStatus ||
-        request?.currentStatus ||
-        request?.approvalStatus ||
-        "",
+      request?.requestStatus ||
+      request?.currentStatus ||
+      request?.approvalStatus ||
+      "",
     ).toUpperCase();
   };
 
@@ -160,13 +162,13 @@ const CTPODashboard = () => {
   const getStageRole = (stage) => {
     return String(
       stage?.approverRole ||
-        stage?.role ||
-        stage?.approver?.role ||
-        stage?.authorityRole ||
-        stage?.approver?.authorityRole ||
-        stage?.approverType ||
-        stage?.stepRole ||
-        "",
+      stage?.role ||
+      stage?.approver?.role ||
+      stage?.authorityRole ||
+      stage?.approver?.authorityRole ||
+      stage?.approverType ||
+      stage?.stepRole ||
+      "",
     )
       .trim()
       .toUpperCase();
@@ -175,10 +177,10 @@ const CTPODashboard = () => {
   const getStageDecision = (stage) => {
     const directDecision = normalizeDecision(
       stage?.decision ||
-        stage?.action ||
-        stage?.status ||
-        stage?.approvalStatus ||
-        stage?.result,
+      stage?.action ||
+      stage?.status ||
+      stage?.approvalStatus ||
+      stage?.result,
     );
 
     if (directDecision) {
@@ -242,9 +244,9 @@ const CTPODashboard = () => {
   const getCTPODecision = (request) => {
     const directDecision = normalizeDecision(
       request?.ctpoDecision ||
-        request?.ctpoStatus ||
-        request?.ctpoApprovalStatus ||
-        request?.ctpoDecisionStatus,
+      request?.ctpoStatus ||
+      request?.ctpoApprovalStatus ||
+      request?.ctpoDecisionStatus,
     );
 
     if (directDecision) {
@@ -272,11 +274,11 @@ const CTPODashboard = () => {
     // --------------------------------------------------------
     const status = String(
       request?._status ||
-        request?.status ||
-        request?.requestStatus ||
-        request?.currentStatus ||
-        request?.approvalStatus ||
-        "",
+      request?.status ||
+      request?.requestStatus ||
+      request?.currentStatus ||
+      request?.approvalStatus ||
+      "",
     )
       .trim()
       .toUpperCase();
@@ -557,7 +559,7 @@ const CTPODashboard = () => {
     console.log("CTPO Approval Activity Chart Data:", result);
     return result;
   }, [requests]);
-  
+
   // ==========================================================
   // CURRENT CTPO IDENTITY
   // ==========================================================
@@ -588,6 +590,17 @@ const CTPODashboard = () => {
 
     if (branch) {
       return String(branch).trim().toUpperCase();
+    }
+
+    // Try parsing from username, facultyId, or name (e.g. "4ktcsm", "2ktcai", "ctpo_csm", "4th Year CSM CTPO")
+    const identifiers = [user?.username, user?.facultyId, user?.code, user?.name];
+    for (const id of identifiers) {
+      if (typeof id === 'string') {
+        const m = id.match(/(?:[1-4]kt|ctpo_|\b(?:1st|2nd|3rd|4th)\s+Year\s+)([a-z0-9]+)/i);
+        if (m && m[1]) {
+          return m[1].toUpperCase();
+        }
+      }
     }
 
     // If branch is not directly available in user,
@@ -621,6 +634,7 @@ const CTPODashboard = () => {
 
   const getYearLabel = () => {
     const possibleYears = [
+      user?.assignedYear,
       user?.yearTier,
       user?.academicYear,
       user?.yearLabel,
@@ -630,23 +644,39 @@ const CTPODashboard = () => {
       user?.year,
     ];
 
-    const stringYear = possibleYears.find(
-      (value) =>
-        typeof value === "string" &&
-        /year/i.test(value) &&
-        !/^[a-f\d]{20,}$/i.test(value.trim())
-    );
+    for (const val of possibleYears) {
+      if (!val) continue;
+      if (val === 1 || val === "1" || /1st|TIER_1ST/i.test(String(val))) return "1st Year";
+      if (val === 2 || val === "2" || /2nd|TIER_2ND/i.test(String(val))) return "2nd Year";
+      if (val === 3 || val === "3" || /3rd|TIER_3RD/i.test(String(val))) return "3rd Year";
+      if (val === 4 || val === "4" || /4th|TIER_4TH/i.test(String(val))) return "4th Year";
+    }
 
-    if (stringYear) return String(stringYear).trim();
+    const identifiers = [user?.username, user?.facultyId, user?.code, user?.name];
+    for (const id of identifiers) {
+      if (typeof id === 'string') {
+        const m = id.match(/^([1-4])kt/i);
+        if (m && m[1]) {
+          const y = parseInt(m[1], 10);
+          if (y === 1) return "1st Year";
+          if (y === 2) return "2nd Year";
+          if (y === 3) return "3rd Year";
+          if (y === 4) return "4th Year";
+        }
+        if (/2nd\s*year/i.test(id)) return "2nd Year";
+        if (/3rd\s*year/i.test(id)) return "3rd Year";
+        if (/4th\s*year/i.test(id)) return "4th Year";
+      }
+    }
 
-    const numYear = possibleYears.find(
-      (value) => 
-        (typeof value === "number" && value >= 1 && value <= 4) ||
-        (typeof value === "string" && /^[1-4]$/.test(value.trim()))
-    );
-
-    if (numYear) {
-      const y = parseInt(numYear, 10);
+    const firstReq = requests[0];
+    if (firstReq?.yearTier) {
+      if (/2/i.test(firstReq.yearTier)) return "2nd Year";
+      if (/3/i.test(firstReq.yearTier)) return "3rd Year";
+      if (/4/i.test(firstReq.yearTier)) return "4th Year";
+    }
+    if (firstReq?.year) {
+      const y = parseInt(firstReq.year, 10);
       if (y === 1) return "1st Year";
       if (y === 2) return "2nd Year";
       if (y === 3) return "3rd Year";
@@ -691,7 +721,18 @@ const CTPODashboard = () => {
   // PIE CHART COLORS
   // ==========================================================
 
-  const PIE_COLORS = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6"];
+  const PIE_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6"];
+
+  const PERMISSION_TYPE_COLORS = {
+    "Out-Pass": "#10b981",
+    "Internship": "#f59e0b",
+    "Mess": "#3b82f6",
+    "Library": "#8b5cf6",
+  };
+
+  const getPermissionTypeColor = (name, index = 0) => {
+    return PERMISSION_TYPE_COLORS[name] || PIE_COLORS[index % PIE_COLORS.length] || "#10b981";
+  };
 
   // ==========================================================
   // CARD STYLE
@@ -700,12 +741,14 @@ const CTPODashboard = () => {
   const statCardStyle = {
     background: "#ffffff",
     border: "1px solid #e2e8f0",
-    borderRadius: "14px",
-    minHeight: "135px",
-    height: "135px",
-    padding: "18px 20px",
+    borderRadius: "12px",
+    minHeight: "100px",
+    padding: "20px 24px",
     boxSizing: "border-box",
     boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
+    display: "flex",
+    alignItems: "center",
+    gap: "16px"
   };
 
   // ==========================================================
@@ -715,7 +758,7 @@ const CTPODashboard = () => {
   const clickableCardStyle = {
     ...statCardStyle,
     cursor: "pointer",
-    transition: "all 0.2s ease",
+    transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
   };
 
   // ==========================================================
@@ -743,63 +786,35 @@ const CTPODashboard = () => {
             HEADER
         ==================================================== */}
 
-        <div
-          style={{
-            marginBottom: "18px",
-          }}
-        >
-          {/* Title row — CTPOMobileNav renders hamburger+drawer on mobile */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "5px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <CTPOMobileNav />
-
-              <Building
-                size={28}
-                strokeWidth={2}
-                style={{
-                  color: "#111827",
-                }}
-              />
-
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: "28px",
-                  fontWeight: 700,
-                  color: "#111827",
-                }}
-              >
-                CTPO Dashboard
-              </h1>
+              <div>
+                <div style={{ color: '#475569', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+                  Welcome back,
+                </div>
+                <h1 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  CTPO <span style={{ color: '#64748b', fontWeight: 400 }}>|</span> <span style={{ color: '#10b981' }}>{branchName || 'All Branches'}</span>
+                </h1>
+                <p style={{ margin: "6px 0 0 0", fontSize: "16px", fontWeight: 600, color: "#64748b" }}>
+                  {yearLabel ? yearLabel : 'All Years'}
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                <Calendar size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+              </div>
             </div>
           </div>
-
-          <p
-            style={{
-              margin: "5px 0 0 0",
-              fontSize: "15px",
-              color: "#64748b",
-            }}
-          >
-            Central Training &amp; Placement Office authorization for permissions &amp;
-            clearances · Logged in as{" "}
-            <strong style={{ color: "#334155" }}>
-              {ctpoIdentity || "CTPO"}
-            </strong>
-          </p>
         </div>
 
         {/* ====================================================
@@ -811,7 +826,7 @@ const CTPODashboard = () => {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-            gap: "18px",
+            gap: "14px",
             width: "100%",
             marginBottom: "16px",
           }}
@@ -823,52 +838,52 @@ const CTPODashboard = () => {
           <div
             onClick={() => navigate('/ctpo/history')}
             style={clickableCardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+              e.currentTarget.style.borderColor = '#bfdbfe';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.06)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
           >
             <div
               style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
                 display: "flex",
                 alignItems: "center",
-                marginBottom: "12px",
+                justifyContent: "center",
+                background: "#ecfdf5",
+                color: "#10b981",
+                flexShrink: 0,
               }}
             >
+              <ClipboardList size={24} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div
                 style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "9px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#eff6ff",
-                  color: "#2563eb",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#64748b",
                 }}
               >
-                <ClipboardList size={21} />
+                Total Requests
               </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                letterSpacing: "0.5px",
-                textTransform: "uppercase",
-                color: "#475569",
-              }}
-            >
-              Total Requests
-            </div>
-
-            <div
-              style={{
-                marginTop: "5px",
-                fontSize: "30px",
-                lineHeight: 1,
-                fontWeight: 700,
-                color: "#0f172a",
-              }}
-            >
-              {loading ? "…" : stats.total}
+              <div
+                style={{
+                  fontSize: "28px",
+                  lineHeight: 1,
+                  fontWeight: 800,
+                  color: "#0f172a",
+                }}
+              >
+                {loading ? "…" : stats.total}
+              </div>
             </div>
           </div>
 
@@ -879,52 +894,52 @@ const CTPODashboard = () => {
           <div
             onClick={() => navigate('/ctpo/pending')}
             style={clickableCardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+              e.currentTarget.style.borderColor = '#bfdbfe';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.06)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
           >
             <div
               style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
                 display: "flex",
                 alignItems: "center",
-                marginBottom: "12px",
+                justifyContent: "center",
+                background: "#fff7ed",
+                color: "#f59e0b",
+                flexShrink: 0,
               }}
             >
+              <Clock size={24} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div
                 style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "9px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#fff7ed",
-                  color: "#f59e0b",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#64748b",
                 }}
               >
-                <Clock size={21} />
+                Pending
               </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                letterSpacing: "0.5px",
-                textTransform: "uppercase",
-                color: "#475569",
-              }}
-            >
-              Pending 
-            </div>
-
-            <div
-              style={{
-                marginTop: "5px",
-                fontSize: "30px",
-                lineHeight: 1,
-                fontWeight: 700,
-                color: "#d97706",
-              }}
-            >
-              {loading ? "…" : stats.pending}
+              <div
+                style={{
+                  fontSize: "28px",
+                  lineHeight: 1,
+                  fontWeight: 800,
+                  color: "#d97706",
+                }}
+              >
+                {loading ? "…" : stats.pending}
+              </div>
             </div>
           </div>
 
@@ -937,52 +952,52 @@ const CTPODashboard = () => {
           <div
             onClick={() => navigate('/ctpo/history?status=APPROVED')}
             style={clickableCardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+              e.currentTarget.style.borderColor = '#bfdbfe';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.06)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
           >
             <div
               style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
                 display: "flex",
                 alignItems: "center",
-                marginBottom: "12px",
+                justifyContent: "center",
+                background: "#ecfdf5",
+                color: "#059669",
+                flexShrink: 0,
               }}
             >
+              <CheckCircle2 size={24} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div
                 style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "9px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#ecfdf5",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#64748b",
+                }}
+              >
+                Approved
+              </div>
+              <div
+                style={{
+                  fontSize: "28px",
+                  lineHeight: 1,
+                  fontWeight: 800,
                   color: "#059669",
                 }}
               >
-                <CheckCircle2 size={21} />
+                {loading ? "…" : stats.approved}
               </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                letterSpacing: "0.5px",
-                textTransform: "uppercase",
-                color: "#475569",
-              }}
-            >
-              Approved
-            </div>
-
-            <div
-              style={{
-                marginTop: "5px",
-                fontSize: "30px",
-                lineHeight: 1,
-                fontWeight: 700,
-                color: "#059669",
-              }}
-            >
-              {loading ? "…" : stats.approved}
             </div>
           </div>
 
@@ -995,52 +1010,52 @@ const CTPODashboard = () => {
           <div
             onClick={() => navigate('/ctpo/history?status=REJECTED')}
             style={clickableCardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+              e.currentTarget.style.borderColor = '#bfdbfe';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.06)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
           >
             <div
               style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
                 display: "flex",
                 alignItems: "center",
-                marginBottom: "12px",
+                justifyContent: "center",
+                background: "#fef2f2",
+                color: "#ef4444",
+                flexShrink: 0,
               }}
             >
+              <XCircle size={24} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div
                 style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "9px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#fef2f2",
-                  color: "#ef4444",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#64748b",
                 }}
               >
-                <XCircle size={21} />
+                Rejected
               </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                letterSpacing: "0.5px",
-                textTransform: "uppercase",
-                color: "#475569",
-              }}
-            >
-              Rejected
-            </div>
-
-            <div
-              style={{
-                marginTop: "5px",
-                fontSize: "30px",
-                lineHeight: 1,
-                fontWeight: 700,
-                color: "#dc2626",
-              }}
-            >
-              {loading ? "…" : stats.rejected}
+              <div
+                style={{
+                  fontSize: "28px",
+                  lineHeight: 1,
+                  fontWeight: 800,
+                  color: "#dc2626",
+                }}
+              >
+                {loading ? "…" : stats.rejected}
+              </div>
             </div>
           </div>
         </div>
@@ -1264,7 +1279,7 @@ const CTPODashboard = () => {
                     {permissionTypeData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={PIE_COLORS[index % PIE_COLORS.length]}
+                        fill={getPermissionTypeColor(entry.name, index)}
                       />
                     ))}
                   </Pie>
@@ -1283,32 +1298,127 @@ const CTPODashboard = () => {
                   minWidth: "105px",
                 }}
               >
-                {permissionTypeData.map((item, index) => (
-                  <div
-                    key={item.name}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "7px",
-                      fontSize: "13px",
-                      color: PIE_COLORS[index % PIE_COLORS.length],
-                    }}
-                  >
-                    <span
+                {permissionTypeData.map((item, index) => {
+                  const color = getPermissionTypeColor(item.name, index);
+                  return (
+                    <div
+                      key={item.name}
                       style={{
-                        width: "14px",
-                        height: "14px",
-                        display: "inline-block",
-                        background: PIE_COLORS[index % PIE_COLORS.length],
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "7px",
+                        fontSize: "13px",
+                        color: color,
                       }}
-                    />
+                    >
+                      <span
+                        style={{
+                          width: "14px",
+                          height: "14px",
+                          display: "inline-block",
+                          background: color,
+                        }}
+                      />
 
-                    {item.name}
-                  </div>
-                ))}
+                      {item.name}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ====================================================
+            GET DETAILED INSIGHTS
+            Reference: HOD Dashboard
+        ==================================================== */}
+
+        <div
+          className="ctpo-insights-card"
+          style={{
+            borderRadius: 10,
+            border: "1px solid #e4e7ff",
+            background:
+              "linear-gradient(100deg, #ecfdf5 0%, #f8fafc 55%, #ecfdf5 100%)",
+            padding: "15px 18px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 15,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 11,
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: "#d1fae5",
+                color: "#1d4ed8",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <BarChart3 size={21} />
+            </div>
+
+            <div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "#172554",
+                }}
+              >
+                Get Detailed Insights
+              </div>
+
+              <div
+                style={{
+                  marginTop: 3,
+                  fontSize: 11,
+                  color: "#64748b",
+                }}
+              >
+                View detailed analytics and download CTPO reports.
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/ctpo/reports")}
+            style={{
+              border: "none",
+              borderRadius: 7,
+              background: "#10b981",
+              color: "#ffffff",
+              padding: "9px 14px",
+              fontSize: 11,
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              whiteSpace: "nowrap",
+              boxShadow: "0 2px 6px rgba(37,99,235,0.18)",
+            }}
+          >
+            Go to Reports
+            <ArrowRight size={14} />
+          </button>
         </div>
 
       </div>

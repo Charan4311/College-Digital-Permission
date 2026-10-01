@@ -84,7 +84,6 @@ exports.login = async (req, res) => {
           profileImage: account.profileImage || '',
           ...(isStudent && {
             rollNo: account.rollNo,
-            studentType: account.studentType,
             year: account.year || 4,
             yearTier: account.yearTier || 'TIER_4TH'
           }),
@@ -126,7 +125,6 @@ exports.getMe = async (req, res) => {
         profileImage: account.profileImage || '',
         ...(isStudent && {
           rollNo: account.rollNo,
-          studentType: account.studentType,
           year: account.year || 4,
           yearTier: account.yearTier || 'TIER_4TH'
         }),
@@ -148,19 +146,13 @@ exports.updateProfile = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Account disabled or not found' });
     }
 
-    const { name, studentType, year, yearTier } = req.body;
+    const { name, year, yearTier } = req.body;
     if (name !== undefined && !String(name).trim()) {
       return res.status(400).json({ success: false, message: 'Name is required' });
     }
 
     if (name !== undefined) account.name = String(name).trim();
-    if (studentType !== undefined) {
-      const normalized = String(studentType).toUpperCase();
-      if (!['DAY_SCHOLAR', 'HOSTELER'].includes(normalized)) {
-        return res.status(400).json({ success: false, message: 'Invalid student type' });
-      }
-      account.studentType = normalized;
-    }
+
     if (year !== undefined) account.year = Number(year);
     if (yearTier !== undefined) account.yearTier = String(yearTier);
 

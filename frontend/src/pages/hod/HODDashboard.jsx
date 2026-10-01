@@ -21,17 +21,21 @@ import {
 } from 'recharts';
 
 import {
-    ClipboardList,
-    Clock,
-    CheckCircle2,
-    XCircle,
     Building2,
     FileText,
     ChevronRight,
     RefreshCw,
     BarChart3,
     ArrowRight,
+    Calendar,
 } from 'lucide-react';
+
+import {
+    FaClipboardList,
+    FaClock,
+    FaCircleCheck,
+    FaCircleXmark
+} from 'react-icons/fa6';
 
 
 // ============================================================
@@ -452,6 +456,11 @@ export default function HODDashboard() {
                 <div
                     style={{
                         marginBottom: 20,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        flexWrap: 'wrap',
+                        gap: '16px'
                     }}
                 >
 
@@ -468,41 +477,39 @@ export default function HODDashboard() {
                         }}
                     >
 
-                        <Building2
-                            size={28}
-                            color="#6366f1"
-                        />
-
-                        HOD Dashboard
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '16px', fontWeight: 600, color: '#64748b', letterSpacing: 'normal', marginBottom: '4px' }}>Welcome back,</span>
+                            <span>
+                                <span style={{ color: '#0f172a' }}>Head of the </span>
+                                <span style={{ color: '#059669' }}>Department</span>
+                            </span>
+                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b', letterSpacing: 'normal', marginTop: '4px' }}>
+                                {(() => {
+                                    const tier = String(user?.yearTier || '');
+                                    const yr = String(user?.year || '');
+                                    const name = String(user?.name || '');
+                                    if (tier.includes('1') || yr === '1' || name.includes('1st') || name.includes('1')) return '1st Year';
+                                    if (tier.includes('2') || yr === '2' || name.includes('2nd') || name.includes('2')) return '2nd Year';
+                                    if (tier.includes('3') || yr === '3' || name.includes('3rd') || name.includes('3nd') || name.includes('3')) return '3rd Year';
+                                    if (tier.includes('4') || yr === '4' || name.includes('4th') || name.includes('4')) return '4th Year';
+                                    return name.replace('Head of Department', '').replace('(', '').replace(')', '').trim() || name;
+                                })()}
+                            </span>
+                        </div>
 
                     </h1>
 
-
-                    <p
-                        style={{
-                            margin: '6px 0 0',
-                            fontSize: 14,
-                            color: '#64748b',
-                        }}
-                    >
-
-                        Head of Department
-                        authorization for
-                        permissions &
-                        clearances
-                        {' · '}
-                        Logged in as{' '}
-
-                        <strong
-                            style={{
-                                color: '#1e293b',
-                            }}
-                        >
-                            {user?.name ||
-                                'Head of Department'}
-                        </strong>
-
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                            <Calendar size={20} />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                                {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
 
@@ -558,12 +565,12 @@ export default function HODDashboard() {
                                 : totalRequests
                         }
                         icon={
-                            <ClipboardList
+                            <FaClipboardList
                                 size={20}
                             />
                         }
-                        iconBackground="#eff6ff"
-                        iconColor="#2563eb"
+                        iconBackground="#ecfdf5"
+                        iconColor="#10b981"
                         valueColor="#172554"
                         onClick={() =>
                             handleKpiClick(
@@ -581,7 +588,7 @@ export default function HODDashboard() {
                                 : pendingCount
                         }
                         icon={
-                            <Clock
+                            <FaClock
                                 size={20}
                             />
                         }
@@ -604,7 +611,7 @@ export default function HODDashboard() {
                                 : approvedCount
                         }
                         icon={
-                            <CheckCircle2
+                            <FaCircleCheck
                                 size={20}
                             />
                         }
@@ -627,7 +634,7 @@ export default function HODDashboard() {
                                 : rejectedCount
                         }
                         icon={
-                            <XCircle
+                            <FaCircleXmark
                                 size={20}
                             />
                         }
@@ -705,9 +712,9 @@ export default function HODDashboard() {
                                             height: 34,
                                             borderRadius: 9,
                                             background:
-                                                '#f1efff',
+                                                '#ecfdf5',
                                             color:
-                                                '#6366f1',
+                                                '#10b981',
                                             display:
                                                 'flex',
                                             alignItems:
@@ -924,9 +931,9 @@ export default function HODDashboard() {
                                     height: 34,
                                     borderRadius: 9,
                                     background:
-                                        '#eff6ff',
+                                        '#ecfdf5',
                                     color:
-                                        '#2563eb',
+                                        '#10b981',
                                     display:
                                         'flex',
                                     alignItems:
@@ -1017,9 +1024,9 @@ export default function HODDashboard() {
                                                 borderRadius:
                                                     9,
                                                 background:
-                                                    '#f1f5ff',
+                                                    '#ecfdf5',
                                                 color:
-                                                    '#6366f1',
+                                                    '#10b981',
                                                 display:
                                                     'flex',
                                                 alignItems:
@@ -1069,9 +1076,9 @@ export default function HODDashboard() {
                                                 padding:
                                                     '7px 5px',
                                                 background:
-                                                    '#eff6ff',
+                                                    '#ecfdf5',
                                                 color:
-                                                    '#2563eb',
+                                                    '#10b981',
                                                 fontSize: 10,
                                                 fontWeight: 700,
                                                 cursor:
@@ -1117,7 +1124,7 @@ export default function HODDashboard() {
                         border:
                             '1px solid #e4e7ff',
                         background:
-                            'linear-gradient(100deg, #f5f7ff 0%, #fafaff 55%, #f4f1ff 100%)',
+                            'linear-gradient(100deg, #ecfdf5 0%, #f8fafc 55%, #ecfdf5 100%)',
                         padding:
                             '15px 18px',
                         display: 'flex',
@@ -1144,9 +1151,9 @@ export default function HODDashboard() {
                                 height: 40,
                                 borderRadius: 10,
                                 background:
-                                    '#e9e7ff',
+                                    '#d1fae5',
                                 color:
-                                    '#5b4ee5',
+                                    '#1d4ed8',
                                 display:
                                     'flex',
                                 alignItems:
@@ -1208,7 +1215,7 @@ export default function HODDashboard() {
                             border: 'none',
                             borderRadius: 7,
                             background:
-                                '#5145e5',
+                                '#10b981',
                             color:
                                 '#ffffff',
                             padding:
@@ -1227,7 +1234,7 @@ export default function HODDashboard() {
                             whiteSpace:
                                 'nowrap',
                             boxShadow:
-                                '0 2px 6px rgba(81,69,229,0.18)',
+                                '0 2px 6px rgba(37,99,235,0.18)',
                         }}
                     >
 
@@ -1400,9 +1407,9 @@ function DashboardStatCard({
                 background: '#ffffff',
                 border:
                     '1px solid #e2e8f0',
-                borderRadius: 10,
-                padding: 16,
-                minHeight: 112,
+                borderRadius: 12,
+                padding: '20px 24px',
+                minHeight: 100,
                 boxShadow:
                     '0 1px 2px rgba(15,23,42,0.04)',
                 cursor:
@@ -1411,6 +1418,9 @@ function DashboardStatCard({
                         : 'default',
                 transition:
                     'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
             }}
             onMouseEnter={(event) => {
 
@@ -1425,7 +1435,7 @@ function DashboardStatCard({
                     '0 6px 18px rgba(15,23,42,0.08)';
 
                 event.currentTarget.style.borderColor =
-                    '#c7d2fe';
+                    '#bfdbfe';
             }}
             onMouseLeave={(event) => {
 
@@ -1446,9 +1456,9 @@ function DashboardStatCard({
 
             <div
                 style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
                     background:
                         iconBackground,
                     color:
@@ -1458,7 +1468,7 @@ function DashboardStatCard({
                         'center',
                     justifyContent:
                         'center',
-                    marginBottom: 12,
+                    flexShrink: 0,
                 }}
             >
 
@@ -1466,32 +1476,32 @@ function DashboardStatCard({
 
             </div>
 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div
+                    style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: '#64748b',
+                    }}
+                >
 
-            <div
-                style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: '#475569',
-                }}
-            >
+                    {label}
 
-                {label}
-
-            </div>
+                </div>
 
 
-            <div
-                style={{
-                    marginTop: 4,
-                    fontSize: 28,
-                    lineHeight: 1,
-                    fontWeight: 800,
-                    color: valueColor,
-                }}
-            >
+                <div
+                    style={{
+                        fontSize: 28,
+                        lineHeight: 1,
+                        fontWeight: 800,
+                        color: valueColor,
+                    }}
+                >
 
-                {value}
+                    {value}
 
+                </div>
             </div>
 
         </div>

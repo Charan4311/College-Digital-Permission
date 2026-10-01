@@ -42,15 +42,15 @@ import {
     FileDown,
     FileSpreadsheet
 } from 'lucide-react';
+import { FaClipboardList, FaClock, FaCircleCheck, FaCircleXmark } from "react-icons/fa6";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const ROLE_LABELS = {
-    CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#3b82f6', desc: 'Department-level review for out-pass, mess, internship & library requests' },
-    HOD: { name: 'HOD Approval Console', pendingStatus: 'PENDING_HOD', color: '#8b5cf6', desc: 'Head of Department authorization for permissions & clearances' },
-    HOSTEL_INCHARGE: { name: 'Hostel In-charge Dashboard', pendingStatus: 'PENDING_HOSTEL_INCHARGE', color: '#10b981', desc: 'Final gate permission clearance for hosteler students' },
-    PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#2563eb', desc: 'Final institutional authorization for student internships' },
+    CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#10b981', desc: 'Department-level review for out-pass, mess, internship & library requests' },
+    HOD: { name: 'HOD Approval Console', pendingStatus: 'PENDING_HOD', color: '#10b981', desc: 'Head of Department authorization for permissions & clearances' },
+    PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#10b981', desc: 'Final institutional authorization for student internships' },
 };
 
 export default function ApproverDashboard() {
@@ -277,7 +277,7 @@ export default function ApproverDashboard() {
     const getBadgeTypeColor = (type) => {
         switch (type) {
             case 'MESS_FEE': return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
-            case 'INTERNSHIP': return { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' };
+            case 'INTERNSHIP': return { bg: '#ecfdf5', text: '#10b981', border: '#bfdbfe' };
             case 'LIBRARY': return { bg: '#fef3c7', text: '#d97706', border: '#fde68a' };
             default: return { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' };
         }
@@ -699,6 +699,18 @@ export default function ApproverDashboard() {
                 ? 'history'
                 : searchParams.get('view') || 'dashboard';
 
+    useEffect(() => {
+        setPlacementSearch('');
+        setPlacementPeriod('ALL');
+        setPlacementFromDate('');
+        setPlacementToDate('');
+        if (placementView === 'history') {
+            setPlacementStatusFilter('REVIEWED');
+        } else if (placementView === 'pending') {
+            setPlacementStatusFilter('PENDING_PLACEMENT_OFFICER');
+        }
+    }, [placementView]);
+
     const formatPlacementDate = (value) => {
         if (!value) return '-';
         const date = new Date(value);
@@ -803,19 +815,19 @@ export default function ApproverDashboard() {
         try {
             setDownloadLoading('pdf');
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            
+
             doc.setFontSize(20);
             doc.setTextColor(40, 45, 90);
             doc.text('Digital Permission', 14, 16);
-            
+
             doc.setFontSize(14);
             doc.text('Placement Officer Report', 14, 24);
-            
+
             doc.setFontSize(9);
             doc.setTextColor(100, 100, 110);
             doc.text(`Period: ${placementPeriod === 'ALL' ? 'All Time' : placementPeriod}`, 14, 32);
             doc.text(`Total Requests: ${records.length}`, 14, 38);
-            
+
             autoTable(doc, {
                 startY: 45,
                 head: [[
@@ -832,7 +844,7 @@ export default function ApproverDashboard() {
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [40, 45, 90] }
             });
-            
+
             doc.save(`placement-internship-report-${new Date().toISOString().slice(0, 10)}.pdf`);
         } catch (error) {
             console.error('PDF generation error:', error);
@@ -1141,61 +1153,38 @@ export default function ApproverDashboard() {
                     }}
                 >
                     <div>
-                        <div
-                            style={{
-                                fontSize: 11,
-                                fontWeight: 800,
-                                letterSpacing: '1px',
-                                color: '#2563eb',
-                                marginBottom: 8,
-                            }}
-                        >
-                            PLACEMENT OFFICER
-                        </div>
-
                         <h1
-                            className="page-title"
                             style={{
                                 margin: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
                                 fontSize: 28,
-                                lineHeight: 1.2,
+                                fontWeight: 800,
+                                color: '#0f172a',
+                                letterSpacing: '-0.5px',
                             }}
                         >
-                            Welcome back!
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '16px', fontWeight: 600, color: '#64748b', letterSpacing: 'normal', marginBottom: '4px' }}>Welcome back,</span>
+                                <span>
+                                    <span style={{ color: '#0f172a' }}>Placement </span>
+                                    <span style={{ color: '#059669' }}>Officer</span>
+                                </span>
+                            </div>
                         </h1>
-
-                        <p
-                            className="page-subtitle"
-                            style={{ marginTop: 8, marginBottom: 0 }}
-                        >
-                            Here's the summary of internship permission requests.
-                        </p>
                     </div>
 
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        <span
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 7,
-                                padding: '9px 12px',
-                                border: '1px solid var(--border)',
-                                borderRadius: 10,
-                                background: '#fff',
-                                color: 'var(--text-secondary)',
-                                fontSize: 12,
-                            }}
-                        >
-                            <CalendarDays size={15} />
-                            {todayLabel}
-                        </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                            <Calendar size={20} />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                                {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1231,7 +1220,7 @@ export default function ApproverDashboard() {
                     alignItems: 'center',
                     gap: 8
                 }}>
-                    <Briefcase size={18} color="#2563eb" />
+                    <Briefcase size={18} color="#10b981" />
                     Internship Overview
                 </div>
                 <div
@@ -1242,53 +1231,48 @@ export default function ApproverDashboard() {
                     }}
                 >
                     {[
-                        { key: 'TOTAL', label: 'TOTAL REQUESTS', value: total, color: '#7c3aed', icon: ClipboardList },
-                        { key: 'PENDING', label: 'PENDING REQUESTS', value: pendingCount, color: '#f59e0b', icon: Clock },
-                        { key: 'APPROVED', label: 'APPROVED REQUESTS', value: approved, color: '#059669', icon: CheckCircle2 },
-                        { key: 'REJECTED', label: 'REJECTED REQUESTS', value: rejected, color: '#dc2626', icon: XCircle },
+                        { key: 'TOTAL', label: 'Total Requests', value: total, iconBg: 'rgba(13,148,136,0.12)', iconColor: '#0d9488', valueColor: '#115e59', icon: FaClipboardList },
+                        { key: 'PENDING', label: 'Pending', value: pendingCount, iconBg: 'rgba(245,158,11,0.12)', iconColor: '#d97706', valueColor: '#d97706', icon: FaClock },
+                        { key: 'APPROVED', label: 'Approved', value: approved, iconBg: 'rgba(22,163,74,0.12)', iconColor: '#16a34a', valueColor: '#16a34a', icon: FaCircleCheck },
+                        { key: 'REJECTED', label: 'Rejected', value: rejected, iconBg: 'rgba(220,38,38,0.12)', iconColor: '#dc2626', valueColor: '#dc2626', icon: FaCircleXmark },
                     ].map((card) => {
                         const Icon = card.icon;
 
                         return (
                             <div
                                 key={card.key}
-                                className="stat-card"
+                                className="card stat-card-hover"
                                 onClick={() => handlePlacementKpi(card.key)}
                                 style={{
-                                    position: 'relative',
-                                    overflow: 'hidden',
+                                    background: '#ffffff',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: 12,
+                                    padding: '20px 24px',
+                                    minHeight: 100,
+                                    boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
                                     cursor: 'pointer',
+                                    transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 16,
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+                                    e.currentTarget.style.borderColor = '#bfdbfe';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(15,23,42,0.04)';
+                                    e.currentTarget.style.borderColor = '#e2e8f0';
                                 }}
                             >
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        right: 18,
-                                        top: 18,
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: 10,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        background: `${card.color}12`,
-                                        color: card.color,
-                                    }}
-                                >
-                                    <Icon size={19} />
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: card.iconBg, color: card.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Icon size={20} />
                                 </div>
-
-                                <div className="stat-label">{card.label}</div>
-                                <div
-                                    className="stat-value"
-                                    style={{
-                                        color:
-                                            card.key === 'TOTAL'
-                                                ? 'var(--text-primary)'
-                                                : card.color,
-                                    }}
-                                >
-                                    {card.value}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: '#64748b' }}>{card.label}</div>
+                                    <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.valueColor }}>{card.value}</div>
                                 </div>
                             </div>
                         );
@@ -1325,7 +1309,7 @@ export default function ApproverDashboard() {
                                         gap: 7,
                                     }}
                                 >
-                                    <TrendingUp size={17} color="#2563eb" />
+                                    <TrendingUp size={17} color="#10b981" />
                                     Approval Activity (Last 7 Days)
                                 </div>
                                 <div className="card-subtitle">
@@ -1444,7 +1428,7 @@ export default function ApproverDashboard() {
                                     gap: 7,
                                 }}
                             >
-                                <Briefcase size={17} color="#2563eb" />
+                                <Briefcase size={17} color="#10b981" />
                                 Internship Requests
                             </div>
 
@@ -1549,7 +1533,7 @@ export default function ApproverDashboard() {
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     cursor: 'pointer',
-                                    color: '#2563eb',
+                                    color: '#10b981',
                                     fontWeight: 700,
                                 }}
                             >
@@ -1585,17 +1569,6 @@ export default function ApproverDashboard() {
                     }}
                 >
                     <div>
-                        <div
-                            style={{
-                                fontSize: 11,
-                                fontWeight: 800,
-                                letterSpacing: '1px',
-                                color: '#2563eb',
-                                marginBottom: 7,
-                            }}
-                        >
-                            PLACEMENT OFFICER
-                        </div>
                         <h1 className="page-title" style={{ margin: 0 }}>
                             {isPendingView
                                 ? 'Pending Internship Requests'
@@ -1780,7 +1753,7 @@ export default function ApproverDashboard() {
                                                         {request.studentId?.name || 'Unknown Student'}
                                                     </div>
                                                     <div className="placement-mobile-roll">
-                                                        {request.studentId?.rollNo || '-'} · {request.branchId?.name || request.branchId?.code || '-'} · Year {request.year || request.studentId?.year || '-'}
+                                                        {request.studentId?.rollNo || '-'} - {request.branchId?.name || request.branchId?.code || '-'} - Year {request.year || request.studentId?.year || '-'}
                                                     </div>
                                                 </div>
                                                 {renderPlacementStatus(request.status)}
@@ -1854,7 +1827,7 @@ export default function ApproverDashboard() {
                                                     <td>
                                                         <div
                                                             style={{
-                                                                fontWeight: 700,
+                                                                fontWeight: 600,
                                                                 color: 'var(--text-primary)',
                                                             }}
                                                         >
@@ -1862,11 +1835,11 @@ export default function ApproverDashboard() {
                                                         </div>
                                                         <div
                                                             className="td-muted"
-                                                            style={{ marginTop: 2 }}
+                                                            style={{ marginTop: 2, fontSize: '11px' }}
                                                         >
                                                             <code>{request.studentId?.rollNo || '-'}</code>
                                                         </div>
-                                                        <div className="td-muted">
+                                                        <div className="td-muted" style={{ fontSize: '11px' }}>
                                                             {request.branchId?.name ||
                                                                 request.branchId?.code ||
                                                                 '-'}{' '}
@@ -1877,7 +1850,7 @@ export default function ApproverDashboard() {
                                                     <td style={{ minWidth: 220 }}>
                                                         <div
                                                             style={{
-                                                                fontWeight: 700,
+                                                                fontWeight: 600,
                                                                 color: 'var(--text-primary)',
                                                             }}
                                                         >
@@ -1889,7 +1862,7 @@ export default function ApproverDashboard() {
                                                                 display: 'flex',
                                                                 alignItems: 'center',
                                                                 gap: 4,
-                                                                fontSize: 12,
+                                                                fontSize: 11,
                                                                 color: 'var(--text-secondary)',
                                                                 marginTop: 3,
                                                             }}
@@ -1905,7 +1878,7 @@ export default function ApproverDashboard() {
                                                                 marginTop: 3,
                                                             }}
                                                         >
-                                                            {request.role || '-'} ·{' '}
+                                                            {request.role || '-'} -{' '}
                                                             {request.internshipMode || '-'}
                                                         </div>
                                                     </td>
@@ -1915,7 +1888,7 @@ export default function ApproverDashboard() {
                                                             {formatPlacementDate(request.startDate)}
                                                         </div>
                                                         <div style={{ marginTop: 3 }}>
-                                                            → {formatPlacementDate(request.endDate)}
+                                                            to {formatPlacementDate(request.endDate)}
                                                         </div>
                                                     </td>
 
@@ -1945,7 +1918,9 @@ export default function ApproverDashboard() {
                                                                 Document
                                                             </a>
                                                         ) : (
-                                                            <span className="td-muted">None</span>
+                                                            <div style={{ textAlign: 'center' }}>
+                                                                <span className="td-muted">None</span>
+                                                            </div>
                                                         )}
                                                     </td>
 
@@ -1968,13 +1943,23 @@ export default function ApproverDashboard() {
                                                                     )
                                                                 }
                                                                 style={{
+                                                                    height: '32px',
+                                                                    border: '1px solid #a7f3d0',
+                                                                    background: '#ecfdf5',
+                                                                    color: '#10b981',
+                                                                    borderRadius: '7px',
+                                                                    padding: '0 12px',
                                                                     display: 'inline-flex',
                                                                     alignItems: 'center',
-                                                                    gap: 4,
+                                                                    justifyContent: 'center',
+                                                                    gap: '5px',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: 700,
+                                                                    cursor: 'pointer'
                                                                 }}
                                                             >
-                                                                <Eye size={13} />
-                                                                View
+                                                                <Eye size={15} />
+                                                                {isPendingView ? 'View' : 'Review'}
                                                             </button>
 
 
@@ -1994,24 +1979,8 @@ export default function ApproverDashboard() {
     };
 
     const renderPlacementOfficerLayout = () => (
-        <>
+        <DashboardLayout>
             <style>{`
-        .placement-officer-shell { display:flex; width:100%; max-width:100%; min-width:0; height:100vh; min-height:0; background:#f8fafc; margin:0; overflow:hidden; box-sizing:border-box; }
-        .placement-officer-sidebar { width:260px; flex:0 0 260px; }
-        .placement-officer-main { flex:1 1 auto; min-width:0; width:0; max-width:100%; height:100vh; padding:24px 28px; overflow-y:auto; overflow-x:hidden; box-sizing:border-box; }
-        .placement-mobile-menu { display:none; }
-        .placement-sidebar-overlay { display:none; }
-        @media (max-width:900px) {
-          .placement-officer-sidebar { position:fixed !important; left:0; top:0; bottom:0; z-index:1200; transform:translateX(-100%); transition:transform .22s ease; box-shadow:0 12px 30px rgba(15,23,42,.18); }
-          .placement-officer-sidebar.mobile-open { transform:translateX(0); }
-          .placement-officer-main { width:100% !important; min-width:0 !important; padding:72px 14px 24px !important; }
-          .placement-mobile-menu { display:flex; position:fixed; top:12px; left:12px; z-index:1300; width:44px; height:44px; align-items:center; justify-content:center; border:1px solid #e2e8f0; border-radius:12px; background:#fff; color:#334155; box-shadow:0 4px 14px rgba(15,23,42,.12); cursor:pointer; }
-          .placement-sidebar-overlay { display:block; position:fixed; inset:0; z-index:1100; background:rgba(15,23,42,.38); }
-        }
-        @media (max-width:480px) {
-          .placement-officer-main { padding:68px 12px 20px !important; }
-        }
-
         /* Placement mobile history/request cards */
         .placement-mobile-request-list { display:none; }
         .placement-mobile-request-card {
@@ -2043,10 +2012,8 @@ export default function ApproverDashboard() {
         @media (max-width:768px) {
           .placement-mobile-request-list { display:block; }
           .placement-desktop-request-table { display:none !important; }
-          .placement-officer-main .card { max-width:100%; min-width:0; box-sizing:border-box; }
         }
         @media (max-width:400px) {
-          .placement-officer-main { padding:68px 10px 18px !important; }
           .placement-mobile-request-card { padding:13px; border-radius:13px; }
           .placement-mobile-student { font-size:13px; }
           .placement-mobile-info-grid { gap:11px 12px; }
@@ -2055,173 +2022,10 @@ export default function ApproverDashboard() {
           .placement-mobile-actions { gap:6px; }
         }
       `}</style>
-            <div className="placement-officer-shell">
-                {placementMobileOpen && (
-                    <button type="button" className="placement-sidebar-overlay" aria-label="Close navigation" onClick={() => setPlacementMobileOpen(false)} />
-                )}
-                <button
-                    type="button"
-                    className="placement-mobile-menu"
-                    aria-label={placementMobileOpen ? 'Close navigation' : 'Open navigation'}
-                    onClick={() => setPlacementMobileOpen((v) => !v)}
-                >
-                    {placementMobileOpen ? <CloseIcon size={22} /> : <Menu size={22} />}
-                </button>
-                <aside
-                    className={`placement-officer-sidebar${placementMobileOpen ? ' mobile-open' : ''}`}
-                    style={{
-                        width: 260,
-                        flexShrink: 0,
-                        background: '#ffffff',
-                        borderRight: '1px solid #e5e7eb',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        height: '100vh',
-                        minHeight: 0,
-                        boxSizing: 'border-box',
-                    }}
-                >
-                    <div style={{ padding: '28px 22px 22px', borderBottom: '1px solid #e5e7eb' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 34, height: 34, borderRadius: 9, background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Briefcase size={18} />
-                            </div>
-                            <div>
-                                <div style={{ fontWeight: 800, color: '#2563eb', fontSize: 16 }}>Digital Permission</div>
-                                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>College Approval Platform</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ padding: '28px 14px', flex: 1 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', letterSpacing: '1px', padding: '0 14px 12px' }}>NAVIGATION</div>
-
-                        {[
-                            { label: 'Overview', path: '/placement/dashboard', icon: Building, active: placementView === 'dashboard' },
-                            { label: 'Pending Requests', path: '/placement/pending', icon: Clock, active: placementView === 'pending' },
-                            { label: 'Review History', path: '/placement/history', icon: ClipboardList, active: placementView === 'history' },
-                        ].map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <button
-                                    key={item.path}
-                                    type="button"
-                                    onClick={() => {
-                                        setPlacementSearch('');
-                                        setPlacementPeriod('ALL');
-                                        setPlacementFromDate('');
-                                        setPlacementToDate('');
-                                        if (item.path === '/placement/history') {
-                                            setPlacementStatusFilter('REVIEWED');
-                                        } else if (item.path === '/placement/pending') {
-                                            setPlacementStatusFilter('PENDING_PLACEMENT_OFFICER');
-                                        }
-                                        navigate(item.path);
-                                    }}
-                                    style={{
-                                        width: '100%',
-                                        border: 0,
-                                        background: item.active ? '#eaf2ff' : 'transparent',
-                                        color: item.active ? '#2563eb' : '#64748b',
-                                        borderRadius: 9,
-                                        padding: '11px 13px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 11,
-                                        fontSize: 14,
-                                        fontWeight: item.active ? 700 : 500,
-                                        cursor: 'pointer',
-                                        textAlign: 'left',
-                                        marginBottom: 5,
-                                    }}
-                                >
-                                    <Icon size={18} />
-                                    {item.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div style={{ borderTop: '1px solid #e5e7eb', padding: '18px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
-                            <div
-                                style={{
-                                    width: 38,
-                                    height: 38,
-                                    borderRadius: '50%',
-                                    background: '#4f46e5',
-                                    color: '#fff',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontWeight: 800,
-                                    fontSize: 13,
-                                    flexShrink: 0,
-                                }}
-                            >
-                                {String(user?.name || 'PO').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
-                            </div>
-
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                                <div
-                                    style={{
-                                        fontWeight: 700,
-                                        fontSize: 13,
-                                        color: '#1e293b',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                    }}
-                                >
-                                    {user?.name || 'Placement Officer'}
-                                </div>
-                                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
-                                    Placement Officer
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={handlePlacementLogout}
-                                title="Logout"
-                                aria-label="Logout"
-                                style={{
-                                    width: 34,
-                                    height: 34,
-                                    padding: 0,
-                                    margin: 0,
-                                    border: 0,
-                                    borderRadius: 7,
-                                    background: 'transparent',
-                                    color: '#94a3b8',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = '#2563eb';
-                                    e.currentTarget.style.background = '#eff6ff';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = '#94a3b8';
-                                    e.currentTarget.style.background = 'transparent';
-                                }}
-                            >
-                                <LogOut size={18} />
-                            </button>
-                        </div>
-                    </div>
-                </aside>
-
-                <main className="placement-officer-main">
-                    <div style={{ width: '100%', maxWidth: 1240, margin: '0 auto', boxSizing: 'border-box' }}>
-                        {placementView === 'dashboard' ? renderPlacementDashboard() : renderPlacementRequests(placementView)}
-                    </div>
-                </main>
+            <div style={{ width: '100%', paddingBottom: 24 }}>
+                {placementView === 'dashboard' ? renderPlacementDashboard() : renderPlacementRequests(placementView)}
             </div>
-        </>
+        </DashboardLayout>
     );
 
     return (
@@ -2231,18 +2035,41 @@ export default function ApproverDashboard() {
             ) : (
                 <DashboardLayout>
                     <>
-                        <div className="page-header" style={{ marginBottom: '24px' }}>
-                            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Building size={26} color={cfg.color} />
-                                <span>{cfg.name}</span>
-                            </h1>
-                            <p className="page-subtitle">
-                                {isHostelIncharge
-                                    ? 'Final gate permission clearance for hosteler students · Logged in as Hostel In-charge'
-                                    : `${cfg.desc} · Logged in as `}
-                                {!isHostelIncharge && <strong>{user?.name}</strong>}
-                            </p>
-                        </div>
+                        {isHostelIncharge ? (
+                            <div style={{ marginBottom: 20 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                                    <div>
+                                        <div style={{ color: '#475569', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+                                            Welcome back,
+                                        </div>
+                                        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.5px' }}>
+                                            Hostel <span style={{ color: '#10b981' }}>In-charge</span>
+                                        </h1>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                                            <Calendar size={18} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                                            <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                                                {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="page-header" style={{ marginBottom: '24px' }}>
+                                <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <Building size={26} color={cfg.color} />
+                                    <span>{cfg.name}</span>
+                                </h1>
+                                <p className="page-subtitle">
+                                    {cfg.desc} - Logged in as <strong>{user?.name}</strong>
+                                </p>
+                            </div>
+                        )}
 
                         {actionMsg && (
                             <div
@@ -2256,51 +2083,54 @@ export default function ApproverDashboard() {
 
                         {/* Stats Cards */}
                         {isHostelIncharge ? (
-                            <div className="stats-grid" style={{ marginBottom: '24px' }}>
-                                <div
-                                    className="stat-card"
-                                    onClick={() => handleHostelKpi('TOTAL')}
-                                    style={{ cursor: 'pointer', border: kpiFilter === 'TOTAL' ? '2px solid var(--accent)' : '1px solid var(--border)' }}
-                                >
-                                    <div className="stat-icon" style={{ color: 'var(--accent)' }}>
-                                        <ClipboardList size={22} />
-                                    </div>
-                                    <div className="stat-label">TOTAL REQUESTS</div>
-                                    <div className="stat-value">{hostelTotal}</div>
-                                </div>
-                                <div
-                                    className="stat-card"
-                                    onClick={() => handleHostelKpi('APPROVED')}
-                                    style={{ cursor: 'pointer', border: kpiFilter === 'APPROVED' ? '2px solid var(--green)' : '1px solid var(--border)' }}
-                                >
-                                    <div className="stat-icon" style={{ color: 'var(--green)' }}>
-                                        <CheckCircle2 size={22} />
-                                    </div>
-                                    <div className="stat-label">APPROVED</div>
-                                    <div className="stat-value" style={{ color: 'var(--green)' }}>{hostelApproved}</div>
-                                </div>
-                                <div
-                                    className="stat-card"
-                                    onClick={() => handleHostelKpi('PENDING')}
-                                    style={{ cursor: 'pointer', border: kpiFilter === 'PENDING' ? '2px solid var(--yellow)' : '1px solid var(--border)' }}
-                                >
-                                    <div className="stat-icon" style={{ color: 'var(--yellow)' }}>
-                                        <Clock size={22} />
-                                    </div>
-                                    <div className="stat-label">PENDING</div>
-                                    <div className="stat-value" style={{ color: 'var(--yellow)' }}>{hostelPending}</div>
-                                </div>
-                                <div
-                                    className="stat-card"
-                                    onClick={() => handleHostelKpi('REJECTED')}
-                                    style={{ cursor: 'pointer', border: kpiFilter === 'REJECTED' ? '2px solid var(--red)' : '1px solid var(--border)' }}
-                                >
-                                    <div className="stat-icon" style={{ color: 'var(--red)' }}>
-                                        <XCircle size={22} />
-                                    </div>
-                                    <div className="stat-label">REJECTED</div>
-                                    <div className="stat-value" style={{ color: 'var(--red)' }}>{hostelRejected}</div>
-                                </div>
+                            <div className="stats-grid placement-kpi-grid" style={{ marginBottom: '24px', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+                                {[
+                                    { key: 'TOTAL', label: 'TOTAL REQUESTS', value: hostelTotal, iconBg: '#f1f5f9', iconColor: '#3b82f6', valueColor: '#1e293b', icon: FaClipboardList },
+                                    { key: 'APPROVED', label: 'APPROVED', value: hostelApproved, iconBg: '#ecfdf5', iconColor: '#10b981', valueColor: '#059669', icon: FaCircleCheck },
+                                    { key: 'PENDING', label: 'PENDING', value: hostelPending, iconBg: '#fff7ed', iconColor: '#f59e0b', valueColor: '#d97706', icon: FaClock },
+                                    { key: 'REJECTED', label: 'REJECTED', value: hostelRejected, iconBg: '#fef2f2', iconColor: '#ef4444', valueColor: '#dc2626', icon: FaCircleXmark },
+                                ].map((card) => {
+                                    const Icon = card.icon;
+                                    const isActive = kpiFilter === card.key;
+                                    return (
+                                        <div
+                                            key={card.key}
+                                            className="card stat-card-hover"
+                                            onClick={() => handleHostelKpi(card.key)}
+                                            style={{
+                                                background: '#ffffff',
+                                                border: '1px solid #e2e8f0',
+                                                borderRadius: 12,
+                                                padding: '20px 24px',
+                                                minHeight: 100,
+                                                boxShadow: isActive ? '0 4px 12px rgba(16, 185, 129, 0.1)' : '0 1px 2px rgba(15,23,42,0.04)',
+                                                cursor: 'pointer',
+                                                transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 16,
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                                e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+                                                e.currentTarget.style.borderColor = '#bfdbfe';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                                e.currentTarget.style.boxShadow = isActive ? '0 4px 12px rgba(16, 185, 129, 0.1)' : '0 1px 2px rgba(15,23,42,0.04)';
+                                                e.currentTarget.style.borderColor = '#e2e8f0';
+                                            }}
+                                        >
+                                            <div style={{ width: 48, height: 48, borderRadius: 12, background: card.iconBg, color: card.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <Icon size={20} />
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                <div style={{ fontSize: 14, fontWeight: 600, color: '#64748b' }}>{card.label}</div>
+                                                <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.valueColor }}>{card.value}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="stats-grid" style={{ marginBottom: '24px' }}>
@@ -2518,7 +2348,7 @@ export default function ApproverDashboard() {
                                                             <td>
                                                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.studentId?.name}</div>
                                                                 <div className="td-muted" style={{ fontSize: 12 }}>
-                                                                    <code>{req.studentId?.rollNo}</code> · {req.branchId?.name || 'CSM'}
+                                                                    <code>{req.studentId?.rollNo}</code> - {req.branchId?.name || 'CSM'}
                                                                 </div>
                                                             </td>
                                                             <td style={{ maxWidth: 220 }}>
@@ -2527,7 +2357,7 @@ export default function ApproverDashboard() {
                                                                 </div>
                                                                 {reqType === 'MESS_FEE' && (
                                                                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                                                                        Amount: <strong>₹{req.messAmount?.toLocaleString('en-IN')}</strong> ·{' '}
+                                                                        Amount: <strong>₹{req.messAmount?.toLocaleString('en-IN')}</strong> -{' '}
                                                                         <span style={{ color: req.paidStatus === 'Paid' ? 'var(--green)' : 'var(--yellow)', fontWeight: 600 }}>
                                                                             {req.paidStatus}
                                                                         </span>
@@ -2535,7 +2365,7 @@ export default function ApproverDashboard() {
                                                                 )}
                                                                 {reqType === 'INTERNSHIP' && (
                                                                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                                                                        <strong>{req.companyName}</strong> ({req.role}) · {req.internshipMode}
+                                                                        <strong>{req.companyName}</strong> ({req.role}) - {req.internshipMode}
                                                                     </div>
                                                                 )}
                                                             </td>
@@ -2545,7 +2375,7 @@ export default function ApproverDashboard() {
                                                                         <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
                                                                             {new Date(req.outDate).toLocaleDateString('en-IN')}
                                                                         </div>
-                                                                        <div style={{ fontSize: 11 }}>{req.outTime} → {req.expectedReturnTime}</div>
+                                                                        <div style={{ fontSize: 11 }}>{req.outTime} to {req.expectedReturnTime}</div>
                                                                     </>
                                                                 )}
                                                                 {(reqType === 'MESS_FEE' || reqType === 'INTERNSHIP') && (
@@ -2587,7 +2417,9 @@ export default function ApproverDashboard() {
                                                                             <span>View Doc</span>
                                                                         </a>
                                                                     ) : (
-                                                                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>None</span>
+                                                                        <div style={{ textAlign: 'center' }}>
+                                                                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>None</span>
+                                                                        </div>
                                                                     )}
                                                                 </td>
                                                             )}
@@ -2599,13 +2431,18 @@ export default function ApproverDashboard() {
                                                                     {tab === 'pending' && (
                                                                         <td>
                                                                             <button
-                                                                                className="btn btn-ghost btn-sm"
+                                                                                className="btn btn-sm"
                                                                                 onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
                                                                                 style={{
                                                                                     display: 'inline-flex',
                                                                                     alignItems: 'center',
                                                                                     gap: '4px',
-                                                                                    padding: '6px 10px'
+                                                                                    padding: '6px 12px',
+                                                                                    background: '#ecfdf5',
+                                                                                    color: '#10b981',
+                                                                                    border: '1px solid #10b981',
+                                                                                    borderRadius: '6px',
+                                                                                    fontWeight: 600
                                                                                 }}
                                                                             >
                                                                                 <Eye size={14} />
@@ -2704,9 +2541,19 @@ export default function ApproverDashboard() {
                                                             {isHostelIncharge && (
                                                                 <td>
                                                                     <button
-                                                                        className="btn btn-ghost btn-sm"
+                                                                        className="btn btn-sm"
                                                                         onClick={() => navigate(`/outpass/${req._id}`)}
-                                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
+                                                                        style={{
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '4px',
+                                                                            padding: '6px 12px',
+                                                                            background: '#ecfdf5',
+                                                                            color: '#10b981',
+                                                                            border: '1px solid #10b981',
+                                                                            borderRadius: '6px',
+                                                                            fontWeight: 600
+                                                                        }}
                                                                     >
                                                                         <Eye size={14} />
                                                                         <span>View</span>
@@ -2814,3 +2661,5 @@ export default function ApproverDashboard() {
         </>
     );
 }
+
+

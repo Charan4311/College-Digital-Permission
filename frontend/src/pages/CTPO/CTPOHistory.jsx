@@ -10,15 +10,15 @@ import {
 } from 'react-router-dom';
 
 import {
-  ClipboardList,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Search,
-  Eye,
-  FileText,
-  Download,
-} from 'lucide-react';
+  FiClipboard as ClipboardList,
+  FiCheckCircle as CheckCircle,
+  FiXCircle as XCircle,
+  FiClock as Clock,
+  FiSearch as Search,
+  FiEye as Eye,
+  FiFileText as FileText,
+  FiDownload as Download,
+} from 'react-icons/fi';
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -205,29 +205,29 @@ export default function CTPOHistory() {
 
       permissionType =
         typeMap[
-          String(permissionType)
-            .toUpperCase()
+        String(permissionType)
+          .toUpperCase()
         ] ||
         permissionType;
 
 
       // ====================================================
-// STUDENT OBJECT
-// ====================================================
+      // STUDENT OBJECT
+      // ====================================================
 
-const student =
-  request?.student ||
-  request?.studentDetails ||
-  request?.studentId ||
-  request?.user ||
-  request?.userDetails ||
-  request?.applicant ||
-  request?.applicantDetails ||
-  request?.createdBy ||
-  request?.submittedBy ||
-  request?.requester ||
-  request?.requesterDetails ||
-  {};
+      const student =
+        request?.student ||
+        request?.studentDetails ||
+        request?.studentId ||
+        request?.user ||
+        request?.userDetails ||
+        request?.applicant ||
+        request?.applicantDetails ||
+        request?.createdBy ||
+        request?.submittedBy ||
+        request?.requester ||
+        request?.requesterDetails ||
+        {};
 
       // ------------------------------------------------------
       // STUDENT NAME
@@ -512,7 +512,7 @@ const student =
     if (ctpoStages.length > 0) {
       return getStageDecision(
         ctpoStages[
-          ctpoStages.length - 1
+        ctpoStages.length - 1
         ]
       );
     }
@@ -879,9 +879,9 @@ const student =
               ) {
                 matchesTime =
                   requestDate.getMonth() ===
-                    now.getMonth() &&
+                  now.getMonth() &&
                   requestDate.getFullYear() ===
-                    now.getFullYear();
+                  now.getFullYear();
               }
             }
           }
@@ -967,11 +967,11 @@ const student =
 
   const handleExport = () => {
     const doc = new jsPDF();
-    
+
     // Add title
     doc.setFontSize(16);
     doc.text('CTPO Requests History', 14, 15);
-    
+
     const headers = [
       'Request Type',
       'Student',
@@ -1226,7 +1226,7 @@ const student =
             COUNT SUMMARY
         ================================================== */}
 
-        
+
 
 
         {/* ==================================================
@@ -1343,7 +1343,7 @@ const student =
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                                 <span>{request._permissionType}</span>
                                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace', marginTop: '2px' }}>
-                                  Ref: {request?.referenceId || request?.refId || 'N/A'}
+                                  Ref: {(request?.referenceId || request?.refId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'}
                                 </span>
                               </div>
                             </div>
@@ -1543,8 +1543,8 @@ const student =
         }
 
         .ctpo-export-button {
-          background: #2563eb;
-          border: 1px solid #2563eb;
+          background: #10b981;
+          border: 1px solid #10b981;
           color: #ffffff;
         }
 
@@ -1588,12 +1588,12 @@ const student =
 
         .ctpo-history-tab:hover {
           background: #f8fafc;
-          color: #2563eb;
+          color: #10b981;
         }
 
         .ctpo-history-tab.active {
-          background: #eff6ff;
-          color: #2563eb;
+          background: #ecfdf5;
+          color: #10b981;
         }
 
         .ctpo-history-tab.active::after {
@@ -1603,7 +1603,7 @@ const student =
           right: 0;
           bottom: -1px;
           height: 2px;
-          background: #2563eb;
+          background: #10b981;
         }
 
         .ctpo-history-tab strong {
@@ -1837,7 +1837,7 @@ const student =
           border: 1px solid #dbe3ef;
           border-radius: 8px;
           background: #ffffff;
-          color: #2563eb;
+          color: #10b981;
           cursor: pointer;
           font-size: 12px;
           font-weight: 600;
@@ -1845,7 +1845,7 @@ const student =
         }
 
         .ctpo-view-button:hover {
-          background: #eff6ff;
+          background: #ecfdf5;
           border-color: #93c5fd;
         }
 
@@ -1888,7 +1888,7 @@ const student =
           padding: 9px 18px;
           border: none;
           border-radius: 8px;
-          background: #2563eb;
+          background: #10b981;
           color: #ffffff;
           cursor: pointer;
           font-weight: 600;

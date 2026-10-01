@@ -830,8 +830,8 @@ export default function HODBranchRequests() {
                                     width: 44,
                                     height: 44,
                                     borderRadius: 10,
-                                    background: '#eff6ff',
-                                    color: '#2563eb',
+                                    background: '#ecfdf5',
+                                    color: '#10b981',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -910,14 +910,14 @@ export default function HODBranchRequests() {
                                     border: 'none',
                                     borderBottom:
                                         active
-                                            ? '3px solid #2563eb'
+                                            ? '3px solid #10b981'
                                             : '3px solid transparent',
                                     background:
                                         active
-                                            ? '#eff6ff'
+                                            ? '#ecfdf5'
                                             : 'transparent',
                                     color: active
-                                        ? '#2563eb'
+                                        ? '#10b981'
                                         : '#64748b',
                                     padding:
                                         '12px 18px',
@@ -1194,8 +1194,8 @@ export default function HODBranchRequests() {
                                 height: 32,
                                 borderRadius: 8,
                                 background:
-                                    '#eff6ff',
-                                color: '#2563eb',
+                                    '#ecfdf5',
+                                color: '#10b981',
                                 display:
                                     'flex',
                                 alignItems:
@@ -1417,7 +1417,7 @@ export default function HODBranchRequests() {
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             <span>{requestType(request)}</span>
                                                             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace' }}>
-                                                                Ref: {request?.referenceId || request?.refId || 'N/A'}
+                                                                Ref: {(request?.referenceId || request?.refId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'}
                                                             </span>
                                                         </div>
                                                     </Cell>
@@ -1477,13 +1477,13 @@ export default function HODBranchRequests() {
                                                                 padding:
                                                                     '0 10px',
                                                                 border:
-                                                                    '1px solid #dbeafe',
+                                                                    '1px solid #d1fae5',
                                                                 borderRadius:
                                                                     7,
                                                                 background:
-                                                                    '#eff6ff',
+                                                                    '#f0fdf4',
                                                                 color:
-                                                                    '#2563eb',
+                                                                    '#16a34a',
                                                                 fontSize:
                                                                     11,
                                                                 fontWeight:
@@ -1733,7 +1733,7 @@ export default function HODBranchRequests() {
                                     gap: 8,
                                 }}
                             >
-                                <Download size={20} color="#2563eb" />
+                                <Download size={20} color="#10b981" />
                                 Export Report
                             </h2>
                             <button
@@ -1784,7 +1784,7 @@ export default function HODBranchRequests() {
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>Total Requests:</span>
-                                    <span style={{ color: '#2563eb', fontSize: 14, fontWeight: 700 }}>
+                                    <span style={{ color: '#10b981', fontSize: 14, fontWeight: 700 }}>
                                         {filteredRequests.length}
                                     </span>
                                 </div>
@@ -1943,11 +1943,11 @@ function PageButton({
                 height: 32,
                 padding: '0 8px',
                 border: active
-                    ? '1px solid #2563eb'
+                    ? '1px solid #10b981'
                     : '1px solid #e2e8f0',
                 borderRadius: 7,
                 background: active
-                    ? '#2563eb'
+                    ? '#10b981'
                     : '#fff',
                 color: active
                     ? '#fff'

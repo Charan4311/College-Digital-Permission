@@ -29,12 +29,13 @@ import {
   Paperclip,
   ExternalLink
 } from 'lucide-react';
+import { FaClipboardList, FaClock, FaCircleCheck, FaCircleXmark } from 'react-icons/fa6';
 
 const ROLE_LABELS = {
-  CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#3b82f6', desc: 'Department-level review for out-pass, mess, internship & library requests' },
-  HOD: { name: 'HOD Approval Console', pendingStatus: 'PENDING_HOD', color: '#8b5cf6', desc: 'Head of Department authorization for permissions & clearances' },
-  HOSTEL_INCHARGE: { name: 'Hostel In-charge Dashboard', pendingStatus: 'PENDING_HOSTEL_INCHARGE', color: '#10b981', desc: 'Final gate permission clearance for hosteler students' },
-  PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#2563eb', desc: 'Final institutional authorization for student internships' },
+  CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#10b981', desc: 'Department-level review for out-pass, mess, internship & library requests' },
+  HOD: { name: 'HOD Approval Console', pendingStatus: 'PENDING_HOD', color: '#10b981', desc: 'Head of Department authorization for permissions & clearances' },
+  HOSTEL_INCHARGE: { name: 'Hostel Incharge Dashboard', pendingStatus: 'PENDING_HOSTEL', color: '#10b981', desc: 'Final gate permission clearance for hostel students' },
+  PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#10b981', desc: 'Final institutional authorization for student internships' },
 };
 
 export default function ApproverDashboard() {
@@ -201,7 +202,7 @@ export default function ApproverDashboard() {
   const getBadgeTypeColor = (type) => {
     switch (type) {
       case 'MESS_FEE': return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
-      case 'INTERNSHIP': return { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' };
+      case 'INTERNSHIP': return { bg: '#ecfdf5', text: '#10b981', border: '#bfdbfe' };
       case 'LIBRARY': return { bg: '#fef3c7', text: '#d97706', border: '#fde68a' };
       default: return { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' };
     }
@@ -264,6 +265,12 @@ export default function ApproverDashboard() {
 
   const getHostelDisplayStatus = (request) => {
     const status = String(request?.status || '').toUpperCase();
+
+    // Hostel pending requests should be displayed simply as "Pending".
+    // The workflow-specific status is still kept in the backend.
+    if (isPendingHostelStatus(status)) {
+      return 'PENDING';
+    }
 
     // Hostel rejection should be displayed simply as "Rejected".
     // The workflow-specific status is still kept in the backend.
@@ -349,18 +356,41 @@ export default function ApproverDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="page-header" style={{ marginBottom: '24px' }}>
-        <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Building size={26} color={cfg.color} />
-          <span>{cfg.name}</span>
-        </h1>
-        <p className="page-subtitle">
-          {isHostelIncharge
-            ? 'Final gate permission clearance for hosteler students · Logged in as Hostel In-charge'
-            : `${cfg.desc} · Logged in as `}
-          {!isHostelIncharge && <strong>{user?.name}</strong>}
-        </p>
-      </div>
+      {isHostelIncharge ? (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <div style={{ color: '#475569', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+                Welcome back,
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.5px' }}>
+                Hostel <span style={{ color: '#10b981' }}>In-charge</span>
+              </h1>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                <Calendar size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="page-header" style={{ marginBottom: '24px' }}>
+          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Building size={26} color={cfg.color} />
+            <span>{cfg.name}</span>
+          </h1>
+          <p className="page-subtitle">
+            {cfg.desc} Â· Logged in as <strong>{user?.name}</strong>
+          </p>
+        </div>
+      )}
 
       {actionMsg && (
         <div
@@ -374,51 +404,54 @@ export default function ApproverDashboard() {
 
       {/* Stats Cards */}
       {isHostelIncharge ? (
-        <div className="stats-grid" style={{ marginBottom: '24px' }}>
-          <div
-            className="stat-card"
-            onClick={() => handleHostelKpi('TOTAL')}
-            style={{ cursor: 'pointer', border: kpiFilter === 'TOTAL' ? '2px solid var(--accent)' : '1px solid var(--border)' }}
-          >
-            <div className="stat-icon" style={{ color: 'var(--accent)' }}>
-              <ClipboardList size={22} />
-            </div>
-            <div className="stat-label">TOTAL REQUESTS</div>
-            <div className="stat-value">{hostelTotal}</div>
-          </div>
-          <div
-            className="stat-card"
-            onClick={() => handleHostelKpi('APPROVED')}
-            style={{ cursor: 'pointer', border: kpiFilter === 'APPROVED' ? '2px solid var(--green)' : '1px solid var(--border)' }}
-          >
-            <div className="stat-icon" style={{ color: 'var(--green)' }}>
-              <CheckCircle2 size={22} />
-            </div>
-            <div className="stat-label">APPROVED</div>
-            <div className="stat-value" style={{ color: 'var(--green)' }}>{hostelApproved}</div>
-          </div>
-          <div
-            className="stat-card"
-            onClick={() => handleHostelKpi('PENDING')}
-            style={{ cursor: 'pointer', border: kpiFilter === 'PENDING' ? '2px solid var(--yellow)' : '1px solid var(--border)' }}
-          >
-            <div className="stat-icon" style={{ color: 'var(--yellow)' }}>
-              <Clock size={22} />
-            </div>
-            <div className="stat-label">PENDING</div>
-            <div className="stat-value" style={{ color: 'var(--yellow)' }}>{hostelPending}</div>
-          </div>
-          <div
-            className="stat-card"
-            onClick={() => handleHostelKpi('REJECTED')}
-            style={{ cursor: 'pointer', border: kpiFilter === 'REJECTED' ? '2px solid var(--red)' : '1px solid var(--border)' }}
-          >
-            <div className="stat-icon" style={{ color: 'var(--red)' }}>
-              <XCircle size={22} />
-            </div>
-            <div className="stat-label">REJECTED</div>
-            <div className="stat-value" style={{ color: 'var(--red)' }}>{hostelRejected}</div>
-          </div>
+        <div className="stats-grid placement-kpi-grid" style={{ marginBottom: '24px', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+          {[
+            { key: 'TOTAL', label: 'TOTAL REQUESTS', value: hostelTotal, iconBg: '#f1f5f9', iconColor: '#3b82f6', valueColor: '#1e293b', icon: FaClipboardList },
+            { key: 'APPROVED', label: 'APPROVED', value: hostelApproved, iconBg: '#ecfdf5', iconColor: '#10b981', valueColor: '#059669', icon: FaCircleCheck },
+            { key: 'PENDING', label: 'PENDING', value: hostelPending, iconBg: '#fff7ed', iconColor: '#f59e0b', valueColor: '#d97706', icon: FaClock },
+            { key: 'REJECTED', label: 'REJECTED', value: hostelRejected, iconBg: '#fef2f2', iconColor: '#ef4444', valueColor: '#dc2626', icon: FaCircleXmark },
+          ].map((card) => {
+            const Icon = card.icon;
+            const isActive = kpiFilter === card.key;
+            return (
+              <div
+                key={card.key}
+                className="card stat-card-hover"
+                onClick={() => handleHostelKpi(card.key)}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: '20px 24px',
+                  minHeight: 100,
+                  boxShadow: isActive ? '0 4px 12px rgba(16, 185, 129, 0.1)' : '0 1px 2px rgba(15,23,42,0.04)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
+                  e.currentTarget.style.borderColor = '#bfdbfe';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = isActive ? '0 4px 12px rgba(16, 185, 129, 0.1)' : '0 1px 2px rgba(15,23,42,0.04)';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                }}
+              >
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: card.iconBg, color: card.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon size={20} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#64748b' }}>{card.label}</div>
+                  <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.valueColor }}>{card.value}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="stats-grid" style={{ marginBottom: '24px' }}>
@@ -640,7 +673,7 @@ export default function ApproverDashboard() {
                         <td>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.studentId?.name}</div>
                           <div className="td-muted" style={{ fontSize: 12 }}>
-                            <code>{req.studentId?.rollNo}</code> · {req.branchId?.name || 'CSM'}
+                            <code>{req.studentId?.rollNo}</code> Â· {req.branchId?.name || 'CSM'}
                           </div>
                         </td>
                         <td style={{ maxWidth: 220 }}>
@@ -649,7 +682,7 @@ export default function ApproverDashboard() {
                           </div>
                           {reqType === 'MESS_FEE' && (
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              Amount: <strong>₹{req.messAmount?.toLocaleString('en-IN')}</strong> ·{' '}
+                              Amount: <strong>â‚¹{req.messAmount?.toLocaleString('en-IN')}</strong> Â·{' '}
                               <span style={{ color: req.paidStatus === 'Paid' ? 'var(--green)' : 'var(--yellow)', fontWeight: 600 }}>
                                 {req.paidStatus}
                               </span>
@@ -657,7 +690,7 @@ export default function ApproverDashboard() {
                           )}
                           {reqType === 'INTERNSHIP' && (
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              <strong>{req.companyName}</strong> ({req.role}) · {req.internshipMode}
+                              <strong>{req.companyName}</strong> ({req.role}) Â· {req.internshipMode}
                             </div>
                           )}
                         </td>
@@ -667,7 +700,7 @@ export default function ApproverDashboard() {
                               <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
                                 {new Date(req.outDate).toLocaleDateString('en-IN')}
                               </div>
-                              <div style={{ fontSize: 11 }}>{req.outTime} → {req.expectedReturnTime}</div>
+                              <div style={{ fontSize: 11 }}>{req.outTime} â†’ {req.expectedReturnTime}</div>
                             </>
                           )}
                           {(reqType === 'MESS_FEE' || reqType === 'INTERNSHIP') && (
@@ -721,13 +754,18 @@ export default function ApproverDashboard() {
                             {tab === 'pending' && (
                               <td>
                                 <button
-                                  className="btn btn-ghost btn-sm"
+                                  className="btn btn-sm"
                                   onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '4px',
-                                    padding: '6px 10px'
+                                    padding: '6px 12px',
+                                    background: '#ecfdf5',
+                                    color: '#10b981',
+                                    border: '1px solid #10b981',
+                                    borderRadius: '6px',
+                                    fontWeight: 600
                                   }}
                                 >
                                   <Eye size={14} />
@@ -844,9 +882,19 @@ export default function ApproverDashboard() {
                         {isHostelIncharge && (
                           <td>
                             <button
-                              className="btn btn-ghost btn-sm"
+                              className="btn btn-sm"
                               onClick={() => navigate(`/outpass/${req._id}`)}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '6px 12px',
+                                background: '#ecfdf5',
+                                color: '#10b981',
+                                border: '1px solid #10b981',
+                                borderRadius: '6px',
+                                fontWeight: 600
+                              }}
                             >
                               <Eye size={14} />
                               <span>View</span>
@@ -899,6 +947,31 @@ export default function ApproverDashboard() {
           </div>
         </div>
       )}
+
+      <style>{`
+        .hostel-ctpo-kpi-grid .hostel-ctpo-kpi-card {
+          flex-direction: row !important;
+          align-items: center !important;
+        }
+
+        .hostel-ctpo-kpi-grid .hostel-ctpo-kpi-icon {
+          flex: 0 0 48px !important;
+        }
+
+        @media (max-width: 900px) {
+          .hostel-ctpo-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .hostel-ctpo-kpi-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+
     </DashboardLayout>
   );
 }
+

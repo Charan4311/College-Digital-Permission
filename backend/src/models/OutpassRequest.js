@@ -11,8 +11,6 @@ const outpassRequestSchema = new mongoose.Schema({
   branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
   year: { type: Number, default: 4, index: true },
   yearTier: { type: String, default: 'TIER_4TH' },
-  studentType: { type: String, enum: ['DAY_SCHOLAR', 'HOSTELER'], default: 'DAY_SCHOLAR' },
-
   referenceId: { type: String, unique: true, sparse: true },
   emergencyContact: { type: String },
 

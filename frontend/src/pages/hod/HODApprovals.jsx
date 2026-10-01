@@ -119,9 +119,7 @@ const normalizeStudentType = (value) => {
         return 'DAY SCHOLAR';
     }
 
-    if (type === 'HOSTELER') {
-        return 'HOSTELER';
-    }
+    
 
     return type || '-';
 };
@@ -299,7 +297,8 @@ export default function HODApprovals() {
                 const status = String(request?.status || '').trim().toUpperCase();
                 const reqType = getRequestType(request);
                 
-                return status.startsWith('PENDING') && reqType !== 'LIBRARY';
+                // Only show requests that are pending HOD approval (CTPO already approved)
+                return (status === 'PENDING_HOD' || status === 'PENDING_HOD_APPROVAL') && reqType !== 'LIBRARY';
             });
 
             setRequests(pendingRequests);
@@ -738,14 +737,7 @@ export default function HODApprovals() {
                                                 <span>Branch</span>
                                                 <strong>{branch}</strong>
                                             </div>
-                                            <div>
-                                                <span>Year</span>
-                                                <strong>{year}</strong>
-                                            </div>
-                                            <div>
-                                                <span>Student Type</span>
-                                                <strong>{studentType}</strong>
-                                            </div>
+
                                             <div>
                                                 <span>Request Date</span>
                                                 <strong>{requestDate}</strong>
@@ -762,7 +754,7 @@ export default function HODApprovals() {
                                             }
                                         >
                                             <Eye size={15} />
-                                            View Request
+                                            View
                                         </button>
                                     </div>
                                 );
@@ -840,7 +832,7 @@ export default function HODApprovals() {
                                                     styles.th
                                                 }
                                             >
-                                                STUDENT
+                                                STUDENT NAME
                                             </th>
 
                                             <th
@@ -864,23 +856,7 @@ export default function HODApprovals() {
                                                     styles.th
                                                 }
                                             >
-                                                YEAR
-                                            </th>
-
-                                            <th
-                                                style={
-                                                    styles.th
-                                                }
-                                            >
-                                                STUDENT TYPE
-                                            </th>
-
-                                            <th
-                                                style={
-                                                    styles.th
-                                                }
-                                            >
-                                                REQUEST TYPE
+                                                TYPE
                                             </th>
 
                                             <th
@@ -1027,35 +1003,6 @@ export default function HODApprovals() {
                                                             </span>
                                                         </td>
 
-
-                                                        {/* YEAR */}
-                                                        <td
-                                                            style={
-                                                                styles.td
-                                                            }
-                                                        >
-                                                            {
-                                                                getYear(
-                                                                    request
-                                                                )
-                                                            }
-                                                        </td>
-
-
-                                                        {/* STUDENT TYPE */}
-                                                        <td
-                                                            style={
-                                                                styles.td
-                                                            }
-                                                        >
-                                                            {
-                                                                normalizeStudentType(
-                                                                    getStudentType(
-                                                                        request
-                                                                    )
-                                                                )
-                                                            }
-                                                        </td>
 
 
                                                         {/* TYPE */}
@@ -1386,8 +1333,8 @@ export default function HODApprovals() {
                             display: flex;
                             align-items: center;
                             justify-content: center;
-                            background: #eff6ff;
-                            color: #2563eb;
+                            background: #ecfdf5;
+                            color: #10b981;
                             font-size: 12px;
                             font-weight: 700;
                         }
@@ -1466,8 +1413,8 @@ export default function HODApprovals() {
                             margin-top: 12px;
                             border: 1px solid #bfdbfe;
                             border-radius: 7px;
-                            background: #eff6ff;
-                            color: #2563eb;
+                            background: #ecfdf5;
+                            color: #10b981;
                             display: inline-flex;
                             align-items: center;
                             justify-content: center;
@@ -1833,9 +1780,9 @@ const styles = {
         display: 'flex',
         alignItems: 'center',
         gap: 7,
-        background: '#eff6ff',
-        color: '#2563eb',
-        border: '1px solid #dbeafe',
+        background: '#ecfdf5',
+        color: '#10b981',
+        border: '1px solid #d1fae5',
         borderRadius: 20,
         padding: '7px 11px',
         fontSize: 12,
@@ -1894,8 +1841,8 @@ const styles = {
         width: 32,
         height: 32,
         borderRadius: '50%',
-        background: '#eff6ff',
-        color: '#2563eb',
+        background: '#ecfdf5',
+        color: '#10b981',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1946,9 +1893,9 @@ const styles = {
 
     viewButton: {
         height: 32,
-        border: '1px solid #bfdbfe',
-        background: '#eff6ff',
-        color: '#2563eb',
+        border: '1px solid #a7f3d0',
+        background: '#ecfdf5',
+        color: '#10b981',
         borderRadius: 7,
         padding: '0 12px',
         display: 'inline-flex',
@@ -1996,8 +1943,8 @@ const styles = {
     },
 
     activePageButton: {
-        background: '#2563eb',
-        borderColor: '#2563eb',
+        background: '#10b981',
+        borderColor: '#10b981',
         color: '#ffffff',
     },
 
@@ -2010,7 +1957,7 @@ const styles = {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#2563eb',
+        color: '#10b981',
     },
 
     loadingText: {
@@ -2039,8 +1986,8 @@ const styles = {
         width: 68,
         height: 68,
         borderRadius: '50%',
-        background: '#eff6ff',
-        color: '#2563eb',
+        background: '#ecfdf5',
+        color: '#10b981',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -2071,8 +2018,8 @@ const styles = {
         padding: '0 14px',
         border: '1px solid #bfdbfe',
         borderRadius: 8,
-        background: '#eff6ff',
-        color: '#2563eb',
+        background: '#ecfdf5',
+        color: '#10b981',
         display: 'inline-flex',
         alignItems: 'center',
         gap: 7,

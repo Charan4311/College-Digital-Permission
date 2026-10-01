@@ -10,7 +10,6 @@ const studentSchema = new mongoose.Schema({
   branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
   year: { type: Number, default: 4 },
   yearTier: { type: String, default: 'TIER_4TH' },
-  studentType: { type: String, enum: ['DAY_SCHOLAR', 'HOSTELER'] },
   isActive: { type: Boolean, default: true }
 }, { collection: 'users' });
 

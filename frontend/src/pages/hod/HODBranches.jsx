@@ -249,7 +249,7 @@ const HODBranches = () => {
                         getStudentType(request);
 
                     return (
-                        type === "HOSTELER" ||
+                        
                         type === "HOSTEL" ||
                         type === "HOSTELLER"
                     );
@@ -261,7 +261,7 @@ const HODBranches = () => {
                         getStudentType(request);
 
                     return (
-                        type === "DAY_SCHOLAR" ||
+                        
                         type === "DAY SCHOLAR" ||
                         type === "DAY-SCHOLAR" ||
                         type === "DAYSCHOLAR"
@@ -355,9 +355,9 @@ const HODBranches = () => {
             <div
                 className="hod-branch-grid"
                 style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                        "repeat(3, minmax(0, 1fr))",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    justifyContent: "center",
                     gap: "18px",
                     alignItems: "stretch",
                 }}
@@ -367,35 +367,42 @@ const HODBranches = () => {
                         key={branch.code}
                         className="card"
                         style={{
-                            minHeight: "80px",
+                            flex: "0 0 calc(33.333% - 12px)",
+                            minWidth: "250px", // prevent it from getting too small on mobile before media queries kick in
+                            padding: "24px 20px",
                             display: "flex",
-                            flexDirection: "row",
+                            flexDirection: "column",
                             alignItems: "center",
+                            justifyContent: "space-between",
+                            textAlign: "center",
                             gap: "12px",
+                            background: "#ffffff",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "12px",
                         }}
                     >
                         <div
                             style={{
-                                width: "46px",
-                                height: "46px",
+                                width: "52px",
+                                height: "52px",
                                 borderRadius: "12px",
-                                background: "#eff6ff",
-                                color: "#2563eb",
+                                background: "#ecfdf5",
+                                color: "#10b981",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                flexShrink: 0,
+                                marginBottom: "4px",
                             }}
                         >
-                            <Building2 size={22} />
+                            <Building2 size={26} />
                         </div>
 
-                        <div style={{ flex: 1 }}>
+                        <div>
                             <h2
                                 style={{
-                                    margin: 0,
+                                    margin: "0 0 6px 0",
                                     fontSize: "20px",
-                                    fontWeight: 700,
+                                    fontWeight: 800,
                                     color: "#0f172a",
                                 }}
                             >
@@ -404,9 +411,11 @@ const HODBranches = () => {
 
                             <p
                                 style={{
-                                    margin: "4px 0 0",
-                                    fontSize: "12px",
+                                    margin: 0,
+                                    fontSize: "13px",
                                     color: "#64748b",
+                                    lineHeight: "1.4",
+                                    minHeight: "36px",
                                 }}
                             >
                                 {branch.name}
@@ -414,11 +423,26 @@ const HODBranches = () => {
                         </div>
                         
                         <button 
-                            className="btn btn-sm"
-                            style={{ padding: '6px 12px', fontSize: '12px', background: '#2563eb', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            type="button"
+                            style={{ 
+                                width: "100%", 
+                                padding: "10px", 
+                                fontSize: "14px", 
+                                fontWeight: 600,
+                                background: "#10b981", 
+                                color: "white", 
+                                border: "none", 
+                                borderRadius: "6px",
+                                display: "flex", 
+                                alignItems: "center", 
+                                justifyContent: "center",
+                                gap: "6px",
+                                cursor: "pointer",
+                                marginTop: "4px"
+                            }}
                             onClick={() => handleViewRequests(branch.code)}
                         >
-                            View Details <ArrowRight size={14} />
+                            View Details <ArrowRight size={16} />
                         </button>
                     </div>
                 ))}

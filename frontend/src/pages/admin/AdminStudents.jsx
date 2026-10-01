@@ -11,15 +11,13 @@ export default function AdminStudents() {
   const [branches, setBranches] = useState([]);
   const [filter, setFilter] = useState({ branchId: '', year: '' });
   const [selected, setSelected] = useState([]);
-  const [bulkType, setBulkType] = useState('DAY_SCHOLAR');
+  const [msgType, setMsgType] = useState('success');
+  const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [msg, setMsg] = useState('');
-  const [msgType, setMsgType] = useState('success');
   const [editingId, setEditingId] = useState(null);
-  const [editType, setEditType] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const LIMIT = 50;
 
   const fetchData = async () => {
@@ -101,47 +99,7 @@ export default function AdminStudents() {
     else setSelected(students.map(s => s._id));
   };
 
-  const bulkUpdate = async () => {
-    if (!selected.length) return;
-    try {
-      await api.patch('/admin/students', { studentIds: selected, studentType: bulkType });
-      setMsg(`Successfully updated ${selected.length} students to ${bulkType === 'DAY_SCHOLAR' ? 'Day Scholar' : 'Hosteler'}`);
-      setMsgType('success');
-      setSelected([]);
-      fetchData();
-    } catch (e) {
-      setMsg(e.response?.data?.message || 'Error updating students');
-      setMsgType('error');
-    }
-  };
 
-  const handleStartEdit = (student) => {
-    setEditingId(student._id);
-    setEditType(student.studentType || 'DAY_SCHOLAR');
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditType('');
-  };
-
-  const handleSaveEdit = async (studentId) => {
-    setSaving(true);
-    try {
-      const res = await api.patch(`/admin/students/${studentId}`, { studentType: editType });
-      if (res.data.success) {
-        setMsg(`Student type updated successfully to ${editType === 'DAY_SCHOLAR' ? 'Day Scholar' : 'Hosteler'}`);
-        setMsgType('success');
-        setEditingId(null);
-        fetchData();
-      }
-    } catch (e) {
-      setMsg(e.response?.data?.message || 'Failed to update student type');
-      setMsgType('error');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const totalPages = Math.ceil(total / LIMIT) || 1;
 
@@ -236,9 +194,9 @@ export default function AdminStudents() {
                 height: '40px',
                 padding: '0 20px',
                 borderRadius: '10px',
-                border: '1.5px solid #2563eb',
-                background: '#ffffff',
-                color: '#2563eb',
+                border: 'none',
+                background: '#10b981',
+                color: '#ffffff',
                 fontSize: '14px',
                 fontWeight: 600,
                 display: 'inline-flex',
@@ -249,13 +207,13 @@ export default function AdminStudents() {
                 transition: 'all 0.15s ease'
               }}
               onMouseEnter={e => {
-                if (!exporting) e.currentTarget.style.backgroundColor = '#eff6ff';
+                if (!exporting) e.currentTarget.style.backgroundColor = '#059669';
               }}
               onMouseLeave={e => {
-                if (!exporting) e.currentTarget.style.backgroundColor = '#ffffff';
+                if (!exporting) e.currentTarget.style.backgroundColor = '#10b981';
               }}
             >
-              <Download size={16} />
+              <Download size={16} color="#ffffff" />
               <span>{exporting ? 'Exporting...' : 'Export'}</span>
             </button>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
@@ -270,16 +228,6 @@ export default function AdminStudents() {
       {selected.length > 0 && (
         <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
           <span><strong>{selected.length}</strong> selected</span>
-          <select
-            className="form-input form-select"
-            style={{ width: 160, margin: 0, minWidth: 140 }}
-            value={bulkType}
-            onChange={e => setBulkType(e.target.value)}
-          >
-            <option value="DAY_SCHOLAR">Day Scholar</option>
-            <option value="HOSTELER">Hosteler</option>
-          </select>
-          <button className="btn btn-primary btn-sm" onClick={bulkUpdate}>Apply Bulk Change</button>
           <button className="btn btn-ghost btn-sm" onClick={() => setSelected([])}>Clear</button>
         </div>
       )}
@@ -308,20 +256,17 @@ export default function AdminStudents() {
               <table>
                 <thead>
                   <tr>
-                    <th style={{ width: 40 }}><input type="checkbox" checked={selected.length === students.length && students.length > 0} onChange={toggleAll} /></th>
                     <th>ROLL NUMBER</th>
                     <th>NAME</th>
                     <th>BRANCH</th>
                     <th>YEAR</th>
                     <th>YEAR TIER</th>
-                    <th>STUDENT TYPE</th>
-                    <th style={{ textAlign: 'center', width: 140 }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
                   {students.length === 0 ? (
                     <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                         {searchTerm ? 'No matching student found.' : 'No enrolled student records found matching the selected filters.'}
                       </td>
                     </tr>
@@ -330,62 +275,11 @@ export default function AdminStudents() {
                       const isEditing = editingId === s._id;
                       return (
                         <tr key={s._id}>
-                          <td><input type="checkbox" checked={selected.includes(s._id)} onChange={() => toggleSelect(s._id)} /></td>
-                          <td><code style={{ fontWeight: 700, color: '#1E293B', fontSize: '13px' }}>{s.rollNo}</code></td>
-                          <td style={{ fontWeight: 600, color: '#0F172A' }}>{s.name}</td>
-                          <td>{s.branchId?.name || 'N/A'}</td>
-                          <td>Year {s.year}</td>
-                          <td><span className="badge badge-info">{s.yearTier || `TIER_${s.year}`}</span></td>
-                          <td>
-                            {isEditing ? (
-                              <select
-                                className="form-input form-select"
-                                style={{ width: 140, padding: '4px 8px', fontSize: '12px' }}
-                                value={editType}
-                                onChange={e => setEditType(e.target.value)}
-                              >
-                                <option value="DAY_SCHOLAR">Day Scholar</option>
-                                <option value="HOSTELER">Hosteler</option>
-                              </select>
-                            ) : s.studentType ? (
-                              <span className={`badge badge-${s.studentType.toLowerCase()}`}>
-                                {s.studentType === 'DAY_SCHOLAR' ? 'Day Scholar' : 'Hosteler'}
-                              </span>
-                            ) : (
-                              <span style={{ color: 'var(--yellow)', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                <AlertCircle size={12} /> Unassigned
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            {isEditing ? (
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                                <button
-                                  className="btn btn-success btn-sm"
-                                  style={{ padding: '4px 8px', fontSize: '11px' }}
-                                  onClick={() => handleSaveEdit(s._id)}
-                                  disabled={saving}
-                                >
-                                  <Save size={12} /> Save
-                                </button>
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ padding: '4px 8px', fontSize: '11px' }}
-                                  onClick={handleCancelEdit}
-                                >
-                                  <X size={12} />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                style={{ padding: '4px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                onClick={() => handleStartEdit(s)}
-                              >
-                                <Edit2 size={12} /> Edit
-                              </button>
-                            )}
-                          </td>
+                          <td style={{ padding: 12, fontSize: 12, color: '#475569', fontWeight: 400, whiteSpace: 'nowrap' }}>{s.rollNo}</td>
+                          <td style={{ padding: 12, fontSize: 12, color: '#172554', fontWeight: 700, whiteSpace: 'nowrap' }}>{s.name}</td>
+                          <td style={{ padding: 12, fontSize: 12, color: '#475569', fontWeight: 400, whiteSpace: 'nowrap' }}>{s.branchId?.name || 'N/A'}</td>
+                          <td style={{ padding: 12, fontSize: 12, color: '#475569', fontWeight: 400, whiteSpace: 'nowrap' }}>Year {s.year}</td>
+                          <td style={{ padding: 12, fontSize: 12, color: '#475569', fontWeight: 400, whiteSpace: 'nowrap' }}><span className="badge badge-info">{s.yearTier || `TIER_${s.year}`}</span></td>
                         </tr>
                       );
                     })

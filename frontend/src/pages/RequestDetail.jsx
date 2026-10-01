@@ -50,16 +50,16 @@ function getWorkflowChain(request) {
   if (type === 'INTERNSHIP') return ['CTPO', 'HOD', 'PLACEMENT_OFFICER'];
   if (type === 'LIBRARY') return ['CTPO'];
   // OUTPASS:
-  return request.studentType === 'HOSTELER' ? ['CTPO', 'HOD', 'HOSTEL_INCHARGE'] : ['CTPO', 'HOD'];
+  return ['CTPO', 'HOD'];
 }
 
 
-/* ─────────────────────────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    ATTACHED DOCUMENT URL
    Uploaded files are served by the backend, not the Vite frontend.
    This converts a relative file URL such as /uploads/file.jpg
    into the backend URL such as http://localhost:5000/uploads/file.jpg.
-───────────────────────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const getDocumentUrl = (documentUrl) => {
   if (!documentUrl) return '';
 
@@ -143,7 +143,7 @@ function Timeline({ steps, status, request }) {
                       </span>
                     )}
                     <span>by <strong>{step.approverUserId?.name || 'Authorized Staff'}</strong></span>
-                    <span>·</span>
+                    <span>Â·</span>
                     <span>{new Date(step.decidedAt).toLocaleString('en-IN')}</span>
                   </div>
                   {step.remarks && (
@@ -229,7 +229,6 @@ export default function RequestDetail() {
       outTime: req.outTime || '17:00',
       expectedReturnDate: req.expectedReturnDate ? new Date(req.expectedReturnDate).toISOString().split('T')[0] : '',
       expectedReturnTime: req.expectedReturnTime || '20:00',
-      studentType: req.studentType || 'DAY_SCHOLAR',
       emergencyContact: req.emergencyContact || '',
       startDate: req.startDate ? new Date(req.startDate).toISOString().split('T')[0] : '',
       endDate: req.endDate ? new Date(req.endDate).toISOString().split('T')[0] : '',
@@ -396,7 +395,7 @@ export default function RequestDetail() {
           : 'HOD Approval';
 
   // Compute clean Reference ID
-  const refId = request.referenceId || `PERM-${new Date(request.createdAt).getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}`;
+  const refId = (request.referenceId || `KDP-${new Date(request.createdAt).getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}`).replace(/^PERM-/i, 'KDP-');
 
   // Permission type label
   const getPermissionTypeLabel = () => {
@@ -496,7 +495,7 @@ export default function RequestDetail() {
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '16px', justifyContent: 'flex-start' }}>
               {reqType === 'OUTPASS' && <FileText size={18} color="var(--accent)" />}
               {reqType === 'MESS_FEE' && <Receipt size={18} color="var(--green)" />}
-              {reqType === 'INTERNSHIP' && <Briefcase size={18} color="#2563eb" />}
+              {reqType === 'INTERNSHIP' && <Briefcase size={18} color="#10b981" />}
               {reqType === 'LIBRARY' && <BookOpen size={18} color="var(--yellow)" />}
               <div className="card-title" style={{ margin: 0 }}>Permission Details</div>
             </div>
@@ -523,7 +522,7 @@ export default function RequestDetail() {
               {/* MESS_FEE specifics */}
               {reqType === 'MESS_FEE' && (
                 <>
-                  <Row icon={DollarSign} label="Mess Amount" value={`₹${request.messAmount?.toLocaleString('en-IN') || 0}`} />
+                  <Row icon={DollarSign} label="Mess Amount" value={`â‚¹${request.messAmount?.toLocaleString('en-IN') || 0}`} />
                   <Row icon={CheckCircle2} label="Payment Status" value={request.paidStatus} />
                   <Row icon={Calendar} label="Period Range" value={`${new Date(request.startDate).toLocaleDateString('en-IN')} to ${new Date(request.endDate).toLocaleDateString('en-IN')}`} />
                 </>
@@ -636,9 +635,9 @@ export default function RequestDetail() {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           APPROVAL ACTIONS
-      ───────────────────────────────────────────── */}
+      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {showApproverApprovalActions && (
         <>
           <div
@@ -934,7 +933,7 @@ export default function RequestDetail() {
           )}
         </>
       )}
-      {/* ─── Edit & Resubmit Modal ─── */}
+      {/* â”€â”€â”€ Edit & Resubmit Modal â”€â”€â”€ */}
       {resubmitModalOpen && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setResubmitModalOpen(false)}>
           <div className="modal" style={{ maxWidth: '540px' }}>
@@ -1044,7 +1043,7 @@ export default function RequestDetail() {
                   </div>
                   <div className="form-grid" style={{ marginBottom: '12px' }}>
                     <div className="form-group">
-                      <label className="form-label">Mess Amount (₹)</label>
+                      <label className="form-label">Mess Amount (â‚¹)</label>
                       <input
                         type="number"
                         required
@@ -1234,7 +1233,7 @@ export default function RequestDetail() {
         </div>
       )}
 
-      {/* ─── Official Digital Permission Document Modal (Exact Replica of Sample) ─── */}
+      {/* â”€â”€â”€ Official Digital Permission Document Modal (Exact Replica of Sample) â”€â”€â”€ */}
       {printModalOpen && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setPrintModalOpen(false)}>
           <div className="modal" style={{ maxWidth: '640px', padding: '24px', background: '#ffffff' }}>
@@ -1312,7 +1311,7 @@ export default function RequestDetail() {
                   {reqType === 'MESS_FEE' && (
                     <>
                       <div><strong>Date:</strong> {new Date(request.startDate).toLocaleDateString('en-GB')} to {new Date(request.endDate).toLocaleDateString('en-GB')}</div>
-                      <div><strong>Mess Amount:</strong> ₹{request.messAmount?.toLocaleString('en-IN')}</div>
+                      <div><strong>Mess Amount:</strong> â‚¹{request.messAmount?.toLocaleString('en-IN')}</div>
                       <div><strong>Payment Status:</strong> {request.paidStatus}</div>
                     </>
                   )}
@@ -1423,7 +1422,8 @@ function Row({ icon: Icon, label, value }) {
         {Icon && <Icon size={14} color="var(--accent)" />}
         <span>{label}</span>
       </span>
-      <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>{value || '—'}</span>
+      <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>{value || 'â€”'}</span>
     </div>
   );
 }
+

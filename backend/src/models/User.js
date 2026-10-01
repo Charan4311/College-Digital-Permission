@@ -19,13 +19,11 @@ const userSchema = new mongoose.Schema({
   rollNo: { type: String, sparse: true, index: true },
   year: { type: Number, default: 4 },
   yearTier: { type: String, default: 'TIER_4TH' },
-  studentType: { type: String, enum: ['DAY_SCHOLAR', 'HOSTELER'] },
   profileImage: { type: String, default: '' },
 
   // HOD authority scoping
   authorityScope: {
     yearTier: String,
-    studentType: { type: String, enum: ['DAY_SCHOLAR', 'HOSTELER'] }
   },
 
   isActive: { type: Boolean, default: true },

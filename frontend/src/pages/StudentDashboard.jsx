@@ -1,315 +1,301 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import DashboardLayout from '../components/DashboardLayout';
-import api from '../lib/api';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import StudentLayout from "../components/StudentLayout";
+import api from "../lib/api";
+import { useNavigate } from "react-router-dom";
+
+import { FiCalendar as Calendar } from "react-icons/fi";
 import {
-  FaSchool,
-  FaCalendarDays,
-  FaChevronDown,
-  FaFileLines,
+  FaClipboardList,
   FaCircleCheck,
   FaClock,
   FaCircleXmark,
   FaChartColumn,
   FaChartPie,
-  FaArrowTrendUp
-} from 'react-icons/fa6';
+} from "react-icons/fa6";
+
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  AreaChart,
-  Area,
-  CartesianGrid,
-  XAxis,
-  YAxis
-} from 'recharts';
-
-import { useNavigate } from 'react-router-dom';
+  PieChart, Pie, Cell, Tooltip,
+  AreaChart, Area, CartesianGrid, XAxis, YAxis
+} from "recharts";
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [stats, setStats] = useState({
-    total: 0,
-    approved: 0,
-    rejected: 0,
-    pending: 0,
-    entries: [],
-    monthlyOverview: []
+    total: 0, approved: 0, rejected: 0, pending: 0, entries: [], monthlyOverview: []
   });
   const [loading, setLoading] = useState(true);
-  const [chartYear, setChartYear] = useState('This Year');
 
   const fetchStats = async () => {
     try {
-      const res = await api.get('/outpass/mine');
+      const res = await api.get("/outpass/mine");
       const requests = res.data.data || [];
+      const total    = requests.length;
+      const approved = requests.filter(r => ["APPROVED","CLEARED","ISSUED","USED"].includes(r.status)).length;
+      const rejected = requests.filter(r => r.status?.startsWith("REJECTED")).length;
+      const pending  = requests.filter(r => r.status?.startsWith("PENDING")).length;
 
-      const total = requests.length;
-      const approved = requests.filter((r) => ['APPROVED', 'CLEARED', 'ISSUED', 'USED'].includes(r.status)).length;
-      const rejected = requests.filter((r) => r.status?.startsWith('REJECTED')).length;
-      const pending = requests.filter((r) => r.status?.startsWith('PENDING')).length;
-
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthlyOverview = monthNames.map((month, index) => {
-        const monthRequests = requests.filter((req) => {
-          const date = new Date(req.createdAt || Date.now());
-          return date.getMonth() === index;
-        });
-
-        const approvedCount = monthRequests.filter((r) => ['APPROVED', 'CLEARED', 'ISSUED', 'USED'].includes(r.status)).length;
-        const rejectedCount = monthRequests.filter((r) => r.status?.startsWith('REJECTED')).length;
-        const pendingCount = monthRequests.filter((r) => r.status?.startsWith('PENDING')).length;
-
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const monthlyOverview = monthNames.map((month, i) => {
+        const mr = requests.filter(req => new Date(req.createdAt || Date.now()).getMonth() === i);
         return {
           month,
-          total: monthRequests.length,
-          approved: approvedCount,
-          rejected: rejectedCount,
-          pending: pendingCount
+          total: mr.length,
+          approved: mr.filter(r => ["APPROVED","CLEARED","ISSUED","USED"].includes(r.status)).length,
+          rejected: mr.filter(r => r.status?.startsWith("REJECTED")).length,
+          pending:  mr.filter(r => r.status?.startsWith("PENDING")).length,
         };
       });
-
       setStats({ total, approved, rejected, pending, entries: [], monthlyOverview });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 15000);
-    return () => clearInterval(interval);
+    const iv = setInterval(fetchStats, 15000);
+    return () => clearInterval(iv);
   }, []);
 
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const pieData = [
-    { name: 'Approved', value: stats.approved, color: '#16a34a' },
-    { name: 'Rejected', value: stats.rejected, color: '#dc2626' },
-    { name: 'Pending', value: stats.pending, color: '#ea580c' }
+    { name: "Approved", value: stats.approved, color: "#10b981" },
+    { name: "Pending",  value: stats.pending,  color: "#f59e0b" },
+    { name: "Rejected", value: stats.rejected, color: "#ef4444" },
   ];
-
-  const monthlyOverview = stats.monthlyOverview?.length ? stats.monthlyOverview : monthNames.map((month) => ({ month, total: 0, approved: 0, rejected: 0, pending: 0 }));
+  const monthlyOverview = stats.monthlyOverview?.length
+    ? stats.monthlyOverview
+    : monthNames.map(m => ({ month: m, total: 0, approved: 0, rejected: 0, pending: 0 }));
 
   return (
-    <DashboardLayout>
-      <div className="page-header" style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
-          <div>
-            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-              <span style={{ fontWeight: 900, letterSpacing: '-0.03em' }}>STUDENT OVERVIEW</span>
-            </h1>
-            <p className="page-subtitle" style={{ marginTop: '8px' }}>
-              Permission Overview for {user?.name || 'student'} ({user?.rollNo || user?.username || 'N/A'})
-            </p>
+    <StudentLayout
+      pageTitle={
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ color: '#475569', fontSize: 16, fontWeight: 600 }}>
+            Welcome back,
           </div>
+          <div style={{ fontSize: 32, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', letterSpacing: '-0.5px' }}>
+            {(() => {
+              const nameParts = (user?.name || "Student").trim().split(" ");
+              if (nameParts.length > 1) {
+                const firstPart = nameParts.slice(0, -1).join(" ");
+                const lastPart = nameParts[nameParts.length - 1];
+                return (
+                  <>
+                    <span style={{ color: '#0f172a' }}>{firstPart}</span>
+                    <span style={{ color: '#10b981' }}>{lastPart}</span>
+                  </>
+                );
+              }
+              return <span style={{ color: '#0f172a' }}>{nameParts[0]}</span>;
+            })()}
+          </div>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "#64748b", display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+            {(() => {
+              const tier = String(user?.yearTier || '');
+              const yr = String(user?.year || '');
+              const name = String(user?.name || '');
+              let yearStr = '';
+              if (tier.includes('1') || yr === '1' || name.includes('1st') || name.includes('1')) yearStr = '1st Year';
+              else if (tier.includes('2') || yr === '2' || name.includes('2nd') || name.includes('2')) yearStr = '2nd Year';
+              else if (tier.includes('3') || yr === '3' || name.includes('3rd') || name.includes('3nd') || name.includes('3')) yearStr = '3rd Year';
+              else if (tier.includes('4') || yr === '4' || name.includes('4th') || name.includes('4')) yearStr = '4th Year';
+              else yearStr = yr ? `${yr} Year` : 'Year N/A';
+              
+              const branch = user?.branchName || user?.branchId?.name || user?.branch || 'Branch N/A';
+              const roll = user?.rollNo || user?.username || 'Roll N/A';
 
-          {/* Year filter removed */}
+              return (
+                <>
+                  <span>{yearStr}</span>
+                  <span style={{ color: '#cbd5e1', margin: '0 10px', fontWeight: 400 }}>|</span>
+                  <span>{branch}</span>
+                  <span style={{ color: '#cbd5e1', margin: '0 10px', fontWeight: 400 }}>|</span>
+                  <span>{roll}</span>
+                </>
+              );
+            })()}
+          </div>
         </div>
-      </div>
-
+      }
+      pageSubtitle={null}
+      headerRight={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+            <Calendar size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+              {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </div>
+          </div>
+        </div>
+      }
+    >
       {loading ? (
-        <div className="loading-screen"><div className="spinner spinner-lg" /></div>
+        <div className="s-loading"><div className="s-spinner" /></div>
       ) : (
         <>
-          <div className="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[18px] mb-[30px] items-stretch">
-            <div className="stat-card" onClick={() => navigate('/student/my-request')} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#eff6ff', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <FaFileLines size={22} />
-                </div>
-                <div style={{ fontSize: '14px', color: '#475569', fontWeight: 700, lineHeight: 1.3 }}>Total Requests</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '8px' }}>
-                <span style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stats.total}</span>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>100% of total requests</div>
-              </div>
-            </div>
-
-            <div className="stat-card" onClick={() => navigate('/student/my-request', { state: { status: 'Approved' } })} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <FaCircleCheck size={22} />
-                </div>
-                <div style={{ fontSize: '14px', color: '#475569', fontWeight: 700, lineHeight: 1.3 }}>Approved</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '8px' }}>
-                <span style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stats.approved}</span>
-                <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>{stats.total ? `${((stats.approved / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
-              </div>
-            </div>
-
-            <div className="stat-card" onClick={() => navigate('/student/my-request', { state: { status: 'Pending' } })} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#ffedd5', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <FaClock size={22} />
-                </div>
-                <div style={{ fontSize: '14px', color: '#475569', fontWeight: 700, lineHeight: 1.3 }}>Pending</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '8px' }}>
-                <span style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stats.pending}</span>
-                <div style={{ fontSize: '12px', color: '#ea580c', fontWeight: 600 }}>{stats.total ? `${((stats.pending / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
-              </div>
-            </div>
-
-            <div className="stat-card" onClick={() => navigate('/student/my-request', { state: { status: 'Rejected' } })} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '18px 16px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px', height: '100%', minHeight: '150px', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <FaCircleXmark size={22} />
-                </div>
-                <div style={{ fontSize: '14px', color: '#475569', fontWeight: 700, lineHeight: 1.3 }}>Rejected</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '8px' }}>
-                <span style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stats.rejected}</span>
-                <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: 600 }}>{stats.total ? `${((stats.rejected / stats.total) * 100).toFixed(2)}% of total requests` : '0% of total requests'}</div>
-              </div>
-            </div>
+          {/* ── KPI CARDS ── */}
+          <div className="s-stat-grid">
+            <StatCard
+              label="Total Requests" value={stats.total}
+              icon={<FaClipboardList size={20} />}
+              iconBg="rgba(13,148,136,0.12)" iconColor="#0d9488" valueColor="#115e59"
+              onClick={() => navigate("/student/my-request")}
+            />
+            <StatCard
+              label="Pending" value={stats.pending}
+              icon={<FaClock size={20} />}
+              iconBg="rgba(245,158,11,0.12)" iconColor="#d97706" valueColor="#d97706"
+              onClick={() => navigate("/student/my-request", { state: { status: "Pending" } })}
+            />
+            <StatCard
+              label="Approved" value={stats.approved}
+              icon={<FaCircleCheck size={20} />}
+              iconBg="rgba(22,163,74,0.12)" iconColor="#16a34a" valueColor="#16a34a"
+              onClick={() => navigate("/student/my-request", { state: { status: "Approved" } })}
+            />
+            <StatCard
+              label="Rejected" value={stats.rejected}
+              icon={<FaCircleXmark size={20} />}
+              iconBg="rgba(220,38,38,0.12)" iconColor="#dc2626" valueColor="#dc2626"
+              onClick={() => navigate("/student/my-request", { state: { status: "Rejected" } })}
+            />
           </div>
 
-          <div className="dashboard-chart-grid grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-[24px] items-stretch">
-            <div className="card dashboard-chart-card" style={{ border: '1px solid #e2e8f0', borderRadius: '18px', padding: '20px 18px 10px', background: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#eff6ff', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FaChartColumn size={17} />
-                  </div>
+          {/* ── CHARTS ── */}
+          <div className="s-chart-grid">
+
+            {/* Area chart */}
+            <div className="s-chart-card">
+              <div className="s-chart-head">
+                <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                  <div className="s-chart-icon-tile"><FaChartColumn size={15} /></div>
                   <div>
-                    <div style={{ fontSize: '20px', fontWeight: 800, color: '#1f2937' }}>Monthly Permission Requests</div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Total, Approved, Pending and Rejected requests per month</div>
+                    <div className="s-chart-title">Monthly Permission Requests</div>
+                    <div className="s-chart-sub">Total, Approved, Pending and Rejected requests per month</div>
                   </div>
                 </div>
-
+                <select className="s-year-selector" defaultValue={new Date().getFullYear()}>
+                  {[2024,2025,2026].map(y => <option key={y}>{y}</option>)}
+                </select>
               </div>
 
-              <div style={{ width: '100%', height: '320px', marginTop: '20px' }}>
+              <div style={{ width:"100%", height:"260px" }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyOverview} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={monthlyOverview} margin={{ top:8, right:8, left:-22, bottom:0 }}>
                     <defs>
-                      <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#1d4ed8" stopOpacity={0.12}/>
-                        <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.12}/>
-                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ea580c" stopOpacity={0.12}/>
-                        <stop offset="95%" stopColor="#ea580c" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#dc2626" stopOpacity={0.12}/>
-                        <stop offset="95%" stopColor="#dc2626" stopOpacity={0}/>
-                      </linearGradient>
+                      {[
+                        { id:"gTotal",    c:"#0d9488" },
+                        { id:"gApproved", c:"#10b981" },
+                        { id:"gPending",  c:"#f59e0b" },
+                        { id:"gRejected", c:"#ef4444" },
+                      ].map(g => (
+                        <linearGradient key={g.id} id={g.id} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%"  stopColor={g.c} stopOpacity={0.22} />
+                          <stop offset="95%" stopColor={g.c} stopOpacity={0}    />
+                        </linearGradient>
+                      ))}
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.6} />
-                    <XAxis 
-                      dataKey="month" 
-                      tickLine={false} 
-                      axisLine={false} 
-                      tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} 
-                      minTickGap={10} 
-                      dy={10}
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(226,232,240,.50)" />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize:11, fill:"#94a3b8", fontWeight:500 }} dy={8} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize:11, fill:"#94a3b8", fontWeight:500 }} dx={-6} />
+                    <Tooltip
+                      contentStyle={{ borderRadius:"14px", border:"1px solid #e2e8f0", boxShadow:"0 12px 28px rgba(0,0,0,.10)", background:"rgba(255,255,255,.98)" }}
+                      itemStyle={{ fontWeight:600, padding:"2px 0" }}
+                      labelStyle={{ color:"#64748b", fontWeight:700, marginBottom:"4px" }}
                     />
-                    <YAxis 
-                      allowDecimals={false} 
-                      tickLine={false} 
-                      axisLine={false} 
-                      tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} 
-                      dx={-10}
-                    />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
-                      itemStyle={{ fontWeight: 700, padding: '2px 0' }}
-                      labelStyle={{ color: '#64748b', fontWeight: 600, marginBottom: '4px' }}
-                    />
-                    <Area type="monotone" dataKey="total" name="Total Requests" stroke="#1e3a8a" strokeWidth={1.5} fillOpacity={1} fill="url(#colorTotal)" activeDot={{ r: 5, fill: '#1e3a8a', strokeWidth: 0, boxShadow: '0 0 10px rgba(30,58,138,0.5)' }} />
-                    <Area type="monotone" dataKey="approved" name="Approved" stroke="#16a34a" strokeWidth={1.5} fillOpacity={1} fill="url(#colorApproved)" activeDot={{ r: 5, fill: '#16a34a', strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="pending" name="Pending" stroke="#ea580c" strokeWidth={1.5} fillOpacity={1} fill="url(#colorPending)" activeDot={{ r: 5, fill: '#ea580c', strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#dc2626" strokeWidth={1.5} fillOpacity={1} fill="url(#colorRejected)" activeDot={{ r: 5, fill: '#dc2626', strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="total"    name="Total"    stroke="#0d9488" strokeWidth={2.2} fill="url(#gTotal)"    activeDot={{ r:5, fill:"#0d9488", strokeWidth:0 }} />
+                    <Area type="monotone" dataKey="approved" name="Approved" stroke="#10b981" strokeWidth={2.2} fill="url(#gApproved)" activeDot={{ r:5, fill:"#10b981", strokeWidth:0 }} />
+                    <Area type="monotone" dataKey="pending"  name="Pending"  stroke="#f59e0b" strokeWidth={2.2} fill="url(#gPending)"  activeDot={{ r:5, fill:"#f59e0b", strokeWidth:0 }} />
+                    <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#ef4444" strokeWidth={2.2} fill="url(#gRejected)" activeDot={{ r:5, fill:"#ef4444", strokeWidth:0 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', padding: '16px 0 12px', borderTop: '1px solid #f1f5f9', marginTop: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#1d4ed8', display: 'inline-block' }} />
-                  <span>Total</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#16a34a', display: 'inline-block' }} />
-                  <span>Approved</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#ea580c', display: 'inline-block' }} />
-                  <span>Pending</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#dc2626', display: 'inline-block' }} />
-                  <span>Rejected</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="card dashboard-chart-card" style={{ border: '1px solid #e2e8f0', borderRadius: '18px', padding: '20px 18px 10px', background: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#eff6ff', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FaChartPie size={17} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '20px', fontWeight: 800, color: '#1f2937' }}>Request Status Distribution</div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Visual representation of your requests</div>
-                  </div>
-                </div>
-
-              </div>
-
-              <div style={{ position: 'relative', width: '100%', height: '230px', marginTop: '12px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={56}
-                      outerRadius={82}
-                      paddingAngle={2}
-                      stroke="white"
-                      strokeWidth={4}
-                    >
-                      {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>Total Requests</div>
-                    <div style={{ fontSize: '32px', fontWeight: 800, color: '#1f2937', lineHeight: 1.1 }}>{stats.total}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '18px', flexWrap: 'wrap', padding: '0 0 12px' }}>
-                {pieData.map((entry) => (
-                  <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: entry.color, display: 'inline-block' }} />
-                    <span>{entry.name}</span>
+              <div className="s-chart-legend">
+                {[
+                  { label:"Total",    color:"#0d9488" },
+                  { label:"Approved", color:"#10b981" },
+                  { label:"Pending",  color:"#f59e0b" },
+                  { label:"Rejected", color:"#ef4444" },
+                ].map(l => (
+                  <div className="s-legend-item" key={l.label}>
+                    <span className="s-legend-dot" style={{ background:l.color }} />
+                    <span>{l.label}</span>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Donut chart */}
+            <div className="s-chart-card">
+              <div className="s-chart-head">
+                <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                  <div className="s-chart-icon-tile"><FaChartPie size={15} /></div>
+                  <div>
+                    <div className="s-chart-title">Request Status Distribution</div>
+                    <div className="s-chart-sub">Visual representation of your requests</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ position:"relative", width:"100%", height:"200px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} dataKey="value" nameKey="name"
+                      innerRadius={60} outerRadius={84}
+                      paddingAngle={3} stroke="rgba(255,255,255,.90)" strokeWidth={3}>
+                      {pieData.map(e => <Cell key={e.name} fill={e.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius:"12px", border:"1px solid #e2e8f0", background:"rgba(255,255,255,.97)" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center label */}
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:"11px", color:"#64748b", fontWeight:700 }}>Total Requests</div>
+                    <div style={{ fontSize:"28px", fontWeight:800, color:"#1f2937", lineHeight:1.1 }}>{stats.total}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="s-chart-legend" style={{ gap:"14px" }}>
+                {pieData.map(e => (
+                  <div className="s-legend-item" key={e.name}>
+                    <span className="s-legend-dot" style={{ background:e.color, borderRadius:"50%" }} />
+                    <span>{e.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </>
       )}
-    </DashboardLayout>
+    </StudentLayout>
+  );
+}
+
+function StatCard({ label, value, icon, iconBg, iconColor, valueColor, onClick }) {
+  return (
+    <div
+      className="s-stat-card"
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={e => { if (onClick && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }}
+    >
+      <div className="s-stat-icon" style={{ background:iconBg, color:iconColor }}>{icon}</div>
+      <div>
+        <div className="s-stat-label">{label}</div>
+        <div className="s-stat-value" style={{ color:valueColor }}>{value}</div>
+      </div>
+    </div>
   );
 }
