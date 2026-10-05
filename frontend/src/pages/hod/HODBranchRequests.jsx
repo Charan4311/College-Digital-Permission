@@ -275,6 +275,7 @@ const isRejected = status =>
     status.startsWith('REJECTED');
 
 const statusLabel = status => {
+    if (status === 'PENDING_CTPO') return 'Pending';
     if (isPending(status)) return 'Pending';
     if (isRejected(status)) return 'Rejected';
     if (isApproved(status)) return 'Approved';
@@ -288,7 +289,7 @@ const statusLabel = status => {
 };
 
 const statusStyle = status => {
-    if (isPending(status)) {
+    if (isPending(status) || status === 'PENDING_CTPO') {
         return {
             background: '#fff7ed',
             color: '#c2410c',
@@ -1025,6 +1026,7 @@ export default function HODBranchRequests() {
                             }}
                         >
                             <select
+                                className="branch-type-filter"
                                 value={typeFilter}
                                 onChange={e => {
                                     setTypeFilter(
@@ -1037,16 +1039,16 @@ export default function HODBranchRequests() {
                                     height: 40,
                                     padding:
                                         '0 34px 0 12px',
-                                    border:
-                                        '1px solid #e2e8f0',
+                                    border: typeFilter !== 'ALL' ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
                                     borderRadius: 8,
                                     outline: 'none',
                                     fontSize: 12,
-                                    color: '#475569',
-                                    background:
-                                        '#fff',
+                                    color: typeFilter !== 'ALL' ? '#059669' : '#475569',
+                                    background: typeFilter !== 'ALL' ? '#ecfdf5' : '#fff',
                                     appearance:
                                         'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
                                 }}
                             >
                                 <option value="ALL">
@@ -1077,8 +1079,7 @@ export default function HODBranchRequests() {
                                         'translateY(-50%)',
                                     pointerEvents:
                                         'none',
-                                    color:
-                                        '#64748b',
+                                    color: typeFilter !== 'ALL' ? '#059669' : '#64748b',
                                 }}
                             />
                         </div>
@@ -1418,7 +1419,7 @@ export default function HODBranchRequests() {
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             <span>{requestType(request)}</span>
                                                             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace' }}>
-                                                                Ref: {(request?.referenceId || request?.refId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'}
+                                                                Ref: {(request?.referenceId || request?.refId || request?._id || request?.id || '').toString().replace(/^PERM-/i, 'KDP-') || 'N/A'}
                                                             </span>
                                                         </div>
                                                     </Cell>
@@ -1675,6 +1676,14 @@ export default function HODBranchRequests() {
                     height: 44px !important;
                     box-sizing: border-box;
                     line-height: 1.2;
+                }
+
+                .branch-type-filter:hover {
+                    border-color: #10b981 !important;
+                }
+                .branch-type-filter:focus {
+                    border-color: #10b981 !important;
+                    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
                 }
 
                 .branch-request-filter-grid input {
