@@ -381,6 +381,13 @@ export default function CTPOReports() {
 
       permissionType = typeMap[normalizedTypeKey] || permissionType;
 
+      const submittedDate =
+        request?.createdAt ||
+        request?.submittedAt ||
+        request?.submittedOn ||
+        request?.date ||
+        request?.created_at;
+
       const id = request?._id || request?.id || request?.requestId;
 
       return {
