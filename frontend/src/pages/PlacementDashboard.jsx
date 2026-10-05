@@ -78,7 +78,7 @@ export default function ApproverDashboard() {
     // Placement Officer UI state. This state is only used when the logged-in
     // role is PLACEMENT_OFFICER; existing CTPO/HOD/Hostel behavior is unchanged.
     const [placementSearch, setPlacementSearch] = useState('');
-    const [placementStatusFilter, setPlacementStatusFilter] = useState('REVIEWED');
+    const [placementStatusFilter, setPlacementStatusFilter] = useState('ALL');
     const [placementPeriod, setPlacementPeriod] = useState('ALL');
     const [placementFromDate, setPlacementFromDate] = useState('');
     const [placementToDate, setPlacementToDate] = useState('');
@@ -152,12 +152,12 @@ export default function ApproverDashboard() {
         const requestedView = searchParams.get('view');
 
         if (isPlacementOfficer) {
-            if (requestedView === 'history') {
+            if (requestedView === 'history' || location.pathname.includes('/placement/history')) {
                 const status = searchParams.get('status');
-                if (status === 'APPROVED' || status === 'REJECTED_PLACEMENT_OFFICER' || status === 'ALL') {
+                if (status === 'APPROVED' || status === 'REJECTED_PLACEMENT_OFFICER' || status === 'PENDING_PLACEMENT_OFFICER' || status === 'ALL') {
                     setPlacementStatusFilter(status);
                 } else {
-                    setPlacementStatusFilter('REVIEWED');
+                    setPlacementStatusFilter('ALL');
                 }
                 setPlacementPeriod(searchParams.get('period') || 'ALL');
                 return;
@@ -183,7 +183,7 @@ export default function ApproverDashboard() {
                 setKpiFilter('TOTAL');
             }
         }
-    }, [searchParams, isHostelIncharge, isPlacementOfficer]);
+    }, [searchParams, location.pathname, isHostelIncharge, isPlacementOfficer]);
 
     useEffect(() => {
         if (tab === 'history') fetchHistory();
@@ -705,7 +705,7 @@ export default function ApproverDashboard() {
         setPlacementFromDate('');
         setPlacementToDate('');
         if (placementView === 'history') {
-            setPlacementStatusFilter('REVIEWED');
+            return;
         } else if (placementView === 'pending') {
             setPlacementStatusFilter('PENDING_PLACEMENT_OFFICER');
         }
@@ -879,24 +879,17 @@ export default function ApproverDashboard() {
 
         if (filter === 'PENDING') {
             setPlacementStatusFilter('PENDING_PLACEMENT_OFFICER');
-            navigate('/placement/pending');
-            return;
-        }
-
-        if (filter === 'APPROVED') {
+            navigate('/placement/history?status=PENDING_PLACEMENT_OFFICER');
+        } else if (filter === 'APPROVED') {
             setPlacementStatusFilter('APPROVED');
-            navigate('/placement/history');
-            return;
-        }
-
-        if (filter === 'REJECTED') {
+            navigate('/placement/history?status=APPROVED');
+        } else if (filter === 'REJECTED') {
             setPlacementStatusFilter('REJECTED_PLACEMENT_OFFICER');
-            navigate('/placement/history');
-            return;
+            navigate('/placement/history?status=REJECTED_PLACEMENT_OFFICER');
+        } else {
+            setPlacementStatusFilter('ALL');
+            navigate('/placement/history?status=ALL');
         }
-
-        setPlacementStatusFilter('ALL');
-        navigate('/placement/history');
     };
 
     const renderPlacementStatus = (status) => {
@@ -1068,7 +1061,7 @@ export default function ApproverDashboard() {
     };
 
     const renderPlacementDashboard = () => {
-        const total = placementDashboardRequests.length;
+        const total = placementAllRequests.length;
         const approved = placementApprovedRequests.length;
         const pendingCount = placementDashboardPendingRequests.length;
         const rejected = placementRejectedRequests.length;
@@ -1617,7 +1610,7 @@ export default function ApproverDashboard() {
                 </div>
 
                 <div
-                    className="card"
+                    className="card placement-request-filter-card"
                     style={{
                         marginBottom: 16,
                         padding: 14,
@@ -1632,6 +1625,7 @@ export default function ApproverDashboard() {
                         }}
                     >
                         <div
+                            className="placement-request-filter-search"
                             style={{
                                 flex: '1 1 280px',
                                 position: 'relative',
@@ -1648,7 +1642,7 @@ export default function ApproverDashboard() {
                                 }}
                             />
                             <input
-                                className="form-input"
+                                className="form-input placement-request-filter-input"
                                 value={placementSearch}
                                 onChange={(e) => setPlacementSearch(e.target.value)}
                                 placeholder="Search student, roll number, company or role..."
@@ -1658,12 +1652,11 @@ export default function ApproverDashboard() {
 
                         {!isPendingView && (
                             <select
-                                className="form-input"
+                                className="form-input placement-request-filter-select"
                                 value={placementStatusFilter}
                                 onChange={(e) => setPlacementStatusFilter(e.target.value)}
-                                style={{ width: 150 }}
+                                style={{ width: 165 }}
                             >
-                                <option value="REVIEWED">Approved & Rejected</option>
                                 <option value="ALL">All Requests</option>
                                 <option value="PENDING_PLACEMENT_OFFICER">Pending</option>
                                 <option value="APPROVED">Approved</option>
@@ -1672,7 +1665,7 @@ export default function ApproverDashboard() {
                         )}
 
                         <select
-                            className="form-input"
+                            className="form-input placement-request-filter-select"
                             value={placementPeriod}
                             onChange={(e) => setPlacementPeriod(e.target.value)}
                             style={{ width: 145 }}
@@ -1981,6 +1974,28 @@ export default function ApproverDashboard() {
     const renderPlacementOfficerLayout = () => (
         <DashboardLayout>
             <style>{`
+                .placement-request-filter-card .placement-request-filter-input {
+                    height: 44px !important;
+                    box-sizing: border-box;
+                    padding: 0 14px 0 36px !important;
+                    line-height: 1.2;
+                }
+                .placement-request-filter-card .placement-request-filter-select {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    height: 44px !important;
+                    box-sizing: border-box;
+                    padding: 0 14px !important;
+                    line-height: 1.2;
+                }
+                .placement-request-filter-card .placement-request-filter-select::picker-icon {
+                    display: block;
+                    margin-left: auto;
+                    color: #64748b;
+                    font-size: 10px;
+                }
+
         /* Placement mobile history/request cards */
         .placement-mobile-request-list { display:none; }
         .placement-mobile-request-card {

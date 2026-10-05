@@ -1,20 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import {
-  FiClipboard as ClipboardList,
-  FiCheckCircle as CheckCircle,
-  FiClock as Clock,
-  FiXCircle as XCircle,
   FiDownload as Download,
   FiCalendar as CalendarDays,
   FiFileText as FileText,
   FiTrendingUp as TrendingUp,
   FiPieChart as PieChartIcon,
-  FiCheckCircle as CheckCircle2,
   FiRefreshCw as RefreshCw,
   FiDownloadCloud as FileDown,
   FiX as X,
 } from "react-icons/fi";
+import { 
+  FaClipboardList as ClipboardList,
+  FaClock as Clock,
+  FaCircleCheck as CheckCircle,
+  FaCircleCheck as CheckCircle2,
+  FaCircleXmark as XCircle
+} from "react-icons/fa6";
 import { FaFileExcel as FileSpreadsheet } from "react-icons/fa";
 
 import { jsPDF } from "jspdf";
@@ -48,7 +50,7 @@ export default function CTPOReports() {
   // STATE
   // ==========================================================
 
-  const [period, setPeriod] = useState("Last 30 Days");
+  const [period, setPeriod] = useState("Last 7 Days");
 
 
   const [requests, setRequests] = useState([]);
@@ -67,7 +69,7 @@ export default function CTPOReports() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   // Top report period and line-chart period are kept synchronized.
-  const [chartPeriod, setChartPeriod] = useState("last30");
+  const [chartPeriod, setChartPeriod] = useState("last7");
 
   // ==========================================================
   // DATE HELPERS
@@ -211,9 +213,9 @@ export default function CTPOReports() {
   // LOAD CTPO REQUESTS
   // ==========================================================
 
-  const loadRequests = async () => {
+  const loadRequests = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError("");
 
       // ------------------------------------------------------
@@ -297,12 +299,12 @@ export default function CTPOReports() {
     // requests are reflected in the counters without changing
     // any existing report/filter functionality.
     const refreshTimer = setInterval(() => {
-      loadRequests();
+      loadRequests(true);
     }, 30000);
 
     // Refresh immediately when the user returns to this tab.
     const handleWindowFocus = () => {
-      loadRequests();
+      loadRequests(true);
     };
 
     window.addEventListener("focus", handleWindowFocus);
@@ -379,34 +381,6 @@ export default function CTPOReports() {
 
       permissionType = typeMap[normalizedTypeKey] || permissionType;
 
-      // ----------------------------------------------------
-      // STUDENT TYPE
-      // ----------------------------------------------------
-
-      const studentTypeRaw =
-        request?.studentType ||
-        request?.student?.studentType ||
-        request?.student?.type ||
-        request?.requestData?.studentType ||
-        "";
-
-      const studentType = String(studentTypeRaw).toUpperCase();
-
-      // ----------------------------------------------------
-      // DATE
-      // ----------------------------------------------------
-
-      const submittedDate =
-        request?.createdAt ||
-        request?.submittedAt ||
-        request?.submittedOn ||
-        request?.date ||
-        request?.created_at;
-
-      // ----------------------------------------------------
-      // REQUEST ID
-      // ----------------------------------------------------
-
       const id = request?._id || request?.id || request?.requestId;
 
       return {
@@ -417,8 +391,6 @@ export default function CTPOReports() {
         _status: status,
 
         _permissionType: permissionType,
-
-        _studentType: studentType,
 
         _submittedDate: submittedDate,
       };
@@ -743,22 +715,7 @@ export default function CTPOReports() {
       isApproved(request),
     ).length;
 
-    // --------------------------------------------------------
-    // STUDENT TYPE
-    // --------------------------------------------------------
 
-    let dayScholar = 0;
-    let hosteller = 0;
-
-    filteredRequests.forEach((request) => {
-      const type = request._studentType;
-
-      if (type.includes("HOSTEL")) {
-        hosteller += 1;
-      } else if (type.includes("DAY") || type.includes("SCHOLAR")) {
-        dayScholar += 1;
-      }
-    });
 
     // --------------------------------------------------------
     // PERMISSION TYPES
@@ -963,9 +920,8 @@ export default function CTPOReports() {
     // --------------------------------------------------------
     // Bucket ALL requests by their submitted date
     // --------------------------------------------------------
-    // Use the same filtered dataset as the HOD Reports graph.
-    // The chart-period buttons still control the rolling chart window.
-    filteredRequests.forEach((request) => {
+    // The chart-period buttons control the rolling chart window independently of the page filter.
+    normalizedRequests.forEach((request) => {
       const dateValue = request._submittedDate;
       if (!dateValue) return;
 
@@ -1023,7 +979,7 @@ export default function CTPOReports() {
 
       return { date: label, total, approved, pending, rejected };
     });
-  }, [filteredRequests, chartPeriod]);
+  }, [normalizedRequests, chartPeriod]);
 
   // ==========================================================
   // PIE / DONUT DATA
@@ -1092,7 +1048,6 @@ export default function CTPOReports() {
 
     const studentName = req.studentName || rawStudent.name || rawStudent.fullName || '-';
     const rollNo = req.rollNo || req.rollNumber || rawStudent.rollNo || rawStudent.rollNumber || '-';
-    const studentType = rawStudent.studentType || rawStudent.type || req.studentType || '-';
 
     let permissionType = req.permissionType?.name || req.permissionType?.label || req.permissionTypeName || req.type || req.requestType || req.permissionType || '-';
     if (typeof permissionType === 'object') {
@@ -1108,7 +1063,6 @@ export default function CTPOReports() {
       sectionBranch,
       studentName,
       rollNo,
-      studentType,
       permissionType,
       details,
       date,
@@ -1232,7 +1186,7 @@ export default function CTPOReports() {
       const grouped = groupRequestsByYearAndSection();
       const rows = [];
 
-      rows.push(['Year', 'Section/Branch', 'Student Name', 'Roll Number', 'Student Type', 'Permission Type', 'Request Date', 'Status']);
+      rows.push(['Year', 'Section/Branch', 'Student Name', 'Roll Number', 'Permission Type', 'Request Date', 'Status']);
 
       const escapeCSV = (val) => {
         if (val == null) return '-';
@@ -1251,7 +1205,6 @@ export default function CTPOReports() {
               escapeCSV(section),
               escapeCSV(mapped.studentName),
               escapeCSV(mapped.rollNo),
-              escapeCSV(mapped.studentType),
               escapeCSV(mapped.permissionType),
               escapeCSV(mapped.date),
               escapeCSV(mapped.status)
@@ -1679,7 +1632,6 @@ export default function CTPOReports() {
       <style>{`
 
         .ctpo-reports-page {
-          width: 100%;
           overflow-x: hidden;
           max-width: 1600px;
           margin: 0 auto;
@@ -1749,13 +1701,20 @@ export default function CTPOReports() {
         .ctpo-period-dropdown-icon {
           position: absolute;
           left: 10px;
+          top: 50%;
+          transform: translateY(-50%);
           color: #64748b;
           pointer-events: none;
         }
 
-        .ctpo-period-dropdown {
-          height: 38px;
-          padding: 0 12px 0 30px;
+        .ctpo-reports-page .ctpo-period-dropdown {
+          display: inline-flex;
+          align-items: center;
+          justify-content: space-between;
+          height: 44px !important;
+          box-sizing: border-box;
+          line-height: 1.2;
+          padding: 0 14px 0 30px;
           border: 1px solid #e2e8f0;
           border-radius: 8px;
           background: #fff;
@@ -1767,6 +1726,13 @@ export default function CTPOReports() {
           appearance: auto;
           box-shadow: 0 1px 3px rgba(15,23,42,.05);
           transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .ctpo-reports-page .ctpo-period-dropdown::picker-icon {
+          display: block;
+          margin-left: auto;
+          color: #64748b;
+          font-size: 10px;
         }
 
         .ctpo-period-dropdown:focus {
@@ -2000,11 +1966,13 @@ export default function CTPOReports() {
 
         .ctpo-trend-header {
           display: flex;
+          flex-direction: row;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
           gap: 14px;
           flex-wrap: wrap;
           margin-bottom: 16px;
+          text-align: left;
         }
 
         .ctpo-trend-title {
@@ -2030,32 +1998,35 @@ export default function CTPOReports() {
           gap: 4px;
           flex-wrap: wrap;
           align-items: center;
+          justify-content: center;
+          background: #f1f5f9;
+          padding: 4px;
+          border-radius: 8px;
         }
 
         .ctpo-cpbtn {
-          height: 30px;
-          padding: 0 11px;
-          border: 1px solid #e2e8f0;
-          background: #fff;
-          color: #64748b;
+          height: 32px;
+          padding: 0 16px;
+          border: none;
+          background: transparent;
+          color: #475569;
           border-radius: 6px;
           cursor: pointer;
           font-weight: 600;
-          font-size: 11px;
-          transition: all 0.15s ease;
+          font-size: 13px;
+          transition: all 0.2s ease;
           white-space: nowrap;
         }
 
-        .ctpo-cpbtn:hover {
-          background: #f8fafc;
-          border-color: #cbd5e1;
+        .ctpo-cpbtn:hover:not(.active) {
+          background: #e2e8f0;
+          color: #1e293b;
         }
 
         .ctpo-cpbtn.active {
           background: #10b981;
           color: #fff;
-          border-color: #10b981;
-          box-shadow: 0 2px 6px rgba(37,99,235,0.22);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         /* ====== CHART EMPTY STATE ====== */
@@ -2121,8 +2092,6 @@ export default function CTPOReports() {
           display: flex;
           flex-direction: column;
           gap: 10px;
-          max-height: 200px;
-          overflow-y: auto;
         }
 
         .ctpo-type-item {

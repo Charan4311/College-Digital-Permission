@@ -1,3 +1,0 @@
-@echo off
-echo Starting College Digital Permission System (Backend + Frontend)...
-npm run dev

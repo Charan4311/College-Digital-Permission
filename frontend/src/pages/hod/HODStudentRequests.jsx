@@ -59,9 +59,19 @@ const formatDate = r => {
 };
 
 const isApproved = status =>
-    ['APPROVED', 'ISSUED', 'USED', 'CLEARED'].includes(status);
+    [
+        'APPROVED',
+        'ISSUED',
+        'USED',
+        'CLEARED',
+        'PENDING_HOSTEL_INCHARGE',
+        'PENDING_PLACEMENT_OFFICER',
+        'PENDING_CTPO'
+    ].includes(status);
 
-const isPending = status => status.startsWith('PENDING');
+const isPending = status => 
+    status === 'PENDING_HOD' || 
+    status === 'PENDING_HOD_APPROVAL';
 const isRejected = status => status.startsWith('REJECTED');
 
 const statusLabel = status => {
@@ -127,7 +137,21 @@ export default function HODStudentRequests() {
                 ? body
                 : body?.data || body?.requests || [];
 
-            setRequests(Array.isArray(data) ? data : []);
+            const isHODVisibleRequest = (request) => {
+                const type = String(
+                    request?.requestType ||
+                    request?.type ||
+                    request?.permissionType ||
+                    ''
+                )
+                    .trim()
+                    .toUpperCase()
+                    .replace(/[\s-]+/g, '_');
+
+                return type !== 'LIBRARY';
+            };
+
+            setRequests(Array.isArray(data) ? data.filter(isHODVisibleRequest) : []);
         } catch (err) {
             console.error('HOD student requests error:', err);
             setError(
@@ -250,6 +274,12 @@ export default function HODStudentRequests() {
     }, [currentPage, totalPages]);
 
     const changeStatus = status => {
+        // Pending tab redirects to the dedicated Pending Approvals page.
+        if (status === 'PENDING') {
+            navigate('/hod/approvals');
+            return;
+        }
+
         setCurrentPage(1);
 
         const params = {};
@@ -340,6 +370,7 @@ export default function HODStudentRequests() {
                 {/* FILTERS - no branch filter */}
                 <div className="card" style={{ marginBottom: 18, padding: 16 }}>
                     <div
+                        className="student-request-filter-grid"
                         style={{
                             display: 'grid',
                             gridTemplateColumns:
@@ -575,18 +606,20 @@ export default function HODStudentRequests() {
                                                         type="button"
                                                         onClick={() => navigate(`/outpass/${request?._id}`)}
                                                         style={{
-                                                            height: 32,
-                                                            padding: '0 10px',
-                                                            border: '1px solid #d1fae5',
-                                                            borderRadius: 7,
-                                                            background: '#f0fdf4',
-                                                            color: '#16a34a',
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            cursor: 'pointer',
                                                             display: 'inline-flex',
                                                             alignItems: 'center',
-                                                            gap: 5
+                                                            gap: 5,
+                                                            padding: '5px 14px',
+                                                            borderRadius: '50px',
+                                                            fontSize: '12.5px',
+                                                            fontWeight: 600,
+                                                            color: '#10b981',
+                                                            background: 'rgba(209, 250, 229, 0.92)',
+                                                            border: '1px solid #a7f3d0',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.15s',
+                                                            fontFamily: 'inherit',
+                                                            whiteSpace: 'nowrap'
                                                         }}
                                                     >
                                                         <Eye size={14} />
@@ -655,7 +688,27 @@ export default function HODStudentRequests() {
           to { transform: rotate(360deg); }
         }
 
-        @media (max-width: 1000px) {
+                .student-request-filter-grid input,
+                .student-request-filter-grid select {
+                    height: 44px !important;
+                    box-sizing: border-box;
+                    line-height: 1.2;
+                }
+
+                .student-request-filter-grid input {
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
+                }
+
+                .student-request-filter-grid select {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 0 34px 0 12px !important;
+                    appearance: none !important;
+                }
+
+        @media (max-width: 1100px) {
           .student-request-filter-grid {
             grid-template-columns: 1fr 1fr !important;
           }

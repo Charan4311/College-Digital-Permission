@@ -333,9 +333,20 @@ export default function ApproverDashboard() {
     }
   }
 
+  const normalizeHostelRequestType = (request) => {
+    const type = String(request?.requestType || request?.type || 'OUTPASS')
+      .trim()
+      .toUpperCase()
+      .replace(/[\s-]+/g, '_');
+
+    if (type === 'MESS') return 'MESS_FEE';
+    if (type === 'OUT_PASS') return 'OUTPASS';
+    return type;
+  };
+
   const filteredHostelData = hostelBaseData.filter(r => {
     if (typeFilter === 'ALL') return true;
-    return (r.requestType || 'OUTPASS') === typeFilter;
+    return normalizeHostelRequestType(r) === typeFilter;
   });
 
   const changeHostelView = (view) => {
@@ -673,7 +684,7 @@ export default function ApproverDashboard() {
                         <td>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.studentId?.name}</div>
                           <div className="td-muted" style={{ fontSize: 12 }}>
-                            <code>{req.studentId?.rollNo}</code> Â· {req.branchId?.name || 'CSM'}
+                            <code>{req.studentId?.rollNo}</code> | {req.branchId?.name || 'CSM'}
                           </div>
                         </td>
                         <td style={{ maxWidth: 220 }}>
@@ -682,7 +693,7 @@ export default function ApproverDashboard() {
                           </div>
                           {reqType === 'MESS_FEE' && (
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              Amount: <strong>â‚¹{req.messAmount?.toLocaleString('en-IN')}</strong> Â·{' '}
+                              Amount: <strong>INR {req.messAmount?.toLocaleString('en-IN')}</strong> |{' '}
                               <span style={{ color: req.paidStatus === 'Paid' ? 'var(--green)' : 'var(--yellow)', fontWeight: 600 }}>
                                 {req.paidStatus}
                               </span>
@@ -690,7 +701,7 @@ export default function ApproverDashboard() {
                           )}
                           {reqType === 'INTERNSHIP' && (
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              <strong>{req.companyName}</strong> ({req.role}) Â· {req.internshipMode}
+                              <strong>{req.companyName}</strong> ({req.role}) | {req.internshipMode}
                             </div>
                           )}
                         </td>
@@ -700,7 +711,7 @@ export default function ApproverDashboard() {
                               <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
                                 {new Date(req.outDate).toLocaleDateString('en-IN')}
                               </div>
-                              <div style={{ fontSize: 11 }}>{req.outTime} â†’ {req.expectedReturnTime}</div>
+                              <div style={{ fontSize: 11 }}>{req.outTime} to {req.expectedReturnTime}</div>
                             </>
                           )}
                           {(reqType === 'MESS_FEE' || reqType === 'INTERNSHIP') && (
@@ -749,7 +760,7 @@ export default function ApproverDashboard() {
                         {isHostelIncharge ? (
                           <>
                             <td>
-                              <StatusBadge status={getHostelDisplayStatus(req) || cfg.pendingStatus} />
+                              <StatusBadge status={getHostelDisplayStatus(req) || cfg.pendingStatus} showIcon={!isHostelIncharge} />
                             </td>
                             {tab === 'pending' && (
                               <td>
@@ -759,13 +770,17 @@ export default function ApproverDashboard() {
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '4px',
-                                    padding: '6px 12px',
-                                    background: '#ecfdf5',
+                                    gap: '5px',
+                                    padding: '5px 14px',
+                                    background: 'rgba(209, 250, 229, 0.92)',
                                     color: '#10b981',
-                                    border: '1px solid #10b981',
-                                    borderRadius: '6px',
-                                    fontWeight: 600
+                                    border: '1px solid #a7f3d0',
+                                    borderRadius: '50px',
+                                    fontSize: '12.5px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                    fontFamily: 'inherit'
                                   }}
                                 >
                                   <Eye size={14} />
@@ -878,7 +893,7 @@ export default function ApproverDashboard() {
                           {reqType === 'INTERNSHIP' && (`${new Date(req.startDate).toLocaleDateString('en-IN')} - ${new Date(req.endDate).toLocaleDateString('en-IN')}`)}
                           {reqType === 'LIBRARY' && (new Date(req.requestDate || req.createdAt).toLocaleDateString('en-IN'))}
                         </td>
-                        <td><StatusBadge status={isHostelIncharge ? getHostelDisplayStatus(req) : req.status} /></td>
+                        <td><StatusBadge status={isHostelIncharge ? getHostelDisplayStatus(req) : req.status} showIcon={!isHostelIncharge} /></td>
                         {isHostelIncharge && (
                           <td>
                             <button
@@ -887,13 +902,17 @@ export default function ApproverDashboard() {
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '4px',
-                                padding: '6px 12px',
-                                background: '#ecfdf5',
+                                gap: '5px',
+                                padding: '5px 14px',
+                                background: 'rgba(209, 250, 229, 0.92)',
                                 color: '#10b981',
-                                border: '1px solid #10b981',
-                                borderRadius: '6px',
-                                fontWeight: 600
+                                border: '1px solid #a7f3d0',
+                                borderRadius: '50px',
+                                fontSize: '12.5px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                fontFamily: 'inherit'
                               }}
                             >
                               <Eye size={14} />

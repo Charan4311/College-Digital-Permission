@@ -140,15 +140,7 @@ const extractRequestArray = (payload) => {
     return [];
 };
 
-const getStudentType = (request) => {
-    return String(
-        request?.studentType ||
-        request?.student?.studentType ||
-        ""
-    )
-        .trim()
-        .toUpperCase();
-};
+
 
 const getStatus = (request) => {
     return String(request?.status || "").toUpperCase();
@@ -243,31 +235,6 @@ const HODBranches = () => {
                 }
             );
 
-            const hostelRequests =
-                branchRequests.filter((request) => {
-                    const type =
-                        getStudentType(request);
-
-                    return (
-                        
-                        type === "HOSTEL" ||
-                        type === "HOSTELLER"
-                    );
-                });
-
-            const dayScholarRequests =
-                branchRequests.filter((request) => {
-                    const type =
-                        getStudentType(request);
-
-                    return (
-                        
-                        type === "DAY SCHOLAR" ||
-                        type === "DAY-SCHOLAR" ||
-                        type === "DAYSCHOLAR"
-                    );
-                });
-
             const pending = branchRequests.filter(
                 (request) =>
                     getStatus(request).includes("PENDING")
@@ -291,8 +258,6 @@ const HODBranches = () => {
             return {
                 code: branch.code,
                 name: branch.name,
-                hostel: hostelRequests.length,
-                dayScholar: dayScholarRequests.length,
                 total: branchRequests.length,
                 pending: pending.length,
                 approved: approved.length,

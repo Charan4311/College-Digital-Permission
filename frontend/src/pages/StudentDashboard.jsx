@@ -24,8 +24,9 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [stats, setStats] = useState({
-    total: 0, approved: 0, rejected: 0, pending: 0, entries: [], monthlyOverview: []
+    total: 0, approved: 0, rejected: 0, pending: 0, allRequests: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -38,18 +39,7 @@ export default function StudentDashboard() {
       const rejected = requests.filter(r => r.status?.startsWith("REJECTED")).length;
       const pending  = requests.filter(r => r.status?.startsWith("PENDING")).length;
 
-      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const monthlyOverview = monthNames.map((month, i) => {
-        const mr = requests.filter(req => new Date(req.createdAt || Date.now()).getMonth() === i);
-        return {
-          month,
-          total: mr.length,
-          approved: mr.filter(r => ["APPROVED","CLEARED","ISSUED","USED"].includes(r.status)).length,
-          rejected: mr.filter(r => r.status?.startsWith("REJECTED")).length,
-          pending:  mr.filter(r => r.status?.startsWith("PENDING")).length,
-        };
-      });
-      setStats({ total, approved, rejected, pending, entries: [], monthlyOverview });
+      setStats({ total, approved, rejected, pending, allRequests: requests });
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -66,9 +56,19 @@ export default function StudentDashboard() {
     { name: "Pending",  value: stats.pending,  color: "#f59e0b" },
     { name: "Rejected", value: stats.rejected, color: "#ef4444" },
   ];
-  const monthlyOverview = stats.monthlyOverview?.length
-    ? stats.monthlyOverview
-    : monthNames.map(m => ({ month: m, total: 0, approved: 0, rejected: 0, pending: 0 }));
+  const monthlyOverview = monthNames.map((month, i) => {
+    const mr = (stats.allRequests || []).filter(req => {
+      const d = new Date(req.createdAt || Date.now());
+      return d.getMonth() === i && d.getFullYear() === Number(selectedYear);
+    });
+    return {
+      month,
+      total: mr.length,
+      approved: mr.filter(r => ["APPROVED","CLEARED","ISSUED","USED"].includes(r.status)).length,
+      rejected: mr.filter(r => r.status?.startsWith("REJECTED")).length,
+      pending:  mr.filter(r => r.status?.startsWith("PENDING")).length,
+    };
+  });
 
   return (
     <StudentLayout
@@ -181,8 +181,8 @@ export default function StudentDashboard() {
                     <div className="s-chart-sub">Total, Approved, Pending and Rejected requests per month</div>
                   </div>
                 </div>
-                <select className="s-year-selector" defaultValue={new Date().getFullYear()}>
-                  {[2024,2025,2026].map(y => <option key={y}>{y}</option>)}
+                <select className="s-year-selector" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+                  {[2024,2025,2026].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
 

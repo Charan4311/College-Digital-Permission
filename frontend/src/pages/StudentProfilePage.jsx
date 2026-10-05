@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import StudentLayout from "../components/StudentLayout";
 import api from "../lib/api";
@@ -94,9 +94,6 @@ export default function StudentProfilePage() {
   const initials          = user?.name ? user.name.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase() : "U";
   const displayBranch     = user?.branchName || user?.branchId?.name || "N/A";
   const rollNumber        = user?.rollNo || user?.username || "N/A";
-  const displayStudentType = user?.studentType === "HOSTELER" ? "Hosteler"
-    : user?.studentType === "DAY_SCHOLAR" ? "Day Scholar"
-    : (user?.studentType || "Day Scholar");
 
   return (
     <StudentLayout pageTitle="My Profile" pageSubtitle="Student account and profile details">
@@ -137,7 +134,6 @@ export default function StudentProfilePage() {
           {/* Info list */}
           <div className="s-profile-info-list">
             {[
-              { icon:<User      size={14} color="#10b981" />, label:"Student",     value:displayStudentType },
               { icon:<IdCard    size={14} color="#10b981" />, label:"Roll Number", value:rollNumber         },
               { icon:<Building2 size={14} color="#10b981" />, label:"Branch",      value:displayBranch      },
               { icon:<GraduationCap size={14} color="#10b981" />, label:"College", value:COLLEGE_NAME       },
@@ -168,7 +164,6 @@ export default function StudentProfilePage() {
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px 18px" }}>
               {[
                 { label:"Full Name *",              value:profileForm.name },
-                { label:"Student Category *",       value:displayStudentType },
                 { label:"Roll Number / Username *",  value:rollNumber, note:"Username is your roll number and cannot be changed." },
                 { label:"College *",                value:COLLEGE_NAME },
                 { label:"Year (Department) *",      value:profileForm.year ? profileForm.year + " Year" : "N/A" },

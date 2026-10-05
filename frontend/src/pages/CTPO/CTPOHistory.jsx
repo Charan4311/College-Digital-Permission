@@ -1425,6 +1425,7 @@ export default function CTPOHistory() {
                                   request
                                 )
                               }
+                              showIcon={false}
                             />
 
                           </td>
@@ -1560,6 +1561,7 @@ export default function CTPOHistory() {
         .ctpo-history-tabs {
           display: flex;
           align-items: stretch;
+          justify-content: flex-start;
           gap: 0;
           flex-wrap: nowrap;
           width: 100%;
@@ -1624,6 +1626,7 @@ export default function CTPOHistory() {
           width: 100%;
           display: flex;
           align-items: center;
+          justify-content: flex-start;
           gap: 12px;
           padding: 0;
           background: transparent;
@@ -1831,22 +1834,24 @@ export default function CTPOHistory() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
-          height: 36px;
-          padding: 0 13px;
-          border: 1px solid #dbe3ef;
-          border-radius: 8px;
-          background: #ffffff;
-          color: #10b981;
-          cursor: pointer;
-          font-size: 12px;
+          gap: 5px;
+          padding: 5px 14px;
+          border-radius: 50px;
+          font-size: 12.5px;
           font-weight: 600;
+          color: #10b981;
+          background: rgba(209, 250, 229, 0.92);
+          border: 1px solid #a7f3d0;
+          cursor: pointer;
+          transition: all 0.15s;
+          font-family: inherit;
           white-space: nowrap;
         }
 
         .ctpo-view-button:hover {
-          background: #ecfdf5;
-          border-color: #93c5fd;
+          background: #d1fae5;
+          border-color: #6ee7b7;
+          transform: translateY(-1px);
         }
 
         /* REJECTED BADGE — scoped to CTPO All Requests only */

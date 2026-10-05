@@ -464,6 +464,14 @@ const CTPODashboard = () => {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   }, [requests]);
+
+  const requestStatusData = useMemo(() => {
+    return [
+      { name: 'Approved', value: stats.approved, color: '#10b981' },
+      { name: 'Pending', value: stats.pending, color: '#f59e0b' },
+      { name: 'Rejected', value: stats.rejected, color: '#ef4444' }
+    ].filter(d => d.value > 0);
+  }, [stats]);
   // ==========================================================
   // APPROVAL ACTIVITY - LAST 7 DAYS
   // ==========================================================
@@ -508,20 +516,43 @@ const CTPODashboard = () => {
     });
 
     // --------------------------------------------------------
-    // Bucket each request by its submission date
+    // Bucket each request by its CTPO decision date
     // --------------------------------------------------------
     requests.forEach((request) => {
-      // Use submission date as the reliable bucket key
-      const dateValue =
-        request?.createdAt ||
-        request?.submittedAt ||
-        request?.submittedOn ||
-        request?.date ||
-        request?.created_at;
+      const decision = getCTPODecision(request);
+      if (!decision || decision === "") return; // Only count approved/rejected
 
-      if (!dateValue) return;
+      // Try to find when CTPO made the decision
+      let decisionDateValue = null;
 
-      const d = new Date(dateValue);
+      const stages = getApprovalStages(request);
+      const ctpoStage = stages.find(
+        (item) => {
+          const role = String(item?.role || item?.approverRole || item?.approverType || "").toUpperCase();
+          return (
+            (role === "CTPO" || role.includes("CTPO")) &&
+            (
+              normalizeDecision(item?.decision || item?.action || item?.status || item?.approvalStatus) === decision
+            )
+          );
+        }
+      );
+
+      if (ctpoStage) {
+        decisionDateValue = ctpoStage?.decidedAt || ctpoStage?.decisionAt || (decision === "APPROVED" ? ctpoStage?.approvedAt : ctpoStage?.rejectedAt);
+      }
+
+      if (!decisionDateValue) {
+        if (decision === "APPROVED") {
+          decisionDateValue = request?.ctpoApprovedAt || request?.ctpoApprovalAt || request?.approvedAt || request?.updatedAt;
+        } else {
+          decisionDateValue = request?.ctpoRejectedAt || request?.ctpoRejectionAt || request?.rejectedAt || request?.updatedAt;
+        }
+      }
+
+      if (!decisionDateValue) return;
+
+      const d = new Date(decisionDateValue);
       if (Number.isNaN(d.getTime())) return;
 
       // Only include days in the 7-day window
@@ -530,14 +561,11 @@ const CTPODashboard = () => {
       const key = d.toLocaleDateString("en-CA");
       if (!bucketMap[key]) return;
 
-      const decision = getCTPODecision(request);
       if (decision === "APPROVED") {
         bucketMap[key].approved += 1;
       } else if (decision === "REJECTED") {
         bucketMap[key].rejected += 1;
       }
-      // Pending requests are not shown on the graph bar
-      // (graph tracks CTPO decisions: approve / reject)
     });
 
     // --------------------------------------------------------
@@ -1238,7 +1266,7 @@ const CTPODashboard = () => {
                   color: "#0f172a",
                 }}
               >
-                Requests by Permission Type
+                Request Status Distribution
               </h2>
 
               <span
@@ -1250,7 +1278,7 @@ const CTPODashboard = () => {
                   maxWidth: "110px",
                 }}
               >
-                Distribution of requests
+                Visual representation of your requests
               </span>
             </div>
 
@@ -1267,7 +1295,7 @@ const CTPODashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={permissionTypeData}
+                    data={requestStatusData}
                     dataKey="value"
                     nameKey="name"
                     cx="48%"
@@ -1275,14 +1303,17 @@ const CTPODashboard = () => {
                     innerRadius={48}
                     outerRadius={78}
                     paddingAngle={2}
+                    stroke="rgba(255,255,255,.90)" 
+                    strokeWidth={3}
                   >
-                    {permissionTypeData.map((entry, index) => (
+                    {requestStatusData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={getPermissionTypeColor(entry.name, index)}
+                        fill={entry.color}
                       />
                     ))}
                   </Pie>
+                  <Tooltip contentStyle={{ borderRadius:"12px", border:"1px solid #e2e8f0", background:"rgba(255,255,255,.97)" }} />
                 </PieChart>
               </ResponsiveContainer>
 
@@ -1298,8 +1329,8 @@ const CTPODashboard = () => {
                   minWidth: "105px",
                 }}
               >
-                {permissionTypeData.map((item, index) => {
-                  const color = getPermissionTypeColor(item.name, index);
+                {requestStatusData.map((item, index) => {
+                  const color = item.color;
                   return (
                     <div
                       key={item.name}

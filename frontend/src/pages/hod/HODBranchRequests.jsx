@@ -209,12 +209,6 @@ const yearOf = request =>
     request?.student?.yearTier ||
     '-';
 
-const studentType = request =>
-    request?.studentType ||
-    request?.studentId?.studentType ||
-    request?.student?.studentType ||
-    '-';
-
 const requestType = request => {
     const type = normalize(
         request?.requestType ||
@@ -269,10 +263,13 @@ const isApproved = status =>
         'ISSUED',
         'USED',
         'CLEARED',
+        'PENDING_HOSTEL_INCHARGE',
+        'PENDING_PLACEMENT_OFFICER'
     ].includes(status);
 
 const isPending = status =>
-    status.startsWith('PENDING');
+    status === 'PENDING_HOD' || 
+    status === 'PENDING_HOD_APPROVAL';
 
 const isRejected = status =>
     status.startsWith('REJECTED');
@@ -361,7 +358,21 @@ export default function HODBranchRequests() {
 
             const data = extractRequests(response);
 
-            setRequests(data);
+            const isHODVisibleRequest = (request) => {
+                const type = String(
+                    request?.requestType ||
+                    request?.type ||
+                    request?.permissionType ||
+                    ''
+                )
+                    .trim()
+                    .toUpperCase()
+                    .replace(/[\s-]+/g, '_');
+
+                return type !== 'LIBRARY';
+            };
+
+            setRequests(data.filter(isHODVisibleRequest));
         } catch (err) {
             console.error(
                 'HOD branch requests error:',
@@ -582,7 +593,6 @@ export default function HODBranchRequests() {
             'Student',
             'Roll No',
             'Year',
-            'Student Type',
             'Request Type',
             'Date',
             'Status',
@@ -593,7 +603,6 @@ export default function HODBranchRequests() {
             studentName(request),
             rollNo(request),
             yearOf(request),
-            studentType(request),
             requestType(request),
             formatDate(request),
             statusLabel(statusOf(request)),
@@ -685,7 +694,6 @@ export default function HODBranchRequests() {
                     'Student Name': studentName(request),
                     'Roll Number': rollNo(request),
                     'Year': yearOf(request),
-                    'Student Type': studentType(request),
                     'Permission Type': requestType(request),
                     'Status': statusLabel(statusOf(request)),
                     'Date': formatDate(request),
@@ -1268,7 +1276,6 @@ export default function HODBranchRequests() {
                                         'Student',
                                         'Roll No',
                                         'Year',
-                                        'Student Type',
                                         'Request Type',
                                         'Date',
                                         'Status',
@@ -1312,7 +1319,7 @@ export default function HODBranchRequests() {
                                     <tr>
                                         <td
                                             colSpan={
-                                                9
+                                                8
                                             }
                                             style={{
                                                 padding:
@@ -1337,7 +1344,7 @@ export default function HODBranchRequests() {
                                     <tr>
                                         <td
                                             colSpan={
-                                                9
+                                                8
                                             }
                                             style={{
                                                 padding:
@@ -1408,12 +1415,6 @@ export default function HODBranchRequests() {
                                                     </Cell>
 
                                                     <Cell>
-                                                        {studentType(
-                                                            request
-                                                        )}
-                                                    </Cell>
-
-                                                    <Cell>
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             <span>{requestType(request)}</span>
                                                             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace' }}>
@@ -1469,17 +1470,17 @@ export default function HODBranchRequests() {
                                                             type="button"
                                                             onClick={() =>
                                                                 navigate(
-                                                                    `/outpass/${request?._id}`
+                                                                    `/outpass/${request?._id || request?.id || request?.requestId}`
                                                                 )
                                                             }
                                                             style={{
                                                                 height: 32,
                                                                 padding:
-                                                                    '0 10px',
+                                                                    '0 12px',
                                                                 border:
                                                                     '1px solid #d1fae5',
                                                                 borderRadius:
-                                                                    7,
+                                                                    50,
                                                                 background:
                                                                     '#f0fdf4',
                                                                 color:
@@ -1502,7 +1503,7 @@ export default function HODBranchRequests() {
                                                                     14
                                                                 }
                                                             />
-                                                            View
+                                                            Review
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -1669,7 +1670,27 @@ export default function HODBranchRequests() {
                     }
                 }
 
-                @media (max-width: 1000px) {
+                .branch-request-filter-grid input,
+                .branch-request-filter-grid select {
+                    height: 44px !important;
+                    box-sizing: border-box;
+                    line-height: 1.2;
+                }
+
+                .branch-request-filter-grid input {
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
+                }
+
+                .branch-request-filter-grid select {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 0 34px 0 12px !important;
+                    appearance: none !important;
+                }
+
+                @media (max-width: 1100px) {
                     .branch-request-filter-grid {
                         grid-template-columns:
                             1fr 1fr !important;

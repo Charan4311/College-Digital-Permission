@@ -22,6 +22,7 @@ import {
   UploadCloud,
   Trash2,
   DollarSign,
+  IndianRupee,
   MapPin,
   Laptop,
   Check,
@@ -59,11 +60,7 @@ const getTodayDateString = () => {
 };
 
 const validateLeaveDateRange = (startDate, endDate) => {
-  const today = getTodayDateString();
-
   if (!startDate) return 'Please select a valid start date.';
-  if (startDate < today) return 'Period start date cannot be in the past. Please select today or a future date.';
-  if (endDate && endDate < today) return 'Period end date cannot be in the past. Please select today or a future date.';
   if (endDate && endDate < startDate) return 'Period end date cannot be earlier than the start date. Please select a date on or after the chosen start date.';
 
   return '';
@@ -124,7 +121,7 @@ const PERMISSION_META = {
   MESS_FEE: {
     title: 'Apply for Mess Fee Permission',
     description: 'Submit your mess fee clearance, refund, or related request.',
-    icon: Receipt,
+    icon: IndianRupee,
     chips: ['Clear Details', 'Document Check', 'Fast Approval'],
     stepLabels: ['Basic Details', 'Hostel Staying Period', 'Payment Details', 'Review & Submit']
   },
@@ -310,7 +307,7 @@ export default function StudentNewPermissionPage() {
       <div className="s-perm-tabs">
         {[
           { key: 'OUTPASS', label: 'Out-Pass', icon: GraduationCap },
-          { key: 'MESS_FEE', label: 'Mess Fee', icon: Receipt },
+          { key: 'MESS_FEE', label: 'Mess Fee', icon: IndianRupee },
           { key: 'INTERNSHIP', label: 'Internship', icon: Briefcase },
           { key: 'LIBRARY', label: 'Library', icon: BookOpen }
         ].map(({ key, label, icon: Icon }) => (
@@ -775,14 +772,13 @@ export default function StudentNewPermissionPage() {
                                   size={13}
                                   color="#10b981"
                                 />
-                                Joining Date
+                                Entry Date
                               </label>
 
                               <input
                                 type="date"
                                 required
                                 className="s-form-input"
-                                min={getTodayDateString()}
                                 value={form.startDate}
                                 onChange={e => {
                                   const value =
@@ -840,10 +836,6 @@ export default function StudentNewPermissionPage() {
                                 type="date"
                                 required
                                 className="s-form-input"
-                                min={
-                                  form.startDate ||
-                                  getTodayDateString()
-                                }
                                 value={form.endDate}
                                 onChange={e => {
                                   const value =
@@ -894,11 +886,11 @@ export default function StudentNewPermissionPage() {
                                   color: '#0f172a'
                                 }}
                               >
-                                <DollarSign
+                                <IndianRupee
                                   size={13}
                                   color="#10b981"
                                 />
-                                Mess Fee Amount (₹)
+                                Mess Fee Amount
                               </label>
 
                               <input
@@ -1762,14 +1754,13 @@ export default function StudentNewPermissionPage() {
                               size={13}
                               color="#10b981"
                             />
-                            Access / Clearance Date
+                            Access Date
                           </label>
 
                           <input
                             type="date"
                             required
                             className="s-form-input"
-                            min={getTodayDateString()}
                             value={form.requestDate}
                             onChange={e => {
                               const value =

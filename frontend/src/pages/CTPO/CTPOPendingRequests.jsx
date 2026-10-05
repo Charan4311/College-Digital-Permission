@@ -549,7 +549,7 @@ export default function ApproverDashboard() {
                 )}
 
                 {/* Feature Filter Pills */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                     {(isHostelIncharge
                         ? ['ALL', 'OUTPASS', 'MESS_FEE', 'INTERNSHIP']
                         : ['ALL', 'OUTPASS', 'MESS_FEE', 'INTERNSHIP', 'LIBRARY']
@@ -718,38 +718,38 @@ export default function ApproverDashboard() {
                                                             <StatusBadge status={getHostelDisplayStatus(req) || cfg.pendingStatus} />
                                                         </td>
                                                         {tab === 'pending' && (
-                                                            <td>
+                                                             <td>
                                                                 <button
-                                                                    className="btn btn-ghost btn-sm"
                                                                     onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
                                                                     style={{
-                                                                        height: '32px',
-                                                                        border: '1px solid #bfdbfe',
-                                                                        background: '#eff6ff',
-                                                                        color: '#3b82f6',
-                                                                        borderRadius: '7px',
-                                                                        padding: '0 12px',
                                                                         display: 'inline-flex',
                                                                         alignItems: 'center',
-                                                                        justifyContent: 'center',
                                                                         gap: '5px',
-                                                                        fontSize: '11px',
-                                                                        fontWeight: 700,
-                                                                        cursor: 'pointer'
+                                                                        padding: '5px 14px',
+                                                                        borderRadius: '50px',
+                                                                        fontSize: '12.5px',
+                                                                        fontWeight: 600,
+                                                                        color: '#10b981',
+                                                                        background: 'rgba(209, 250, 229, 0.92)',
+                                                                        border: '1px solid #a7f3d0',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.15s',
+                                                                        fontFamily: 'inherit',
+                                                                        whiteSpace: 'nowrap'
                                                                     }}
                                                                 >
-                                                                    <Eye size={15} />
+                                                                    <Eye size={13} />
                                                                     <span>View</span>
                                                                 </button>
-                                                            </td>
-                                                        )}
+                                                             </td>
+                                                         )}
                                                     </>
                                                 ) : (
                                                     <td>
-                                                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                                                             <button
-                                                                className="btn btn-success btn-sm"
-                                                                disabled={actionLoading}
+                                                                 className="btn btn-success btn-sm"
+                                                                 disabled={actionLoading}
                                                                 onClick={() => handleApprove(req._id)}
                                                                 style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
                                                             >
@@ -766,32 +766,31 @@ export default function ApproverDashboard() {
                                                                 <span>Reject</span>
                                                             </button>
                                                             <button
-                                                                className="btn btn-ghost btn-sm"
                                                                 onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
                                                                 style={{
-                                                                    height: '32px',
-                                                                    border: '1px solid #bfdbfe',
-                                                                    background: '#eff6ff',
-                                                                    color: '#3b82f6',
-                                                                    borderRadius: '7px',
-                                                                    padding: '0 12px',
                                                                     display: 'inline-flex',
                                                                     alignItems: 'center',
-                                                                    justifyContent: 'center',
                                                                     gap: '5px',
-                                                                    fontSize: '11px',
-                                                                    fontWeight: 700,
-                                                                    cursor: 'pointer'
+                                                                    padding: '5px 14px',
+                                                                    borderRadius: '50px',
+                                                                    fontSize: '12.5px',
+                                                                    fontWeight: 600,
+                                                                    color: '#10b981',
+                                                                    background: 'rgba(209, 250, 229, 0.92)',
+                                                                    border: '1px solid #a7f3d0',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.15s',
+                                                                    fontFamily: 'inherit',
+                                                                    whiteSpace: 'nowrap'
                                                                 }}
                                                             >
-                                                                <Eye size={15} />
+                                                                <Eye size={13} />
                                                                 <span>View</span>
                                                             </button>
                                                         </div>
                                                     </td>
                                                 )}
                                             </tr>
-                                        );
                                     })}
                                 </tbody>
                             </table>
@@ -869,19 +868,20 @@ export default function ApproverDashboard() {
                                                             className="btn btn-ghost btn-sm"
                                                             onClick={() => navigate(`/outpass/${req._id}`)}
                                                             style={{
-                                                                height: '32px',
-                                                                border: '1px solid #bfdbfe',
-                                                                background: '#eff6ff',
-                                                                color: '#3b82f6',
-                                                                borderRadius: '7px',
-                                                                padding: '0 12px',
                                                                 display: 'inline-flex',
                                                                 alignItems: 'center',
-                                                                justifyContent: 'center',
                                                                 gap: '5px',
-                                                                fontSize: '11px',
-                                                                fontWeight: 700,
-                                                                cursor: 'pointer'
+                                                                padding: '5px 14px',
+                                                                borderRadius: '50px',
+                                                                fontSize: '12.5px',
+                                                                fontWeight: 600,
+                                                                color: '#10b981',
+                                                                background: 'rgba(209, 250, 229, 0.92)',
+                                                                border: '1px solid #a7f3d0',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.15s',
+                                                                fontFamily: 'inherit',
+                                                                whiteSpace: 'nowrap'
                                                             }}
                                                         >
                                                             <Eye size={15} />

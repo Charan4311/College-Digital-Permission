@@ -1179,7 +1179,7 @@ exports.getProofFile = async (req, res) => {
         { documentFileId: fileId },
         { documentUrl: { $regex: new RegExp(`/uploads/${fileId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), $options: 'i' } }
       ]
-    }).populate('studentId', 'name role branchId year yearTier studentType').populate('branchId', 'name code');
+    }).populate('studentId', 'name role branchId year yearTier').populate('branchId', 'name code');
 
     if (!request) {
       // Check directly in GridFS

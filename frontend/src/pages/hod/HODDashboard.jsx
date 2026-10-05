@@ -252,6 +252,7 @@ export default function HODDashboard() {
             'CLEARED',
             'PENDING_HOSTEL_INCHARGE',
             'PENDING_PLACEMENT_OFFICER',
+            'PENDING_CTPO'
         ].includes(status);
     };
 
@@ -265,10 +266,7 @@ export default function HODDashboard() {
 
 
     const pendingCount =
-        history.filter(
-            (request) =>
-                getStatus(request).startsWith('PENDING')
-        ).length;
+        pending.length;
 
 
     const rejectedCount =
@@ -297,6 +295,11 @@ export default function HODDashboard() {
                 STUDENT_REQUESTS_ROUTE
             );
 
+            return;
+        }
+
+        if (status === 'PENDING') {
+            navigate('/hod/approvals');
             return;
         }
 
@@ -347,13 +350,15 @@ export default function HODDashboard() {
 
             const grouped = {};
 
-            // The dashboard-stats API currently returns KPI totals but does not
-            // return approvedPerDay/rejectedPerDay. Build the chart from the
-            // already-loaded history so the existing backend does not need
-            // to be changed.
+            // Prefer updatedAt (the date the status actually changed) over
+            // createdAt so the chart reflects real approval/rejection activity
+            // rather than submission dates.
             history.forEach((request) => {
 
                 const rawDate =
+                    request?.updatedAt ||
+                    request?.approvedAt ||
+                    request?.rejectedAt ||
                     request?.createdAt ||
                     request?.requestDate ||
                     request?.outDate ||
@@ -389,7 +394,7 @@ export default function HODDashboard() {
 
             const result = [];
 
-            // Last 7 days
+            // Last 7 days (i=6 down to 0 → 7 entries: today-6 … today)
             for (let i = 6; i >= 0; i--) {
 
                 const date = new Date();
@@ -559,6 +564,7 @@ export default function HODDashboard() {
 
                     <DashboardStatCard
                         label="Total Requests"
+                        subtitle="All time"
                         value={
                             loading
                                 ? '—'
@@ -1369,6 +1375,7 @@ export default function HODDashboard() {
 
 function DashboardStatCard({
     label,
+    subtitle,
     value,
     icon,
     iconBackground,
@@ -1476,7 +1483,7 @@ function DashboardStatCard({
 
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div
                     style={{
                         fontSize: 14,
@@ -1502,6 +1509,18 @@ function DashboardStatCard({
                     {value}
 
                 </div>
+
+                {subtitle && (
+                    <div
+                        style={{
+                            fontSize: 11,
+                            color: '#94a3b8',
+                            marginTop: 2,
+                        }}
+                    >
+                        {subtitle}
+                    </div>
+                )}
             </div>
 
         </div>

@@ -23,6 +23,7 @@ import {
   Briefcase,
   BookOpen,
   DollarSign,
+  IndianRupee,
   MapPin,
   Laptop,
   Paperclip,
@@ -183,6 +184,9 @@ export default function RequestDetail() {
   const [resubmitting, setResubmitting] = useState(false);
   const [resubmitError, setResubmitError] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  // Document View Modal State
+  const [documentModalOpen, setDocumentModalOpen] = useState(false);
 
   // Official Document View / Print Modal State
   const [printModalOpen, setPrintModalOpen] = useState(false);
@@ -365,6 +369,9 @@ export default function RequestDetail() {
   const rollNo = request?.rollNo || request?.rollNumber || student?.rollNo || student?.rollNumber || '-';
   const branchName = request?.branchName || request?.branchId?.name || student?.branchName || student?.branch?.name || 'CSM';
   const isOwner = user?.role === 'STUDENT' && (request.studentId?._id === user?.id || request.studentId === user?.id || student?._id === user?.id);
+  const reasonDisplay = user?.role === 'HOSTEL_INCHARGE'
+    ? String(request.reason || '').replace(/(?:\s*[-,;|:]\s*)?\bA\+/g, '').replace(/\s+/g, ' ').trim()
+    : request.reason;
   const isApprovedOrIssued = request.status === 'APPROVED' || request.status === 'ISSUED' || request.status === 'USED';
 
   const isApproverPending =
@@ -505,8 +512,7 @@ export default function RequestDetail() {
               <Row icon={User} label="Student Name" value={`${studentName} (${rollNo})`} />
               <Row icon={Building} label="Department" value={branchName} />
               <Row icon={Calendar} label="Academic Year" value={`Year ${request.year || 4}`} />
-              <Row icon={Home} label="Student Type" value={request.studentType?.replace('_', ' ')} />
-              <Row icon={FileText} label="Reason / Purpose" value={request.reason} />
+              <Row icon={FileText} label="Reason / Purpose" value={reasonDisplay} />
 
               {/* OUTPASS specifics */}
               {reqType === 'OUTPASS' && (
@@ -522,7 +528,7 @@ export default function RequestDetail() {
               {/* MESS_FEE specifics */}
               {reqType === 'MESS_FEE' && (
                 <>
-                  <Row icon={DollarSign} label="Mess Amount" value={`â‚¹${request.messAmount?.toLocaleString('en-IN') || 0}`} />
+                  <Row icon={IndianRupee} label="Mess Amount" value={`₹${request.messAmount?.toLocaleString('en-IN') || 0}`} />
                   <Row icon={CheckCircle2} label="Payment Status" value={request.paidStatus} />
                   <Row icon={Calendar} label="Period Range" value={`${new Date(request.startDate).toLocaleDateString('en-IN')} to ${new Date(request.endDate).toLocaleDateString('en-IN')}`} />
                 </>
@@ -551,10 +557,8 @@ export default function RequestDetail() {
                     <Paperclip size={14} color="var(--accent)" />
                     <span>Attached Document</span>
                   </span>
-                  <a
-                    href={getDocumentUrl(request.documentUrl)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setDocumentModalOpen(true)}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -562,8 +566,8 @@ export default function RequestDetail() {
                       fontSize: '13px',
                       fontWeight: 600,
                       color: 'var(--accent)',
-                      textDecoration: 'none',
                       background: 'var(--accent-dim)',
+                      border: 'none',
                       padding: '4px 10px',
                       borderRadius: '6px',
                       cursor: 'pointer'
@@ -571,7 +575,7 @@ export default function RequestDetail() {
                     title="Open attached document"
                   >
                     <span>{request.documentName || 'View Document'}</span>
-                  </a>
+                  </button>
                 </div>
               )}
 
@@ -1284,7 +1288,6 @@ export default function RequestDetail() {
                   <div><strong>Roll Number:</strong> {rollNo}</div>
                   <div><strong>Department:</strong> {branchName}</div>
                   <div><strong>Year:</strong> {request.year || 4}</div>
-                  <div><strong>Student Type:</strong> {request.studentType?.replace('_', ' ')}</div>
                 </div>
               </div>
 
@@ -1407,6 +1410,45 @@ export default function RequestDetail() {
                 <Printer size={15} />
                 <span>Print / Save as PDF</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document View Modal */}
+      {documentModalOpen && request.documentUrl && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setDocumentModalOpen(false); }}
+          style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div className="modal" style={{ width: 'min(900px, 95vw)', height: 'min(90vh, 800px)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={20} color="var(--accent)" />
+                <span>{request.documentName || 'Attached Document'}</span>
+              </div>
+              <button className="btn btn-ghost" onClick={() => setDocumentModalOpen(false)} style={{ padding: '6px' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ flex: 1, border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img 
+                src={getDocumentUrl(request.documentUrl)} 
+                alt={request.documentName || 'Document'} 
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div style={{ display: 'none', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '40px' }}>
+                <FileText size={48} color="#94a3b8" />
+                <span style={{ color: '#64748b' }}>Cannot preview this file type.</span>
+                <a href={getDocumentUrl(request.documentUrl)} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginTop: '12px' }}>
+                  Download / Open in New Tab
+                </a>
+              </div>
             </div>
           </div>
         </div>

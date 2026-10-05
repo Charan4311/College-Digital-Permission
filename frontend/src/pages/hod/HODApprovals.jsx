@@ -100,29 +100,7 @@ const getYear = (request) => {
     );
 };
 
-const getStudentType = (request) => {
-    return (
-        request?.studentType ||
-        request?.studentId?.studentType ||
-        request?.student?.studentType ||
-        '-'
-    );
-};
 
-const normalizeStudentType = (value) => {
-    const type = String(value || '')
-        .trim()
-        .toUpperCase()
-        .replace(/_/g, ' ');
-
-    if (type === 'DAY SCHOLAR') {
-        return 'DAY SCHOLAR';
-    }
-
-    
-
-    return type || '-';
-};
 
 const getRequestType = (request) => {
     const raw =
@@ -700,7 +678,6 @@ export default function HODApprovals() {
                                 const rollNumber = getRollNumber(request);
                                 const branch = getBranch(request);
                                 const year = getYear(request);
-                                const studentType = normalizeStudentType(getStudentType(request));
                                 const requestType = getRequestTypeLabel(request);
                                 const requestDate = formatDate(getRequestDate(request));
 
@@ -1409,19 +1386,20 @@ export default function HODApprovals() {
 
                         .hod-mobile-view-button {
                             width: 100%;
-                            height: 34px;
                             margin-top: 12px;
-                            border: 1px solid #bfdbfe;
-                            border-radius: 7px;
-                            background: #ecfdf5;
+                            border: 1px solid #a7f3d0;
+                            border-radius: 50px;
+                            background: rgba(209, 250, 229, 0.92);
                             color: #10b981;
                             display: inline-flex;
                             align-items: center;
                             justify-content: center;
                             gap: 5px;
-                            font-size: 11px;
-                            font-weight: 700;
+                            padding: 6px 14px;
+                            font-size: 12.5px;
+                            font-weight: 600;
                             cursor: pointer;
+                            transition: all 0.15s;
                         }
                     }
 
@@ -1892,19 +1870,20 @@ const styles = {
     },
 
     viewButton: {
-        height: 32,
-        border: '1px solid #a7f3d0',
-        background: '#ecfdf5',
-        color: '#10b981',
-        borderRadius: 7,
-        padding: '0 12px',
         display: 'inline-flex',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: 5,
-        fontSize: 11,
-        fontWeight: 700,
+        padding: '5px 14px',
+        borderRadius: '50px',
+        fontSize: '12.5px',
+        fontWeight: 600,
+        color: '#10b981',
+        background: 'rgba(209, 250, 229, 0.92)',
+        border: '1px solid #a7f3d0',
         cursor: 'pointer',
+        transition: 'all 0.15s',
+        fontFamily: 'inherit',
+        whiteSpace: 'nowrap',
     },
 
     pagination: {

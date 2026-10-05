@@ -201,32 +201,7 @@ const getYear = (request) => {
 };
 
 
-const getStudentType = (request) => {
-    const value = String(
-        request?.studentType ||
-        request?.studentId?.studentType ||
-        request?.student?.studentType ||
-        ''
-    )
-        .trim()
-        .toUpperCase()
-        .replace(/[\s-]+/g, '_');
-
-    if (
-        value.includes('HOSTEL')
-    ) {
-        return 'Hosteler';
-    }
-
-    if (
-        value.includes('DAY') ||
-        value.includes('SCHOLAR')
-    ) {
-        return 'Day Scholar';
-    }
-
-    return 'Unknown';
-};
+const getStudentType = () => '-';
 
 
 const getRequestDate = (request) => {
@@ -307,7 +282,10 @@ const getStatusCategory = (request) => {
         return 'Rejected';
     }
 
-    if (status.startsWith('PENDING')) {
+    if (
+        status === 'PENDING_HOD' || 
+        status === 'PENDING_HOD_APPROVAL'
+    ) {
         return 'Pending';
     }
 
@@ -318,6 +296,9 @@ const getStatusCategory = (request) => {
             'USED',
             'CLEARED',
             'COMPLETED',
+            'PENDING_HOSTEL_INCHARGE',
+            'PENDING_PLACEMENT_OFFICER',
+            'PENDING_CTPO'
         ].includes(status)
     ) {
         return 'Approved';
@@ -349,7 +330,7 @@ const getPeriodRange = (period) => {
     const end = new Date(now);
 
     if (period === '7DAYS') {
-        start.setDate(start.getDate() - 7);
+        start.setDate(start.getDate() - 6);
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
     }
@@ -443,9 +424,23 @@ export default function HODReports() {
                 response?.data ||
                 [];
 
+            const isHODVisibleRequest = (request) => {
+                const type = String(
+                    request?.requestType ||
+                    request?.type ||
+                    request?.permissionType ||
+                    ''
+                )
+                    .trim()
+                    .toUpperCase()
+                    .replace(/[\s-]+/g, '_');
+
+                return type !== 'LIBRARY';
+            };
+
             setRequests(
                 Array.isArray(data)
-                    ? data
+                    ? data.filter(isHODVisibleRequest)
                     : []
             );
 
@@ -666,11 +661,13 @@ export default function HODReports() {
         return requests.filter((request) => {
             const requestDate = parseDate(getRequestDate(request));
 
-            if (start && (!requestDate || requestDate < start)) {
+            // Only exclude if the date IS present and out of range.
+            // Requests without a parseable date are always included.
+            if (start && requestDate && requestDate < start) {
                 return false;
             }
 
-            if (end && (!requestDate || requestDate > end)) {
+            if (end && requestDate && requestDate > end) {
                 return false;
             }
 
@@ -2389,8 +2386,8 @@ export default function HODReports() {
                             >
 
                                 <ChartHeader
-                                    title="Requests by Branch"
-                                    subtitle="Branch-wise request count"
+                                    title="Requests by Permission Type"
+                                    subtitle="Distribution across all permission categories"
                                 />
 
                                 <div
@@ -2399,98 +2396,62 @@ export default function HODReports() {
                                         marginTop: 8,
                                     }}
                                 >
-
-                                    <ResponsiveContainer
-                                        width="100%"
-                                        height="100%"
-                                    >
-
-                                        <BarChart
-                                            data={
-                                                branchData
-                                            }
-                                            margin={{
-                                                top: 18,
-                                                right: 8,
-                                                left: -20,
-                                                bottom: 0,
-                                            }}
+                                    {requestTypeData.length === 0 ? (
+                                        <div style={{
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: '#94a3b8',
+                                            fontSize: 12,
+                                        }}>
+                                            No data for selected filters
+                                        </div>
+                                    ) : (
+                                        <ResponsiveContainer
+                                            width="100%"
+                                            height="100%"
                                         >
-
-                                            <CartesianGrid
-                                                strokeDasharray="3 3"
-                                                stroke="#e8ebf2"
-                                            />
-
-                                            <XAxis
-                                                dataKey="branch"
-                                                tick={{
-                                                    fontSize: 8,
-                                                    fill:
-                                                        '#7d8497',
-                                                }}
-                                                axisLine={{
-                                                    stroke:
-                                                        '#e5e7ef',
-                                                }}
-                                                tickLine={
-                                                    false
-                                                }
-                                            />
-
-                                            <YAxis
-                                                allowDecimals={
-                                                    false
-                                                }
-                                                tick={{
-                                                    fontSize: 8,
-                                                    fill:
-                                                        '#7d8497',
-                                                }}
-                                                axisLine={
-                                                    false
-                                                }
-                                                tickLine={
-                                                    false
-                                                }
-                                            />
-
-                                            <Tooltip
-                                                contentStyle={{
-                                                    borderRadius:
-                                                        8,
-                                                    fontSize:
-                                                        10,
-                                                }}
-                                            />
-
-                                            <Bar
-                                                dataKey="requests"
-                                                name="Requests"
-                                                fill="#9181ed"
-                                                radius={[
-                                                    4,
-                                                    4,
-                                                    0,
-                                                    0,
-                                                ]}
-                                                maxBarSize={
-                                                    35
-                                                }
-                                            >
-                                                <LabelList
+                                            <PieChart>
+                                                <Pie
+                                                    data={requestTypeData}
                                                     dataKey="requests"
-                                                    position="top"
-                                                    fill="#25324b"
-                                                    fontSize={9}
-                                                    fontWeight={700}
+                                                    nameKey="type"
+                                                    cx="50%"
+                                                    cy="48%"
+                                                    outerRadius={72}
+                                                    innerRadius={38}
+                                                    paddingAngle={3}
+                                                    stroke="none"
+                                                >
+                                                    {requestTypeData.map((entry, index) => {
+                                                        const COLORS = ['#9181ed', '#10b981', '#f59e0b', '#3b82f6', '#ef4444'];
+                                                        return (
+                                                            <Cell
+                                                                key={`cell-${index}`}
+                                                                fill={COLORS[index % COLORS.length]}
+                                                            />
+                                                        );
+                                                    })}
+                                                </Pie>
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        borderRadius: 8,
+                                                        fontSize: 10,
+                                                    }}
+                                                    formatter={(value, name) => [value, name]}
                                                 />
-                                            </Bar>
-
-                                        </BarChart>
-
-                                    </ResponsiveContainer>
-
+                                                <Legend
+                                                    iconType="circle"
+                                                    iconSize={8}
+                                                    wrapperStyle={{
+                                                        fontSize: 10,
+                                                        paddingTop: 6,
+                                                    }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    )}
                                 </div>
 
                             </div>
@@ -2987,6 +2948,28 @@ export default function HODReports() {
                         to {
                             transform: rotate(360deg);
                         }
+                    }
+
+                    .hod-report-select {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        height: 44px !important;
+                        box-sizing: border-box;
+                        line-height: 1.2;
+                    }
+
+                    .hod-report-select::picker-icon {
+                        display: block;
+                        margin-left: auto;
+                        color: #64748b;
+                        font-size: 10px;
+                    }
+
+                    .report-control-grid input[type="date"] {
+                        height: 44px !important;
+                        box-sizing: border-box;
+                        line-height: 1.2;
                     }
 
 
@@ -3526,6 +3509,7 @@ function SelectField({
                 )}
 
                 <select
+                    className="hod-report-select"
                     value={value}
                     onChange={(event) =>
                         onChange(

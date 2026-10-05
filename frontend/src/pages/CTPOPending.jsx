@@ -842,19 +842,20 @@ export default function CTPOPending() {
                                   )
                                 }
                                 style={{
-                                  height: '32px',
-                                  border: '1px solid #a7f3d0',
-                                  background: '#ecfdf5',
-                                  color: '#059669',
-                                  borderRadius: '7px',
-                                  padding: '0 12px',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  justifyContent: 'center',
                                   gap: '5px',
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer'
+                                  padding: '5px 14px',
+                                  borderRadius: '50px',
+                                  fontSize: '12.5px',
+                                  fontWeight: 600,
+                                  color: '#10b981',
+                                  background: 'rgba(209, 250, 229, 0.92)',
+                                  border: '1px solid #a7f3d0',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s',
+                                  fontFamily: 'inherit',
+                                  whiteSpace: 'nowrap'
                                 }}
                               >
                                 <Eye size={15} />

@@ -307,20 +307,13 @@ exports.exportStudentsExcel = async (req, res) => {
       const branchDisplay = codeMap[rawCode] || codeMap[rawName] || rawName || rawCode || 'N/A';
       const yearStr = s.year ? `Year ${s.year}` : 'N/A';
       const tierStr = s.yearTier || (s.year ? `TIER_${s.year}` : 'N/A');
-      const typeStr = s.studentType === 'DAY_SCHOLAR'
-        ? 'Day Scholar'
-        : s.studentType === 'HOSTELER'
-        ? 'Hosteler'
-        : 'Unassigned';
-
       return {
         'S.No': idx + 1,
         'Roll Number': s.rollNo || 'N/A',
         'Student Name': s.name || 'N/A',
         'Branch': branchDisplay,
         'Year': yearStr,
-        'Year Tier': tierStr,
-        'Student Type': typeStr
+        'Year Tier': tierStr
       };
     });
 
@@ -524,7 +517,7 @@ exports.getAdminRequests = async (req, res) => {
     const requests = await OutpassRequest.find(filter)
       .populate({
         path: 'studentId',
-        select: 'name rollNo year branchId studentType',
+        select: 'name rollNo year branchId',
         populate: { path: 'branchId', select: 'name code' }
       })
       .populate('branchId', 'name code')
@@ -583,7 +576,7 @@ exports.exportAdminRequestsExcel = async (req, res) => {
     const requests = await OutpassRequest.find(filter)
       .populate({
         path: 'studentId',
-        select: 'name rollNo year branchId studentType',
+        select: 'name rollNo year branchId',
         populate: { path: 'branchId', select: 'name code' }
       })
       .populate('branchId', 'name code')

@@ -135,64 +135,74 @@ function ScanResult({ result, data, errorMsg }) {
             </span>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-            <span style={{ color: 'var(--text-muted, #94a3b8)' }}>Student Type:</span>
-            <span style={{ fontWeight: 600, color: 'var(--purple, #10b981)' }}>{data.studentType?.replace('_', ' ') || 'N/A'}</span>
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-// Simple Native QR Scanner implementation using HTML5 Video and BarcodeDetector (if available)
+// ZXing provides QR decoding in browsers without a native BarcodeDetector.
 function NativeQRScanner({ onScan, onClose }) {
   const videoRef = useRef(null);
-  const streamRef = useRef(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let intervalId;
+    let active = true;
+    let controls;
+
     async function startCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.setAttribute('playsinline', true);
-          videoRef.current.play();
-
-          // Try to use BarcodeDetector if available
-          if ('BarcodeDetector' in window) {
-            const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-            intervalId = setInterval(async () => {
-              if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
-                try {
-                  const barcodes = await detector.detect(videoRef.current);
-                  if (barcodes.length > 0) {
-                    clearInterval(intervalId);
-                    onScan(barcodes[0].rawValue);
-                  }
-                } catch (e) {
-                  console.error('Barcode detection error:', e);
-                }
-              }
-            }, 500);
-          }
+        if (!navigator.mediaDevices?.getUserMedia || !videoRef.current) {
+          setError('Camera access requires a supported browser and secure connection.');
+          return;
         }
+
+        const [{ BrowserQRCodeReader }, { DecodeHintType }] = await Promise.all([
+          import('@zxing/browser'),
+          import('@zxing/library'),
+        ]);
+        if (!active) return;
+        const reader = new BrowserQRCodeReader(
+          new Map([[DecodeHintType.TRY_HARDER, true]]),
+          { delayBetweenScanAttempts: 200, delayBetweenScanSuccess: 1000 }
+        );
+        controls = await reader.decodeFromConstraints(
+          {
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+          },
+          videoRef.current,
+          (result) => {
+            if (result) {
+              controls?.stop();
+              onScan(result.getText());
+            }
+          }
+        );
+
+        if (!active) controls.stop();
       } catch (err) {
         console.error('Camera error:', err);
-        setError('Camera access denied or unavailable.');
+        if (active) {
+          setError(
+            err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
+              ? 'Camera permission denied. Allow camera access and try again.'
+              : err?.name === 'NotFoundError'
+                ? 'No camera was found on this device.'
+                : 'Camera access is unavailable. Check browser permissions and try again.'
+          );
+        }
       }
     }
 
     startCamera();
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      active = false;
+      controls?.stop();
     };
   }, [onScan]);
 
@@ -204,7 +214,7 @@ function NativeQRScanner({ onScan, onClose }) {
           <div>{error}</div>
         </div>
       ) : (
-        <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <video ref={videoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       )}
 
       <div style={{
@@ -286,15 +296,15 @@ export default function SecurityScanner() {
     }
   }, [activeView]);
 
-  const fetchActivePasses = useCallback(async () => {
-    setLoadingActive(true);
+  const fetchActivePasses = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoadingActive(true);
     try {
       const res = await api.get('/security/active-passes');
       setActivePasses(res.data?.data || []);
     } catch (e) {
       console.error(e);
     } finally {
-      setLoadingActive(false);
+      if (showLoading) setLoadingActive(false);
     }
   }, []);
 
@@ -303,13 +313,24 @@ export default function SecurityScanner() {
     fetchActivePasses();
     const interval = setInterval(() => {
       fetchRecentScans();
-      fetchActivePasses();
+      fetchActivePasses(false);
     }, 10000);
     return () => clearInterval(interval);
   }, [fetchRecentScans, fetchActivePasses]);
 
-  const executeScan = async (tokenToScan) => {
-    if (!tokenToScan) return;
+  const executeScan = useCallback(async (tokenToScan) => {
+    const scannedValue = String(tokenToScan || '').trim();
+    if (!scannedValue) return;
+
+    let scanToken = scannedValue;
+    try {
+      const scanUrl = new URL(scannedValue, window.location.origin);
+      const tokenMatch = scanUrl.pathname.match(/(?:^|\/)verify\/([^/]+)\/?$/i);
+      if (tokenMatch) scanToken = decodeURIComponent(tokenMatch[1]);
+    } catch {
+      // Keep directly entered tokens unchanged.
+    }
+
     setScanning(true);
     setScanResult(null);
     setScanData(null);
@@ -317,11 +338,11 @@ export default function SecurityScanner() {
     setIsCameraOpen(false); // Close camera on scan
 
     try {
-      const res = await api.post('/security/scan', { token: tokenToScan.trim() });
+      const res = await api.post('/security/scan', { token: scanToken });
       setScanResult(res.data?.scanResult || 'VALID');
       setScanData(res.data?.data || null);
       fetchRecentScans();
-      fetchActivePasses();
+      fetchActivePasses(false);
     } catch (e) {
       const errData = e.response?.data;
       setScanResult(errData?.scanResult || 'INVALID');
@@ -332,7 +353,7 @@ export default function SecurityScanner() {
       setScanning(false);
       setToken('');
     }
-  };
+  }, [fetchRecentScans, fetchActivePasses]);
 
   const handleFormScan = (e) => {
     e.preventDefault();
@@ -391,8 +412,19 @@ export default function SecurityScanner() {
     });
 
     filtered.sort((a, b) => {
-      const dateA = new Date(`${a.outDate}T${a.outTime || '00:00'}`).getTime();
-      const dateB = new Date(`${b.outDate}T${b.outTime || '00:00'}`).getTime();
+      const getPassDateTime = pass => {
+        const date = new Date(pass.outDate);
+        if (Number.isNaN(date.getTime())) {
+          return new Date(pass.issuedAt || 0).getTime();
+        }
+
+        const time = String(pass.outTime || '00:00').match(/^(\d{1,2}):(\d{2})/);
+        if (time) date.setHours(Number(time[1]), Number(time[2]), 0, 0);
+        return date.getTime();
+      };
+
+      const dateA = getPassDateTime(a);
+      const dateB = getPassDateTime(b);
       return activeSort === 'Latest to Oldest' ? dateB - dateA : dateA - dateB;
     });
 
@@ -462,6 +494,30 @@ export default function SecurityScanner() {
 
       .security-dashboard-page * {
         box-sizing: border-box;
+      }
+
+      .security-dashboard-page .security-filters > div > input {
+        height: 44px !important;
+        box-sizing: border-box;
+        padding: 0 14px 0 36px !important;
+        line-height: 1.2;
+      }
+
+      .security-dashboard-page .security-filters > select {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 44px !important;
+        box-sizing: border-box;
+        padding: 0 14px !important;
+        line-height: 1.2;
+      }
+
+      .security-dashboard-page .security-filters > select::picker-icon {
+        display: block;
+        margin-left: auto;
+        color: #64748b;
+        font-size: 10px;
       }
 
       @media (max-width: 900px) {
@@ -841,7 +897,7 @@ export default function SecurityScanner() {
                               {p.studentName || 'Unknown Student'} ({p.rollNo || 'N/A'})
                             </div>
                             <div style={{ fontSize: '13px', color: '#64748b' }}>
-                              <strong style={{color: '#475569'}}>Ref ID:</strong> {(p.referenceId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'} &middot; Out: {p.outDate ? formatDate(p.outDate) : 'N/A'}, {p.outTime || 'N/A'} &middot; {p.studentType?.replace('_', ' ') || 'DAY SCHOLAR'}
+                              <strong style={{color: '#475569'}}>Ref ID:</strong> {(p.referenceId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'} &middot; Out: {p.outDate ? formatDate(p.outDate) : 'N/A'}, {p.outTime || 'N/A'}
                             </div>
                           </div>
                           <button

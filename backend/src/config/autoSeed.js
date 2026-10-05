@@ -145,7 +145,6 @@ async function autoSeedIfEmpty() {
           branchId: branchDoc._id,
           year: (i % 3) + 2,
           yearTier: 'TIER_4TH',
-          studentType: i % 2 === 0 ? 'DAY_SCHOLAR' : 'HOSTELER',
           isActive: true
         });
       }
@@ -189,7 +188,6 @@ async function autoSeedIfEmpty() {
           branchId: branchId,
           year: student.year || 4,
           yearTier: student.yearTier || 'TIER_4TH',
-          studentType: student.studentType || (i % 2 === 0 ? 'DAY_SCHOLAR' : 'HOSTELER'),
           referenceId,
           reason,
           emergencyContact: '9876543210',

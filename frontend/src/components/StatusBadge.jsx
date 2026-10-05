@@ -25,7 +25,7 @@ const STATUS_CONFIG = {
   CANCELLED: { label: 'Cancelled', icon: Ban, className: 'badge-cancelled' },
 };
 
-export default function StatusBadge({ status }) {
+export default function StatusBadge({ status, showIcon = true }) {
   if (!status) return null;
   const cfg = STATUS_CONFIG[status] || {
     label: status.replace(/_/g, ' '),
@@ -36,7 +36,7 @@ export default function StatusBadge({ status }) {
 
   return (
     <span className={`badge ${cfg.className}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-      <Icon size={13} />
+      {showIcon && <Icon size={13} />}
       <span>{cfg.label}</span>
     </span>
   );

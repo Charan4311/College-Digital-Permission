@@ -116,10 +116,19 @@ exports.getActivePasses = async (req, res) => {
       .limit(20);
 
     const now = new Date();
+    const getReferenceId = request => {
+      if (request?.referenceId) return request.referenceId;
+      if (!request?._id) return 'N/A';
+
+      const createdAt = new Date(request.createdAt || request.outDate || now);
+      return `KDP-${createdAt.getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}`;
+    };
+
     const data = activePasses.map(p => ({
       _id: p._id,
       token: p.token,
       requestId: p.requestId?._id,
+      referenceId: getReferenceId(p.requestId),
       studentName: p.requestId?.studentId?.name,
       rollNo: p.requestId?.studentId?.rollNo,
       branch: p.requestId?.branchId?.name,

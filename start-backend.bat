@@ -1,3 +1,0 @@
-@echo off
-echo Starting Backend Server on port 5000...
-npm run backend
