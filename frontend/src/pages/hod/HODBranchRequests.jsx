@@ -1375,6 +1375,9 @@ export default function HODBranchRequests() {
                                                     request
                                                 );
 
+                                            // Compute clean Reference ID
+                                            const refId = (request?.referenceId || `KDP-${new Date(request?.createdAt).getFullYear()}-${(request?._id || '').toString().slice(-6).toUpperCase()}`).replace(/^PERM-/i, 'KDP-');
+
                                             return (
                                                 <tr
                                                     key={
@@ -1419,7 +1422,7 @@ export default function HODBranchRequests() {
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             <span>{requestType(request)}</span>
                                                             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace' }}>
-                                                                Ref: {(request?.referenceId || (request?._id ? `KDP-${new Date(request?.createdAt || Date.now()).getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}` : '')).replace(/^PERM-/i, 'KDP-') || 'N/A'}
+                                                                Ref: {refId || 'N/A'}
                                                             </span>
                                                         </div>
                                                     </Cell>
