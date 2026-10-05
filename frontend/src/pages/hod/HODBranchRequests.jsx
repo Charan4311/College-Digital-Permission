@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
@@ -342,6 +342,19 @@ export default function HODBranchRequests() {
     const [currentPage, setCurrentPage] = useState(1);
     const [showGenerateModal, setShowGenerateModal] = useState(false);
     const [downloadLoading, setDownloadLoading] = useState(false);
+    const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+    const typeDropdownRef = useRef(null);
+
+    // Close dropdown on click outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target)) {
+                setIsTypeDropdownOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const fetchRequests = async (refresh = false) => {
         try {
@@ -1020,68 +1033,109 @@ export default function HODBranchRequests() {
 
                         {/* REQUEST TYPE */}
                         <div
+                            ref={typeDropdownRef}
                             style={{
-                                position:
-                                    'relative',
+                                position: 'relative',
+                                minWidth: '140px',
                             }}
                         >
-                            <select
-                                className="branch-type-filter"
-                                value={typeFilter}
-                                onChange={e => {
-                                    setTypeFilter(
-                                        e.target.value
-                                    );
-                                    setCurrentPage(1);
-                                }}
+                            <div
+                                onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
                                 style={{
                                     width: '100%',
                                     height: 40,
-                                    padding:
-                                        '0 34px 0 12px',
-                                    border: '1px solid #a7f3d0',
+                                    padding: '0 34px 0 12px',
+                                    border: isTypeDropdownOpen ? '1px solid #10b981' : '1px solid #a7f3d0',
                                     borderRadius: 8,
-                                    outline: 'none',
-                                    fontSize: 12,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    fontSize: 13,
                                     color: '#059669',
                                     background: '#ecfdf5',
-                                    appearance:
-                                        'none',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
+                                    userSelect: 'none'
                                 }}
                             >
-                                <option value="ALL">
-                                    All Types
-                                </option>
-                                <option value="OUTPASS">
-                                    Out-Pass
-                                </option>
-                                <option value="MESS_FEE">
-                                    Mess Fee
-                                </option>
-                                <option value="INTERNSHIP">
-                                    Internship
-                                </option>
-                                <option value="LIBRARY">
-                                    Library
-                                </option>
-                            </select>
+                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {typeFilter === 'ALL' ? 'All Types' :
+                                     typeFilter === 'OUTPASS' ? 'Out-Pass' :
+                                     typeFilter === 'MESS_FEE' ? 'Mess Fee' :
+                                     typeFilter === 'INTERNSHIP' ? 'Internship' :
+                                     typeFilter === 'LIBRARY' ? 'Library' : typeFilter}
+                                </span>
+                                <ChevronDown
+                                    size={15}
+                                    style={{
+                                        position: 'absolute',
+                                        right: 11,
+                                        top: '50%',
+                                        transform: `translateY(-50%) ${isTypeDropdownOpen ? 'rotate(180deg)' : ''}`,
+                                        pointerEvents: 'none',
+                                        color: '#059669',
+                                        transition: 'transform 0.2s ease'
+                                    }}
+                                />
+                            </div>
 
-                            <ChevronDown
-                                size={15}
-                                style={{
-                                    position:
-                                        'absolute',
-                                    right: 11,
-                                    top: '50%',
-                                    transform:
-                                        'translateY(-50%)',
-                                    pointerEvents:
-                                        'none',
-                                    color: '#059669',
-                                }}
-                            />
+                            {isTypeDropdownOpen && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 'calc(100% + 4px)',
+                                    left: 0,
+                                    minWidth: '100%',
+                                    background: '#ffffff',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: 8,
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                    zIndex: 50,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    padding: '4px'
+                                }}>
+                                    {[
+                                        { value: 'ALL', label: 'All Types' },
+                                        { value: 'OUTPASS', label: 'Out-Pass' },
+                                        { value: 'MESS_FEE', label: 'Mess Fee' },
+                                        { value: 'INTERNSHIP', label: 'Internship' },
+                                        { value: 'LIBRARY', label: 'Library' }
+                                    ].map((opt) => (
+                                        <div
+                                            key={opt.value}
+                                            onClick={() => {
+                                                setTypeFilter(opt.value);
+                                                setCurrentPage(1);
+                                                setIsTypeDropdownOpen(false);
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (typeFilter !== opt.value) {
+                                                    e.currentTarget.style.background = '#d1fae5';
+                                                    e.currentTarget.style.color = '#047857';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (typeFilter !== opt.value) {
+                                                    e.currentTarget.style.background = 'transparent';
+                                                    e.currentTarget.style.color = '#0f172a';
+                                                }
+                                            }}
+                                            style={{
+                                                padding: '8px 12px',
+                                                fontSize: 13,
+                                                cursor: 'pointer',
+                                                borderRadius: 6,
+                                                background: typeFilter === opt.value ? '#10b981' : 'transparent',
+                                                color: typeFilter === opt.value ? '#ffffff' : '#0f172a',
+                                                fontWeight: typeFilter === opt.value ? 600 : 400,
+                                                transition: 'all 0.15s ease',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {opt.label}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* FROM DATE */}
