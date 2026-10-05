@@ -209,29 +209,40 @@ const yearOf = request =>
     request?.student?.yearTier ||
     '-';
 
-const requestType = request => {
-    const type = normalize(
-        request?.requestType ||
-        request?.permissionType ||
-        request?.type ||
-        'OUTPASS'
-    );
-
-    if (type === 'MESS_FEE' || type === 'MESS') return 'Mess Fee';
-    if (type === 'INTERNSHIP') return 'Internship';
-    if (type === 'LIBRARY') return 'Library';
-    if (type === 'OUTPASS' || type === 'OUT-PASS') return 'Out-Pass';
-
-    return request?.requestType || request?.permissionType || type;
+const getRawType = request => {
+    let raw = request?.requestType ||
+              request?.permissionType?.name ||
+              request?.permissionType?.label ||
+              request?.permissionTypeName ||
+              request?.permissionType ||
+              request?.type ||
+              request?.permission?.type ||
+              '';
+    if (typeof raw === 'object' && raw !== null) {
+        raw = raw.name || raw.label || raw.type || '';
+    }
+    return String(raw).trim().toUpperCase().replace(/[\s-]+/g, '_');
 };
 
-const requestTypeKey = request =>
-    normalize(
-        request?.requestType ||
-        request?.permissionType ||
-        request?.type ||
-        'OUTPASS'
-    );
+const requestTypeKey = request => {
+    const raw = getRawType(request);
+
+    if (raw.includes('MESS') || request?.messAmount !== undefined) return 'MESS_FEE';
+    if (raw.includes('INTERNSHIP') || request?.companyName !== undefined || request?.internshipMode !== undefined || request?.role !== undefined) return 'INTERNSHIP';
+    if (raw.includes('LIBRARY')) return 'LIBRARY';
+    if (raw.includes('OUTPASS') || raw.includes('OUT_PASS') || request?.outDate !== undefined || request?.outTime !== undefined || request?.expectedReturnDate !== undefined) return 'OUTPASS';
+
+    return 'OUTPASS';
+};
+
+const requestType = request => {
+    const key = requestTypeKey(request);
+    if (key === 'MESS_FEE') return 'Mess Fee';
+    if (key === 'INTERNSHIP') return 'Internship';
+    if (key === 'LIBRARY') return 'Library';
+    if (key === 'OUTPASS') return 'Out-Pass';
+    return '-';
+};
 
 const dateValue = request =>
     request?.createdAt ||
