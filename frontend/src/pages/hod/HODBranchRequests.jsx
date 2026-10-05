@@ -269,13 +269,13 @@ const isApproved = status =>
 
 const isPending = status =>
     status === 'PENDING_HOD' || 
-    status === 'PENDING_HOD_APPROVAL';
+    status === 'PENDING_HOD_APPROVAL' ||
+    status === 'PENDING_CTPO';
 
 const isRejected = status =>
     status.startsWith('REJECTED');
 
 const statusLabel = status => {
-    if (status === 'PENDING_CTPO') return 'Pending';
     if (isPending(status)) return 'Pending';
     if (isRejected(status)) return 'Rejected';
     if (isApproved(status)) return 'Approved';
@@ -289,7 +289,7 @@ const statusLabel = status => {
 };
 
 const statusStyle = status => {
-    if (isPending(status) || status === 'PENDING_CTPO') {
+    if (isPending(status)) {
         return {
             background: '#fff7ed',
             color: '#c2410c',
@@ -1039,12 +1039,12 @@ export default function HODBranchRequests() {
                                     height: 40,
                                     padding:
                                         '0 34px 0 12px',
-                                    border: typeFilter !== 'ALL' ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
+                                    border: '1px solid #a7f3d0',
                                     borderRadius: 8,
                                     outline: 'none',
                                     fontSize: 12,
-                                    color: typeFilter !== 'ALL' ? '#059669' : '#475569',
-                                    background: typeFilter !== 'ALL' ? '#ecfdf5' : '#fff',
+                                    color: '#059669',
+                                    background: '#ecfdf5',
                                     appearance:
                                         'none',
                                     cursor: 'pointer',
@@ -1079,7 +1079,7 @@ export default function HODBranchRequests() {
                                         'translateY(-50%)',
                                     pointerEvents:
                                         'none',
-                                    color: typeFilter !== 'ALL' ? '#059669' : '#64748b',
+                                    color: '#059669',
                                 }}
                             />
                         </div>
@@ -1419,7 +1419,7 @@ export default function HODBranchRequests() {
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             <span>{requestType(request)}</span>
                                                             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, fontFamily: 'monospace' }}>
-                                                                Ref: {(request?.referenceId || request?.refId || request?._id || request?.id || '').toString().replace(/^PERM-/i, 'KDP-') || 'N/A'}
+                                                                Ref: {(request?.referenceId || (request?._id ? `KDP-${new Date(request?.createdAt || Date.now()).getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}` : '')).replace(/^PERM-/i, 'KDP-') || 'N/A'}
                                                             </span>
                                                         </div>
                                                     </Cell>
