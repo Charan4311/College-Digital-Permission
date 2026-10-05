@@ -795,12 +795,6 @@ export default function CTPOReports() {
 
       rejected,
 
-      studentType: {
-        dayScholar,
-
-        hosteller,
-      },
-
       permissionTypes,
 
       daily,
