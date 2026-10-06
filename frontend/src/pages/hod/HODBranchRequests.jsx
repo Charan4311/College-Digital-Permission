@@ -209,29 +209,35 @@ const yearOf = request =>
     request?.student?.yearTier ||
     '-';
 
-const requestType = request => {
+const requestTypeKey = request => {
+    if (request?.messAmount !== undefined || request?.paidStatus !== undefined) return 'MESS_FEE';
+    if (request?.companyName !== undefined || request?.internshipMode !== undefined || request?.role !== undefined) return 'INTERNSHIP';
+    if (request?.outDate !== undefined || request?.expectedReturnDate !== undefined || request?.outTime !== undefined) return 'OUTPASS';
+    if (request?.permissionType?.name === 'Library' || request?.permissionType?.label === 'Library') return 'LIBRARY';
+    
     const type = normalize(
         request?.requestType ||
+        request?.permissionType?.name ||
+        request?.permissionType?.label ||
         request?.permissionType ||
         request?.type ||
-        'OUTPASS'
+        ''
     );
-
-    if (type === 'MESS_FEE' || type === 'MESS') return 'Mess Fee';
-    if (type === 'INTERNSHIP') return 'Internship';
-    if (type === 'LIBRARY') return 'Library';
-    if (type === 'OUTPASS' || type === 'OUT-PASS') return 'Out-Pass';
-
-    return request?.requestType || request?.permissionType || type;
+    
+    if (type === 'MESS_FEE' || type === 'MESS') return 'MESS_FEE';
+    if (type === 'INTERNSHIP') return 'INTERNSHIP';
+    if (type === 'LIBRARY') return 'LIBRARY';
+    
+    return 'OUTPASS';
 };
 
-const requestTypeKey = request =>
-    normalize(
-        request?.requestType ||
-        request?.permissionType ||
-        request?.type ||
-        'OUTPASS'
-    );
+const requestType = request => {
+    const key = requestTypeKey(request);
+    if (key === 'MESS_FEE') return 'Mess Fee';
+    if (key === 'INTERNSHIP') return 'Internship';
+    if (key === 'LIBRARY') return 'Library';
+    return 'Out-Pass';
+};
 
 const dateValue = request =>
     request?.createdAt ||
@@ -372,21 +378,7 @@ export default function HODBranchRequests() {
 
             const data = extractRequests(response);
 
-            const isHODVisibleRequest = (request) => {
-                const type = String(
-                    request?.requestType ||
-                    request?.type ||
-                    request?.permissionType ||
-                    ''
-                )
-                    .trim()
-                    .toUpperCase()
-                    .replace(/[\s-]+/g, '_');
-
-                return type !== 'LIBRARY';
-            };
-
-            setRequests(data.filter(isHODVisibleRequest));
+            setRequests(data);
         } catch (err) {
             console.error(
                 'HOD branch requests error:',
