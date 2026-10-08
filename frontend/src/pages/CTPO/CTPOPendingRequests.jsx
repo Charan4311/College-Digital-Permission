@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import DashboardLayout from '../components/DashboardLayout';
-import StatusBadge from '../components/StatusBadge';
+import { useAuth } from '../../context/AuthContext';
+import DashboardLayout from '../../components/DashboardLayout';
+import StatusBadge from '../../components/StatusBadge';
+import ZoomableTableWrapper from '../../components/ZoomableTableWrapper';
 import api from '../lib/api';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -600,7 +601,7 @@ export default function ApproverDashboard() {
                             </div>
                         </div>
                     ) : (
-                        <div className="table-wrapper">
+                        <ZoomableTableWrapper>
                             <table>
                                 <thead>
                                     <tr>
@@ -794,7 +795,7 @@ export default function ApproverDashboard() {
                                     })}
                                 </tbody>
                             </table>
-                        </div>
+                        </ZoomableTableWrapper>
                     )}
                 </div>
             )}
@@ -811,7 +812,7 @@ export default function ApproverDashboard() {
                             <div className="empty-state-desc">Reviewed requests will appear here once processed.</div>
                         </div>
                     ) : (
-                        <div className="table-wrapper">
+                        <ZoomableTableWrapper>
                             <table>
                                 <thead>
                                     <tr>
@@ -894,7 +895,7 @@ export default function ApproverDashboard() {
                                     })}
                                 </tbody>
                             </table>
-                        </div>
+                        </ZoomableTableWrapper>
                     )}
                 </div>
             )}

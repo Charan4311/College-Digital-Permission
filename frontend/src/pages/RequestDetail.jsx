@@ -537,9 +537,10 @@ export default function RequestDetail() {
 
         {/* 2-Column Responsive Layout spanning full width */}
         <div
+          className="request-detail-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))',
             gap: '24px',
             alignItems: 'start',
             width: '100%'

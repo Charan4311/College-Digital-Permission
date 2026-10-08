@@ -330,10 +330,11 @@ const HODBranches = () => {
                 {branchStats.map((branch) => (
                     <div
                         key={branch.code}
-                        className="card"
+                        className="card hod-branch-card"
                         style={{
-                            flex: "0 0 calc(33.333% - 12px)",
-                            minWidth: "250px", // prevent it from getting too small on mobile before media queries kick in
+                            flex: "1 1 calc(33.333% - 12px)",
+                            minWidth: "min(100%, 250px)",
+                            maxWidth: "100%",
                             padding: "24px 20px",
                             display: "flex",
                             flexDirection: "column",

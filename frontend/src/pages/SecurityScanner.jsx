@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { BrowserQRCodeReader } from '@zxing/browser';
 import DashboardLayout from '../components/DashboardLayout';
+import ZoomableTableWrapper from '../components/ZoomableTableWrapper';
 import api from '../lib/api';
 import {
   formatDate,
@@ -828,7 +829,7 @@ export default function SecurityScanner() {
                       No allowed permission records found for {historyDateFilter.toLowerCase()}.
                     </div>
                   ) : (
-                    <div className="table-wrapper">
+                    <ZoomableTableWrapper>
                       <table>
                         <thead>
                           <tr>
@@ -902,7 +903,7 @@ export default function SecurityScanner() {
                           })}
                         </tbody>
                       </table>
-                    </div>
+                    </ZoomableTableWrapper>
                   )}
                 </div>
               </div>

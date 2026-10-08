@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import StudentLayout from "../components/StudentLayout";
+import ZoomableTableWrapper from "../components/ZoomableTableWrapper";
 import api from "../lib/api";
 
 import {
@@ -214,7 +215,7 @@ export default function StudentMyRequestsPage() {
         ) : paginatedRequests.length === 0 ? (
           <div style={{ padding:"48px 22px", textAlign:"center", color:"#94a3b8", fontSize:"14px" }}>No requests found.</div>
         ) : (
-          <div className="s-table-wrap">
+          <ZoomableTableWrapper tableWrapperClass="s-table-wrap">
             <table className="s-table">
               <thead>
                 <tr>
@@ -263,7 +264,7 @@ export default function StudentMyRequestsPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ZoomableTableWrapper>
         )}
 
         {/* PAGINATION */}

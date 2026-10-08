@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import FilterDropdown from '../../components/FilterDropdown';
+import ZoomableTableWrapper from '../../components/ZoomableTableWrapper';
 import api from '../../lib/api';
 import {
   Search,
@@ -363,7 +364,7 @@ export default function HODStudentRequests() {
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto', width: '100%' }}>
+          <ZoomableTableWrapper>
             <table style={{ width: '100%', minWidth: 850, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -521,7 +522,7 @@ export default function HODStudentRequests() {
                 )}
               </tbody>
             </table>
-          </div>
+          </ZoomableTableWrapper>
 
           {totalPages > 1 && (
             <div

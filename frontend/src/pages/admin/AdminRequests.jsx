@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
+import ZoomableTableWrapper from '../../components/ZoomableTableWrapper';
 import api from '../../lib/api';
 import {
   ShieldCheck,
@@ -437,7 +438,7 @@ export default function AdminRequests() {
             <div className="spinner spinner-lg" />
           </div>
         ) : (
-          <div className="table-wrapper" style={{ overflowX: 'auto' }}>
+          <ZoomableTableWrapper>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -527,7 +528,7 @@ export default function AdminRequests() {
                 )}
               </tbody>
             </table>
-          </div>
+          </ZoomableTableWrapper>
         )}
       </div>
     </DashboardLayout>

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import DocumentViewer from '../components/DocumentViewer';
+import ZoomableTableWrapper from '../components/ZoomableTableWrapper';
 import api from '../lib/api';
 import {
   formatDate,
@@ -444,12 +445,15 @@ export default function PlacementDashboard({ defaultTab = 'dashboard' }) {
         {activeTab === 'dashboard' && (
           <div>
             {/* Top 4 KPI Cards */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '18px',
-              marginBottom: '24px'
-            }}>
+            <div
+              className="placement-stats-grid stats-grid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+                gap: '18px',
+                marginBottom: '24px'
+              }}
+            >
               {/* Card 1: Total Requests */}
               <div style={{
                 background: '#FFFFFF',
@@ -544,12 +548,15 @@ export default function PlacementDashboard({ defaultTab = 'dashboard' }) {
             </div>
 
             {/* Main 2-Column Section */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
-              gap: '20px',
-              alignItems: 'stretch'
-            }}>
+            <div
+              className="placement-charts-grid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))',
+                gap: '20px',
+                alignItems: 'stretch'
+              }}
+            >
               {/* Left Column: Approval Activity (Last 7 Days) */}
               <div style={{
                 background: '#FFFFFF',
@@ -907,7 +914,7 @@ export default function PlacementDashboard({ defaultTab = 'dashboard' }) {
 
             {/* Table */}
             <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 14, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
-              <div style={{ overflowX: 'auto', width: '100%' }}>
+              <ZoomableTableWrapper>
                 <table style={{ width: '100%', minWidth: 950, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
@@ -1045,7 +1052,7 @@ export default function PlacementDashboard({ defaultTab = 'dashboard' }) {
                     )}
                   </tbody>
                 </table>
-              </div>
+              </ZoomableTableWrapper>
             </div>
           </div>
         )}

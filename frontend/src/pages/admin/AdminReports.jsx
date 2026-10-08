@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
+import ZoomableTableWrapper from '../../components/ZoomableTableWrapper';
 import api from '../../lib/api';
 import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -137,13 +138,13 @@ export default function AdminReports() {
 
   // Render trend badge
   const renderTrendBadge = (trendStr, isPositiveGood = true) => {
-    const isUp = trendStr.startsWith('+') || trendStr.includes('â†‘');
+    const isUp = trendStr.startsWith('+') || trendStr.includes('↑') || trendStr.includes('â†‘');
     const isPositive = (isUp && isPositiveGood) || (!isUp && !isPositiveGood);
     const color = isPositive ? '#166534' : '#991B1B';
     const bg = isPositive ? '#DCFCE7' : '#FEE2E2';
 
     return (
-      <span style={{
+      <span className="admin-summary-trend" style={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: '3px',
@@ -152,10 +153,11 @@ export default function AdminReports() {
         color: color,
         backgroundColor: bg,
         padding: '2px 8px',
-        borderRadius: '12px'
+        borderRadius: '12px',
+        whiteSpace: 'nowrap'
       }}>
-        {isUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-        {trendStr.replace('+', '')} vs last month
+        {isUp ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+        <span>{trendStr.replace('+', '')} vs last month</span>
       </span>
     );
   };
@@ -252,7 +254,7 @@ export default function AdminReports() {
       {/* Top 4 Summary Cards Row */}
       <div className="admin-summary-grid">
         {/* Card 1: Total Requests */}
-        <div style={{
+        <div className="admin-summary-card" style={{
           background: '#ecfdf5',
           border: '1px solid #d1fae5',
           borderRadius: '14px',
@@ -263,8 +265,8 @@ export default function AdminReports() {
           minHeight: '118px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
+            <div className="admin-summary-header" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="admin-summary-icon-box" style={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '10px',
@@ -275,15 +277,15 @@ export default function AdminReports() {
               }}>
                 <FileText size={18} color="#10b981" />
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#1E40AF' }}>Total Requests</span>
+              <span className="admin-summary-title" style={{ fontSize: '14px', fontWeight: 600, color: '#1E40AF' }}>Total Requests</span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
+          <div className="admin-summary-body" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
             <div>
-              <div style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+              <div className="admin-summary-value" style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
                 {summary.totalRequests.count.toLocaleString()}
               </div>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
+              <div className="admin-summary-subtext" style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
                 All permission requests
               </div>
             </div>
@@ -294,7 +296,7 @@ export default function AdminReports() {
         </div>
 
         {/* Card 2: Approved */}
-        <div style={{
+        <div className="admin-summary-card" style={{
           background: '#F0FDF4',
           border: '1px solid #DCFCE7',
           borderRadius: '14px',
@@ -305,8 +307,8 @@ export default function AdminReports() {
           minHeight: '118px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
+            <div className="admin-summary-header" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="admin-summary-icon-box" style={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '10px',
@@ -317,15 +319,15 @@ export default function AdminReports() {
               }}>
                 <CheckCircle2 size={18} color="#166534" />
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#166534' }}>Approved</span>
+              <span className="admin-summary-title" style={{ fontSize: '14px', fontWeight: 600, color: '#166534' }}>Approved</span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
+          <div className="admin-summary-body" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
             <div>
-              <div style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+              <div className="admin-summary-value" style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
                 {summary.approved.count.toLocaleString()}
               </div>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
+              <div className="admin-summary-subtext" style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
                 {summary.approved.percentage}% of total
               </div>
             </div>
@@ -336,7 +338,7 @@ export default function AdminReports() {
         </div>
 
         {/* Card 3: Pending */}
-        <div style={{
+        <div className="admin-summary-card" style={{
           background: '#FFFBEB',
           border: '1px solid #FEF3C7',
           borderRadius: '14px',
@@ -347,8 +349,8 @@ export default function AdminReports() {
           minHeight: '118px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
+            <div className="admin-summary-header" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="admin-summary-icon-box" style={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '10px',
@@ -359,15 +361,15 @@ export default function AdminReports() {
               }}>
                 <Clock size={18} color="#B45309" />
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#B45309' }}>Pending</span>
+              <span className="admin-summary-title" style={{ fontSize: '14px', fontWeight: 600, color: '#B45309' }}>Pending</span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
+          <div className="admin-summary-body" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
             <div>
-              <div style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+              <div className="admin-summary-value" style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
                 {summary.pending.count.toLocaleString()}
               </div>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
+              <div className="admin-summary-subtext" style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
                 {summary.pending.percentage}% of total
               </div>
             </div>
@@ -378,7 +380,7 @@ export default function AdminReports() {
         </div>
 
         {/* Card 4: Rejected */}
-        <div style={{
+        <div className="admin-summary-card" style={{
           background: '#FEF2F2',
           border: '1px solid #FEE2E2',
           borderRadius: '14px',
@@ -389,8 +391,8 @@ export default function AdminReports() {
           minHeight: '118px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
+            <div className="admin-summary-header" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="admin-summary-icon-box" style={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '10px',
@@ -401,15 +403,15 @@ export default function AdminReports() {
               }}>
                 <XCircle size={18} color="#991B1B" />
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#991B1B' }}>Rejected</span>
+              <span className="admin-summary-title" style={{ fontSize: '14px', fontWeight: 600, color: '#991B1B' }}>Rejected</span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
+          <div className="admin-summary-body" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '12px' }}>
             <div>
-              <div style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+              <div className="admin-summary-value" style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
                 {summary.rejected.count.toLocaleString()}
               </div>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
+              <div className="admin-summary-subtext" style={{ fontSize: '12px', fontWeight: 500, color: '#64748B', marginTop: '4px' }}>
                 {summary.rejected.percentage}% of total
               </div>
             </div>
@@ -581,7 +583,7 @@ export default function AdminReports() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-              <XAxis dataKey="date" tick={{ fill: '#64748B', fontSize: 11 }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} interval={range === '30days' ? 2 : 0} />
+              <XAxis dataKey="date" tick={{ fill: '#64748B', fontSize: 10 }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} minTickGap={20} interval="preserveStartEnd" />
               <YAxis tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<CustomTrendTooltip />} />
               <Area type="monotone" dataKey="displayTotal" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTotal)" />
@@ -759,7 +761,7 @@ export default function AdminReports() {
             </p>
           </div>
 
-          <div className="table-wrapper" style={{ overflowX: 'auto' }}>
+          <ZoomableTableWrapper>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
@@ -808,7 +810,7 @@ export default function AdminReports() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ZoomableTableWrapper>
         </div>
 
 

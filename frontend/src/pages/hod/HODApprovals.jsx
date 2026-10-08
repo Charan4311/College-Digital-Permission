@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
+import ZoomableTableWrapper from '../../components/ZoomableTableWrapper';
 import api from '../../lib/api';
 
 import {
@@ -782,11 +783,7 @@ export default function HODApprovals() {
 
 
                             {/* TABLE */}
-                            <div
-                                style={
-                                    styles.tableScroll
-                                }
-                            >
+                            <ZoomableTableWrapper tableWrapperStyle={styles.tableScroll}>
                                 <table
                                     style={
                                         styles.table
@@ -1047,7 +1044,7 @@ export default function HODApprovals() {
                                     </tbody>
 
                                 </table>
-                            </div>
+                            </ZoomableTableWrapper>
 
 
                             {/* PAGINATION */}

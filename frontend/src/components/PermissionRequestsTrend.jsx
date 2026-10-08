@@ -341,13 +341,14 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                             dataKey="date"
                             tick={{
                                 fill: "#64748b",
-                                fontSize: 11,
+                                fontSize: 10,
                             }}
                             axisLine={{
                                 stroke: "#e2e8f0",
                             }}
                             tickLine={false}
-                            interval={range === "30days" ? 2 : 0}
+                            minTickGap={20}
+                            interval="preserveStartEnd"
                         />
 
                         <YAxis

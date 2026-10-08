@@ -34,22 +34,14 @@ export default function StudentLayout({
 
         {/* Page header — always at the top of the main panel */}
         <header className="s-page-header">
-          <div className="s-page-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="s-page-header-left" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
             {/* Mobile hamburger */}
             <button
               type="button"
-              className="s-hamburger-btn"
+              className="s-menu-btn s-hamburger-btn"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open sidebar"
-              style={{
-                display: 'none',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '8px',
-                cursor: 'pointer',
-                color: '#1e293b'
-              }}
+              style={{ alignSelf: 'flex-start', marginTop: '2px', flexShrink: 0 }}
             >
               <Menu size={20} />
             </button>

@@ -3172,14 +3172,15 @@ function DynamicTrendChart({ data }) {
                         <XAxis
                             dataKey="label"
                             tick={{
-                                fontSize: 9,
+                                fontSize: 9.5,
                                 fill: '#667085',
                             }}
                             axisLine={{
                                 stroke: '#e5e7ef',
                             }}
                             tickLine={false}
-                            interval={chartData.length >= 25 ? 2 : 0}
+                            minTickGap={20}
+                            interval="preserveStartEnd"
                         />
 
                         <YAxis

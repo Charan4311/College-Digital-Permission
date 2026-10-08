@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
+import ZoomableTableWrapper from '../../components/ZoomableTableWrapper';
 import api from '../../lib/api';
 import { UserCheck, CheckCircle2, AlertCircle, Edit2, Save, X, Download, Search } from 'lucide-react';
 
@@ -252,7 +253,7 @@ export default function AdminStudents() {
           <div className="loading-screen"><div className="spinner spinner-lg" /></div>
         ) : (
           <>
-            <div className="table-wrapper">
+            <ZoomableTableWrapper>
               <table>
                 <thead>
                   <tr>
@@ -286,7 +287,7 @@ export default function AdminStudents() {
                   )}
                 </tbody>
               </table>
-            </div>
+            </ZoomableTableWrapper>
 
             {/* Pagination */}
             {totalPages > 1 && (

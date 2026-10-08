@@ -22,6 +22,7 @@ import {
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import ZoomableTableWrapper from '../../components/ZoomableTableWrapper';
 
 import DashboardLayout from '../../components/DashboardLayout';
 import StatusBadge from '../../components/StatusBadge';
@@ -1283,7 +1284,7 @@ export default function CTPOHistory() {
             !error &&
             filteredRequests.length > 0 && (
 
-              <div className="ctpo-table-wrapper">
+              <ZoomableTableWrapper tableWrapperClass="ctpo-table-wrapper">
 
                 <table className="ctpo-history-table">
 
@@ -1462,7 +1463,7 @@ export default function CTPOHistory() {
 
                 </table>
 
-              </div>
+              </ZoomableTableWrapper>
             )}
 
         </div>

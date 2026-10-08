@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi';
 
 import DashboardLayout from '../components/DashboardLayout';
+import ZoomableTableWrapper from '../components/ZoomableTableWrapper';
 import api from '../lib/api';
 
 export default function CTPOPending() {
@@ -707,7 +708,7 @@ export default function CTPOPending() {
 
           ) : (
 
-            <div className="ctpo-table-wrapper">
+            <ZoomableTableWrapper tableWrapperClass="ctpo-table-wrapper">
 
               <table className="ctpo-request-table">
 
@@ -874,7 +875,7 @@ export default function CTPOPending() {
 
               </table>
 
-            </div>
+            </ZoomableTableWrapper>
 
           )}
 

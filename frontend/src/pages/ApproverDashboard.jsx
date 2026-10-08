@@ -392,6 +392,7 @@ export default function ApproverDashboard({ defaultTab }) {
 
         {/* 4 Stats Cards */}
         <div
+          className="hostel-stats-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',

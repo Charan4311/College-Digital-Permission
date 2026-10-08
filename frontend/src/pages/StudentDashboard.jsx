@@ -203,7 +203,7 @@ export default function StudentDashboard() {
                       ))}
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(226,232,240,.50)" />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize:11, fill:"#94a3b8", fontWeight:500 }} dy={8} />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize:10, fill:"#94a3b8", fontWeight:500 }} dy={8} minTickGap={15} interval="preserveStartEnd" />
                     <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize:11, fill:"#94a3b8", fontWeight:500 }} dx={-6} />
                     <Tooltip
                       contentStyle={{ borderRadius:"14px", border:"1px solid #e2e8f0", boxShadow:"0 12px 28px rgba(0,0,0,.10)", background:"rgba(255,255,255,.98)" }}
