@@ -82,6 +82,8 @@ exports.login = async (req, res) => {
           branchCode: account.branchId?.code,
           assignedYear: account.assignedYear,
           profileImage: account.profileImage || '',
+          residenceType: account.residenceType || null,
+          needsResidenceType: isStudent && !account.residenceType,
           ...(isStudent && {
             rollNo: account.rollNo,
             year: account.year || 4,
@@ -123,6 +125,8 @@ exports.getMe = async (req, res) => {
         branchCode: account.branchId?.code,
         assignedYear: account.assignedYear,
         profileImage: account.profileImage || '',
+        residenceType: account.residenceType || null,
+        needsResidenceType: isStudent && !account.residenceType,
         ...(isStudent && {
           rollNo: account.rollNo,
           year: account.year || 4,
@@ -146,15 +150,21 @@ exports.updateProfile = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Account disabled or not found' });
     }
 
-    const { name, year, yearTier } = req.body;
+    const { name, year, yearTier, residenceType } = req.body;
     if (name !== undefined && !String(name).trim()) {
       return res.status(400).json({ success: false, message: 'Name is required' });
     }
 
     if (name !== undefined) account.name = String(name).trim();
-
     if (year !== undefined) account.year = Number(year);
     if (yearTier !== undefined) account.yearTier = String(yearTier);
+    if (residenceType !== undefined) {
+      const normalized = String(residenceType).toLowerCase();
+      if (!['hosteler', 'dayscholar'].includes(normalized)) {
+        return res.status(400).json({ success: false, message: 'residenceType must be hosteler or dayscholar' });
+      }
+      account.residenceType = normalized;
+    }
 
     await account.save();
 

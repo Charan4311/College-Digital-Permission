@@ -1,8 +1,13 @@
+require('dotenv').config();
 const dns = require('dns');
 
-dns.setServers(['8.8.8.8', '1.1.1.1']);
-
-require('dotenv').config();
+if (process.env.MONGODB_URI && process.env.MONGODB_URI.startsWith('mongodb+srv:')) {
+  try {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+  } catch (e) {
+    console.warn('DNS server configuration warning:', e.message);
+  }
+}
 
 const app = require('./app');
 const connectDB = require('./config/db');

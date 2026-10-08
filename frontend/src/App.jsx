@@ -130,6 +130,12 @@ function AppRoutes() {
       <Route path="/hostel/dashboard" element={
         <ProtectedRoute roles={['HOSTEL_INCHARGE']}><ApproverDashboard /></ProtectedRoute>
       } />
+      <Route path="/hostel/pending" element={
+        <ProtectedRoute roles={['HOSTEL_INCHARGE']}><ApproverDashboard defaultTab="pending" /></ProtectedRoute>
+      } />
+      <Route path="/hostel/history" element={
+        <ProtectedRoute roles={['HOSTEL_INCHARGE']}><ApproverDashboard defaultTab="history" /></ProtectedRoute>
+      } />
 
       {/* Placement Officer Routes */}
       <Route path="/placement/dashboard" element={

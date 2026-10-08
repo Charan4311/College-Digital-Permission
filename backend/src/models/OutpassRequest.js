@@ -11,7 +11,7 @@ const outpassRequestSchema = new mongoose.Schema({
   branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
   year: { type: Number, default: 4, index: true },
   yearTier: { type: String, default: 'TIER_4TH' },
-  referenceId: { type: String, unique: true, sparse: true },
+  referenceId: { type: String, unique: true, sparse: true, index: true },
   emergencyContact: { type: String },
 
   // General Purpose / Reason
@@ -50,6 +50,8 @@ const outpassRequestSchema = new mongoose.Schema({
   documentUrl: { type: String },
   documentName: { type: String },
   documentFileId: { type: String, index: true },
+  documentPublicId: { type: String },
+  documentMime: { type: String },
 
   // Status Lifecycle
   status: {
@@ -76,7 +78,10 @@ const outpassRequestSchema = new mongoose.Schema({
   resubmitCount: { type: Number, default: 0 },
 
   // Digital Ticket Token / Verification Code
-  qrToken: { type: String, index: true }
+  qrToken: { type: String, index: true },
+  shortCode: { type: String, unique: true, sparse: true, index: true }
 }, { timestamps: true });
+
+outpassRequestSchema.index({ branchId: 1, requestType: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('OutpassRequest', outpassRequestSchema);

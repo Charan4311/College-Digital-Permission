@@ -198,7 +198,7 @@ exports.reactivateUser = async (req, res) => {
 exports.getStudents = async (req, res) => {
   try {
     const { branchId, branch, yearTier, year, page = 1, limit = 50 } = req.query;
-    
+
     // Strictly filter for students only (role: STUDENT and valid rollNo)
     const filter = {
       role: 'STUDENT',
@@ -227,7 +227,7 @@ exports.getStudents = async (req, res) => {
       }
     }
 
-    
+
     if (yearTier && yearTier !== 'all' && yearTier !== '') filter.yearTier = yearTier;
     if (year && year !== 'all' && year !== '') filter.year = parseInt(year);
 
@@ -279,7 +279,7 @@ exports.exportStudentsExcel = async (req, res) => {
       }
     }
 
-    
+
     if (yearTier && yearTier !== 'all' && yearTier !== '') filter.yearTier = yearTier;
     if (year && year !== 'all' && year !== '') filter.year = parseInt(year);
 
@@ -354,7 +354,7 @@ exports.exportStudentsExcel = async (req, res) => {
 exports.getOverview = async (req, res) => {
   try {
     const totalStudents = await Student.countDocuments({ role: 'STUDENT', isActive: true });
-    
+
     // Year-wise student counts
     const year2Students = await Student.countDocuments({ role: 'STUDENT', year: 2, isActive: true });
     const year3Students = await Student.countDocuments({ role: 'STUDENT', year: 3, isActive: true });
@@ -597,8 +597,8 @@ exports.exportAdminRequestsExcel = async (req, res) => {
       const statusClean = APPROVED_STATUSES.includes(r.status)
         ? 'Approved'
         : PENDING_STATUSES.includes(r.status)
-        ? 'Pending'
-        : 'Rejected';
+          ? 'Pending'
+          : 'Rejected';
 
       const formattedDate = new Date(r.createdAt).toLocaleDateString('en-US', {
         month: 'short',
@@ -734,19 +734,33 @@ exports.getReportsAnalytics = async (req, res) => {
 
     // ─── 1. PERMISSION REQUESTS TREND (Time Series) ─────────────────────────
     const trendData = [];
+
+    const getISTDayStr = (date) => {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        month: 'short',
+        day: 'numeric'
+      }).format(new Date(date));
+    };
+
+    const getISTMonthStr = (date) => {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        month: 'short',
+        year: 'numeric'
+      }).format(new Date(date));
+    };
+
     if (intervalUnit === 'day') {
       const daysCount = range === '7days' ? 7 : 30;
       for (let i = daysCount - 1; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
-        const dayStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
+        const dayStr = getISTDayStr(d);
+
         // Filter requests on this day
         const dayRequests = currentRequests.filter(r => {
-          const rDate = new Date(r.createdAt);
-          return rDate.getDate() === d.getDate() &&
-                 rDate.getMonth() === d.getMonth() &&
-                 rDate.getFullYear() === d.getFullYear();
+          return getISTDayStr(r.createdAt) === dayStr;
         });
 
         const dayTotal = dayRequests.length;
@@ -767,11 +781,10 @@ exports.getReportsAnalytics = async (req, res) => {
       const monthsCount = range === '6months' ? 6 : 12;
       for (let i = monthsCount - 1; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthLabel = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const monthLabel = getISTMonthStr(d);
 
         const monthRequests = currentRequests.filter(r => {
-          const rDate = new Date(r.createdAt);
-          return rDate.getMonth() === d.getMonth() && rDate.getFullYear() === d.getFullYear();
+          return getISTMonthStr(r.createdAt) === monthLabel;
         });
 
         const monthTotal = monthRequests.length;
@@ -884,8 +897,8 @@ exports.exportReportsExcel = async (req, res) => {
 
     const rangeLabel = range === '7days' ? 'Last 7 Days'
       : range === '6months' ? 'Last 6 Months'
-      : (range === 'thisyear' || range === 'year') ? 'This Year'
-      : 'Last 30 Days';
+        : (range === 'thisyear' || range === 'year') ? 'This Year'
+          : 'Last 30 Days';
 
     // Branch code normalizer
     const normalizeBranch = (r) => {

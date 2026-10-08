@@ -57,6 +57,51 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
         fetchTrendData(range);
     }, [range]);
 
+    const displayData = React.useMemo(() => {
+        return (data || []).map((item) => {
+            const rawTotal = Number(item.Total ?? item.total ?? 0);
+            const rawApproved = Number(item.Approved ?? item.approved ?? 0);
+            const rawPending = Number(item.Pending ?? item.pending ?? 0);
+            const rawRejected = Number(item.Rejected ?? item.rejected ?? 0);
+
+            let displayTotal = rawTotal;
+            let displayApproved = rawApproved;
+            let displayPending = rawPending;
+            let displayRejected = rawRejected;
+
+            if (rawTotal > 0) {
+                if (rawTotal === rawApproved || rawTotal === rawPending || rawTotal === rawRejected) {
+                    displayTotal = rawTotal + 0.08;
+                }
+            }
+
+            if (rawApproved > 0 && rawPending > 0 && rawApproved === rawPending) {
+                displayApproved = rawApproved + 0.04;
+                displayPending = rawPending - 0.04;
+            }
+            if (rawApproved > 0 && rawRejected > 0 && rawApproved === rawRejected) {
+                displayApproved = rawApproved + 0.04;
+                displayRejected = rawRejected - 0.04;
+            }
+            if (rawPending > 0 && rawRejected > 0 && rawPending === rawRejected) {
+                displayPending = rawPending + 0.04;
+                displayRejected = rawRejected - 0.04;
+            }
+
+            return {
+                ...item,
+                Total: rawTotal,
+                Approved: rawApproved,
+                Pending: rawPending,
+                Rejected: rawRejected,
+                displayTotal,
+                displayApproved,
+                displayPending,
+                displayRejected,
+            };
+        });
+    }, [data]);
+
     // Export to Excel Handler
     const handleExport = async () => {
         try {
@@ -90,113 +135,120 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                 boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
             }}
         >
-            {/* HEADER */}
+            {/* HEADER ROW (Title Left, Filter & Export Right) */}
             <div
                 style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "12px",
                     marginBottom: "20px",
                 }}
             >
-                <h2
-                    style={{
-                        margin: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "9px",
-                        fontSize: "18px",
-                        fontWeight: 700,
-                        color: "#0f172a",
-                    }}
-                >
-                    <TrendingUp
-                        size={21}
-                        color="#10b981"
-                    />
+                <div>
+                    <h2
+                        style={{
+                            margin: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "9px",
+                            fontSize: "17px",
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            fontFamily: "inherit",
+                        }}
+                    >
+                        <TrendingUp
+                            size={20}
+                            color="#059669"
+                        />
+                        Permission Requests Trend
+                    </h2>
 
-                    Permission Requests Trend
-                </h2>
+                    <p
+                        style={{
+                            margin: "4px 0 0",
+                            fontSize: "13px",
+                            color: "#64748b",
+                        }}
+                    >
+                        Daily request count and status over time
+                    </p>
+                </div>
 
-                <p
-                    style={{
-                        margin: "6px 0 0",
-                        fontSize: "13px",
-                        color: "#64748b",
-                    }}
-                >
-                    Daily request count and status over time
-                </p>
-            </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    {/* RANGE TABS */}
+                    <div
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "3px",
+                            padding: "3px",
+                            background: "#f1f5f9",
+                            borderRadius: "8px",
+                            maxWidth: "100%",
+                            overflowX: "auto",
+                        }}
+                    >
+                        {TABS.map((tab) => {
+                            const active = range === tab.value;
 
-            {/* RANGE TABS */}
-            <div
-                style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "4px",
-                    background: "#f1f5f9",
-                    borderRadius: "10px",
-                    marginBottom: "22px",
-                    maxWidth: "100%",
-                    overflowX: "auto",
-                }}
-            >
-                {TABS.map((tab) => {
-                    const active = range === tab.value;
+                            return (
+                                <button
+                                    key={tab.value}
+                                    type="button"
+                                    onClick={() => setRange(tab.value)}
+                                    style={{
+                                        border: "none",
+                                        background: active
+                                            ? "#059669"
+                                            : "transparent",
+                                        color: active
+                                            ? "#ffffff"
+                                            : "#475569",
+                                        padding: "6px 12px",
+                                        borderRadius: "6px",
+                                        fontSize: "12px",
+                                        fontWeight: active ? 700 : 500,
+                                        cursor: "pointer",
+                                        whiteSpace: "nowrap",
+                                        transition: "all 0.15s ease",
+                                    }}
+                                >
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
+                    </div>
 
-                    return (
+                    {/* Export Report Button */}
+                    {!hideExport && (
                         <button
-                            key={tab.value}
-                            type="button"
-                            onClick={() => setRange(tab.value)}
+                            onClick={handleExport}
+                            disabled={exporting}
                             style={{
-                                border: "none",
-                                background: active
-                                    ? "#10b981"
-                                    : "transparent",
-                                color: active
-                                    ? "#ffffff"
-                                    : "#475569",
-                                padding: "8px 16px",
-                                borderRadius: "8px",
-                                fontSize: "13px",
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid #CBD5E1',
+                                borderRadius: '8px',
+                                padding: '6px 14px',
+                                fontSize: '12px',
                                 fontWeight: 600,
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
+                                color: '#1E293B',
+                                cursor: exporting ? 'not-allowed' : 'pointer',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                                transition: 'all 0.15s ease',
                             }}
                         >
-                            {tab.label}
+                            <Download size={13} color="#059669" />
+                            <span>{exporting ? 'Exporting...' : 'Export'}</span>
                         </button>
-                    );
-                })}
+                    )}
+                </div>
             </div>
-
-            {/* Export Report Button */}
-            {!hideExport && (
-                <button
-                    onClick={handleExport}
-                    disabled={exporting}
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid #CBD5E1',
-                        borderRadius: '8px',
-                        padding: '8px 16px',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        color: '#1E293B',
-                        cursor: exporting ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                        transition: 'all 0.15s ease',
-                        marginLeft: '10px',
-                        marginBottom: '22px'
-                    }}
-                >
-                    <Download size={14} color="#10b981" />
-                    <span>{exporting ? 'Exporting...' : 'Export Report'}</span>
-                </button>
-            )}
 
             {/* CHART */}
             {error ? (
@@ -231,7 +283,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                     height={chartHeight}
                 >
                     <AreaChart
-                        data={data}
+                        data={displayData}
                         margin={{
                             top: 10,
                             right: 10,
@@ -249,13 +301,12 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                             >
                                 <stop
                                     offset="5%"
-                                    stopColor="#10b981"
-                                    stopOpacity={0.25}
+                                    stopColor="#3b82f6"
+                                    stopOpacity={0.22}
                                 />
-
                                 <stop
                                     offset="95%"
-                                    stopColor="#10b981"
+                                    stopColor="#3b82f6"
                                     stopOpacity={0}
                                 />
                             </linearGradient>
@@ -272,7 +323,6 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                                     stopColor="#10b981"
                                     stopOpacity={0.22}
                                 />
-
                                 <stop
                                     offset="95%"
                                     stopColor="#10b981"
@@ -297,7 +347,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                                 stroke: "#e2e8f0",
                             }}
                             tickLine={false}
-                            interval="preserveStartEnd"
+                            interval={range === "30days" ? 2 : 0}
                         />
 
                         <YAxis
@@ -310,23 +360,13 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                             allowDecimals={false}
                         />
 
-                        <Tooltip
-                            contentStyle={{
-                                background: "#ffffff",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "10px",
-                                boxShadow:
-                                    "0 4px 14px rgba(0,0,0,0.08)",
-                                padding: "10px 14px",
-                                fontSize: "13px",
-                            }}
-                        />
+                        <Tooltip content={<CustomTrendTooltip />} />
 
                         {/* TOTAL */}
                         <Area
                             type="monotone"
-                            dataKey="Total"
-                            stroke="#10b981"
+                            dataKey="displayTotal"
+                            stroke="#3b82f6"
                             strokeWidth={2.5}
                             fill="url(#trendTotalGradient)"
                             fillOpacity={1}
@@ -335,7 +375,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                         {/* APPROVED */}
                         <Area
                             type="monotone"
-                            dataKey="Approved"
+                            dataKey="displayApproved"
                             stroke="#10b981"
                             strokeWidth={2.5}
                             fill="url(#trendApprovedGradient)"
@@ -345,7 +385,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                         {/* PENDING */}
                         <Line
                             type="monotone"
-                            dataKey="Pending"
+                            dataKey="displayPending"
                             stroke="#f59e0b"
                             strokeWidth={2}
                             dot={false}
@@ -354,7 +394,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                         {/* REJECTED */}
                         <Line
                             type="monotone"
-                            dataKey="Rejected"
+                            dataKey="displayRejected"
                             stroke="#ef4444"
                             strokeWidth={2}
                             dot={false}
@@ -378,7 +418,7 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
                 }}
             >
                 <LegendItem
-                    color="#10b981"
+                    color="#3b82f6"
                     label="Total"
                 />
 
@@ -399,6 +439,50 @@ export default function PermissionRequestsTrend({ hideExport = false, chartHeigh
             </div>
         </div>
     );
+}
+
+function CustomTrendTooltip({ active, payload, label }) {
+    if (active && payload && payload.length) {
+        const item = payload[0]?.payload || {};
+        const total = item.Total ?? 0;
+        const approved = item.Approved ?? 0;
+        const pending = item.Pending ?? 0;
+        const rejected = item.Rejected ?? 0;
+        const dateLabel = label || item.date || "";
+
+        return (
+            <div
+                style={{
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)",
+                    padding: "10px 14px",
+                    fontSize: "13px",
+                    color: "#334155",
+                    minWidth: "125px",
+                }}
+            >
+                <div
+                    style={{
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                    }}
+                >
+                    {dateLabel}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                    <div>Total : {total}</div>
+                    <div>Approved : {approved}</div>
+                    <div>Pending : {pending}</div>
+                    <div>Rejected : {rejected}</div>
+                </div>
+            </div>
+        );
+    }
+    return null;
 }
 
 function LegendItem({ color, label }) {

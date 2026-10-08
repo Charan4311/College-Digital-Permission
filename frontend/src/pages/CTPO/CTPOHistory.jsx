@@ -24,7 +24,6 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 import DashboardLayout from '../../components/DashboardLayout';
-import CTPOMobileNav from '../../components/CTPOMobileNav';
 import StatusBadge from '../../components/StatusBadge';
 import api from '../../lib/api';
 
@@ -1019,9 +1018,8 @@ export default function CTPOHistory() {
         <div className="ctpo-history-header">
 
           <div className="ctpo-history-title-row">
-            <CTPOMobileNav />
             <div>
-              <h1>
+              <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
                 All Requests
               </h1>
 

@@ -38,7 +38,6 @@ import {
 } from "recharts";
 
 import DashboardLayout from "../../components/DashboardLayout";
-import CTPOMobileNav from "../../components/CTPOMobileNav";
 import api from "../../lib/api";
 
 // ============================================================
@@ -978,7 +977,41 @@ export default function CTPOReports() {
         });
       }
 
-      return { date: label, total, approved, pending, rejected };
+      let displayTotal = total;
+      let displayApproved = approved;
+      let displayPending = pending;
+      let displayRejected = rejected;
+
+      if (total > 0) {
+        if (total === approved || total === pending || total === rejected) {
+          displayTotal = total + 0.08;
+        }
+      }
+
+      if (approved > 0 && pending > 0 && approved === pending) {
+        displayApproved = approved + 0.04;
+        displayPending = pending - 0.04;
+      }
+      if (approved > 0 && rejected > 0 && approved === rejected) {
+        displayApproved = approved + 0.04;
+        displayRejected = rejected - 0.04;
+      }
+      if (pending > 0 && rejected > 0 && pending === rejected) {
+        displayPending = pending + 0.04;
+        displayRejected = rejected - 0.04;
+      }
+
+      return {
+        date: label,
+        total,
+        approved,
+        pending,
+        rejected,
+        displayTotal,
+        displayApproved,
+        displayPending,
+        displayRejected,
+      };
     });
   }, [normalizedRequests, chartPeriod]);
 
@@ -1169,7 +1202,24 @@ export default function CTPOReports() {
         });
       });
 
-      const ws = XLSX.utils.json_to_sheet(excelRows);
+      const ws = XLSX.utils.json_to_sheet(excelRows.length > 0 ? excelRows : [{ 'Note': 'No permission requests found' }]);
+
+      // Auto-fit column widths so no text is ever clipped or cut off by borders
+      const autoFit = (rows, minW = 16) => {
+        if (!rows || !rows.length) return [];
+        const keys = Object.keys(rows[0]);
+        return keys.map((key) => {
+          let max = key.toString().length;
+          rows.forEach((r) => {
+            const v = r[key] !== undefined && r[key] !== null ? r[key].toString() : '';
+            if (v.length > max) max = v.length;
+          });
+          return { wch: Math.max(max + 6, minW) };
+        });
+      };
+
+      ws['!cols'] = autoFit(excelRows.length > 0 ? excelRows : [{ 'Note': 'No permission requests found' }], 16);
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "CTPO Report");
       XLSX.writeFile(wb, 'CTPO_Permission_Report.xlsx');
@@ -1291,11 +1341,10 @@ export default function CTPOReports() {
 
         <div className="ctpo-reports-header">
           <div className="ctpo-reports-title-row">
-            <CTPOMobileNav />
             <div>
-              <h1>Reports &amp; Analytics</h1>
+              <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Reports &amp; Analytics</h1>
 
-              <p>
+              <p style={{ color: '#64748b', fontSize: '13px', margin: '4px 0 0' }}>
                 Monitor permission activity, approval status and request trends.
               </p>
             </div>
@@ -1503,7 +1552,7 @@ export default function CTPOReports() {
                     tick={{ fontSize: 11, fill: "#94a3b8" }}
                     tickLine={false}
                     axisLine={{ stroke: "#e2e8f0" }}
-                    interval="preserveStartEnd"
+                    interval={visibleChartData.length >= 25 ? 2 : 0}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "#94a3b8" }}
@@ -1512,25 +1561,59 @@ export default function CTPOReports() {
                     allowDecimals={false}
                   />
                   <Tooltip
-                    contentStyle={{
-                      background: "#fff",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "10px",
-                      fontSize: "12px",
-                      boxShadow: "0 4px 16px rgba(15,23,42,0.08)",
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const item = payload[0]?.payload || {};
+                        const total = item.total ?? 0;
+                        const approved = item.approved ?? 0;
+                        const pending = item.pending ?? 0;
+                        const rejected = item.rejected ?? 0;
+                        const dateLabel = label || item.date || "";
+
+                        return (
+                          <div
+                            style={{
+                              background: "#ffffff",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "12px",
+                              boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)",
+                              padding: "10px 14px",
+                              fontSize: "13px",
+                              color: "#334155",
+                              minWidth: "125px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontWeight: 700,
+                                color: "#0f172a",
+                                marginBottom: "6px",
+                                fontSize: "13px",
+                              }}
+                            >
+                              {dateLabel}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                              <div>Total : {total}</div>
+                              <div>Approved : {approved}</div>
+                              <div>Pending : {pending}</div>
+                              <div>Rejected : {rejected}</div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
-                    itemStyle={{ color: "#334155" }}
-                    labelStyle={{ color: "#0f172a", fontWeight: 700 }}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }}
+                    wrapperStyle={{ fontSize: "12px", paddingTop: "12px", fontWeight: 600 }}
                     iconType="circle"
                     iconSize={8}
                   />
-                  <Area type="monotone" dataKey="total" name="Total" stroke="#3b82f6" strokeWidth={2} fill="url(#gradTotal)" dot={false} activeDot={{ r: 5 }} />
-                  <Area type="monotone" dataKey="approved" name="Approved" stroke="#10b981" strokeWidth={2} fill="url(#gradApproved)" dot={false} activeDot={{ r: 5 }} />
-                  <Area type="monotone" dataKey="pending" name="Pending" stroke="#f59e0b" strokeWidth={2} fill="url(#gradPending)" dot={false} activeDot={{ r: 5 }} />
-                  <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#ef4444" strokeWidth={2} fill="url(#gradRejected)" dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="displayTotal" name="Total" stroke="#3b82f6" strokeWidth={2.5} fill="url(#gradTotal)" dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="displayApproved" name="Approved" stroke="#10b981" strokeWidth={2.5} fill="url(#gradApproved)" dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="displayPending" name="Pending" stroke="#f59e0b" strokeWidth={2} fill="url(#gradPending)" dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="displayRejected" name="Rejected" stroke="#ef4444" strokeWidth={2} fill="url(#gradRejected)" dot={false} activeDot={{ r: 5 }} />
                 </AreaChart>
               </ResponsiveContainer>
             )}

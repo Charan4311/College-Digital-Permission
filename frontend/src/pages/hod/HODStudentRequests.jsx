@@ -1,803 +1,578 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
+import FilterDropdown from '../../components/FilterDropdown';
 import api from '../../lib/api';
-import { Search, ChevronLeft, ChevronRight, Eye, ChevronDown, CalendarDays, ClipboardList } from 'lucide-react';
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  ClipboardList
+} from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
 const STATUS_TABS = [
-    { key: 'ALL', label: 'All Requests' },
-    { key: 'APPROVED', label: 'Approved' },
-    { key: 'PENDING', label: 'Pending' },
-    { key: 'REJECTED', label: 'Rejected' },
+  { key: 'ALL', label: 'All Requests' },
+  { key: 'APPROVED', label: 'Approved' },
+  { key: 'PENDING', label: 'Pending' },
+  { key: 'REJECTED', label: 'Rejected' },
 ];
 
-const statusOf = r => String(r?.status || '').trim().toUpperCase();
+const HOD_PERMISSION_OPTIONS = [
+  { value: 'ALL', label: 'All Types' },
+  { value: 'OUTPASS', label: 'Out-Pass' },
+  { value: 'INTERNSHIP', label: 'Internship' },
+  { value: 'MESS_FEE', label: 'Mess Fee' },
+];
 
-const studentName = r =>
-    r?.studentId?.name || r?.student?.name || r?.studentName || r?.name || '-';
-
-const rollNo = r =>
-    r?.studentId?.rollNo || r?.student?.rollNo || r?.rollNo || '-';
-
-const branchName = r =>
-    r?.branchId?.name || r?.branchId?.code || r?.branch?.name ||
-    r?.branch?.code || r?.branchName || '-';
-
-const yearOf = r =>
-    r?.yearTier || r?.year || r?.studentId?.yearTier ||
-    r?.student?.yearTier || '-';
-
-const requestType = r => {
-    const type = String(
-        r?.requestType || r?.permissionType || r?.type || 'OUTPASS'
-    ).toUpperCase();
-
-    if (type === 'MESS_FEE' || type === 'MESS') return 'Mess Fee';
-    if (type === 'INTERNSHIP') return 'Internship';
-    if (type === 'LIBRARY') return 'Library';
-    if (type === 'OUTPASS' || type === 'OUT-PASS') return 'Out-Pass';
-
-    return r?.requestType || r?.permissionType || type;
+const formatMediumDate = (dateInput) => {
+  if (!dateInput) return '—';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '—';
+  const day = String(d.getDate()).padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[d.getMonth()] || 'Oct';
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
 };
 
-const dateValue = r =>
-    r?.createdAt || r?.requestDate || r?.outDate || r?.date || null;
-
-const formatDate = r => {
-    const value = dateValue(r);
-    if (!value) return '-';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return '-';
-
-    return d.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    });
+const getTypeLabel = (type) => {
+  if (!type) return 'Out-Pass';
+  const t = String(type).toUpperCase();
+  if (t === 'OUTPASS' || t === 'OUT_PASS') return 'Out-Pass';
+  if (t === 'INTERNSHIP') return 'Internship';
+  if (t === 'MESS_FEE' || t === 'MESS') return 'Mess Fee';
+  if (t === 'LIBRARY') return 'Library';
+  return type;
 };
 
-const isApproved = status =>
+export const getHODStatusCategory = (status) => {
+  if (!status) return 'Pending';
+  const s = String(status).toUpperCase();
+  if (s.startsWith('REJECT') || s === 'CANCELLED') {
+    return 'Rejected';
+  }
+  if (s === 'PENDING_HOD' || s === 'PENDING_HOD_APPROVAL') {
+    return 'Pending';
+  }
+  if (
     [
-        'APPROVED',
-        'ISSUED',
-        'USED',
-        'CLEARED',
-        'PENDING_HOSTEL_INCHARGE',
-        'PENDING_PLACEMENT_OFFICER',
-        'PENDING_CTPO'
-    ].includes(status);
-
-const isPending = status => 
-    status === 'PENDING_HOD' || 
-    status === 'PENDING_HOD_APPROVAL';
-const isRejected = status => status.startsWith('REJECTED');
-
-const statusLabel = status => {
-    if (isPending(status)) return 'Pending';
-    if (isRejected(status)) return 'Rejected';
-    if (isApproved(status)) return 'Approved';
-
-    return status
-        ? status.replace(/_/g, ' ').toLowerCase()
-            .replace(/\b\w/g, c => c.toUpperCase())
-        : '-';
-};
-
-const statusStyle = status => {
-    if (isPending(status)) {
-        return { background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' };
-    }
-    if (isRejected(status)) {
-        return { background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' };
-    }
-    if (isApproved(status)) {
-        return { background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0' };
-    }
-    return { background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' };
+      'APPROVED',
+      'ISSUED',
+      'CLEARED',
+      'USED',
+      'COMPLETED',
+      'PENDING_HOSTEL_INCHARGE',
+      'PENDING_PLACEMENT_OFFICER',
+      'PENDING_CTPO'
+    ].includes(s)
+  ) {
+    return 'Approved';
+  }
+  return 'Pending';
 };
 
 export default function HODStudentRequests() {
-    const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-    const urlStatus = String(searchParams.get('status') || 'ALL').toUpperCase();
+  const urlStatus = String(searchParams.get('status') || 'ALL').toUpperCase();
+  const branchFilter = String(searchParams.get('branch') || '').trim().toUpperCase();
 
-    // Branch selected from the HOD Branches page.
-    // Example: /hod/student-requests?branch=CSM
-    const branchFilter = String(
-        searchParams.get('branch') || ''
-    ).trim().toUpperCase();
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeStatus, setActiveStatus] = useState(
+    STATUS_TABS.some((t) => t.key === urlStatus) ? urlStatus : 'ALL'
+  );
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
-    const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState('');
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        ...(branchFilter && { branchCode: branchFilter }),
+        ...(typeFilter !== 'ALL' && { type: typeFilter }),
+        ...(search.trim() && { search: search.trim() }),
+        ...(fromDate && { from: fromDate }),
+        ...(toDate && { to: toDate }),
+      };
 
-    const [activeStatus, setActiveStatus] = useState(
-        STATUS_TABS.some(t => t.key === urlStatus) ? urlStatus : 'ALL'
+      const res = await api.get('/outpass/all/for-me', { params });
+      const rawData = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
+      // Ensure Library requests are excluded from HOD jurisdiction
+      const data = rawData.filter((r) => r.requestType !== 'LIBRARY');
+      setRequests(data);
+    } catch (err) {
+      console.error('HOD student requests error:', err);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, [branchFilter, typeFilter, search, fromDate, toDate]);
+
+  useEffect(() => {
+    const status = String(searchParams.get('status') || 'ALL').toUpperCase();
+    if (STATUS_TABS.some((t) => t.key === status)) {
+      setActiveStatus(status);
+    }
+    setCurrentPage(1);
+  }, [searchParams]);
+
+  // Live dynamic counts computed from all active filtered requests
+  const counts = useMemo(() => {
+    return requests.reduce(
+      (acc, r) => {
+        const cat = getHODStatusCategory(r.status);
+        acc.ALL += 1;
+        if (cat === 'Approved') acc.APPROVED += 1;
+        else if (cat === 'Pending') acc.PENDING += 1;
+        else if (cat === 'Rejected') acc.REJECTED += 1;
+        return acc;
+      },
+      { ALL: 0, APPROVED: 0, PENDING: 0, REJECTED: 0 }
     );
+  }, [requests]);
 
-    const [search, setSearch] = useState('');
-    const [typeFilter, setTypeFilter] = useState('ALL');
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
+  // Filter requests based on the selected status tab
+  const displayedRequests = useMemo(() => {
+    if (activeStatus === 'ALL') return requests;
+    return requests.filter(
+      (r) => getHODStatusCategory(r.status).toUpperCase() === activeStatus
+    );
+  }, [requests, activeStatus]);
 
-    const fetchRequests = async (refresh = false) => {
-        try {
-            refresh ? setRefreshing(true) : setLoading(true);
-            setError('');
+  const totalPages = Math.max(1, Math.ceil(displayedRequests.length / PAGE_SIZE));
+  const pageRequests = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return displayedRequests.slice(start, start + PAGE_SIZE);
+  }, [displayedRequests, currentPage]);
 
-            const res = await api.get('/outpass/all/for-me');
-            const body = res?.data;
+  const clearFilters = () => {
+    setSearch('');
+    setTypeFilter('ALL');
+    setFromDate('');
+    setToDate('');
+    setActiveStatus('ALL');
+    setCurrentPage(1);
+    if (branchFilter) setSearchParams({});
+  };
 
-            const data = Array.isArray(body)
-                ? body
-                : body?.data || body?.requests || [];
+  const currentTabLabel =
+    activeStatus === 'APPROVED'
+      ? 'Approved Requests'
+      : activeStatus === 'PENDING'
+      ? 'Pending Requests'
+      : activeStatus === 'REJECTED'
+      ? 'Rejected Requests'
+      : 'All Requests';
 
-            const isHODVisibleRequest = (request) => {
-                const type = String(
-                    request?.requestType ||
-                    request?.type ||
-                    request?.permissionType ||
-                    ''
-                )
-                    .trim()
-                    .toUpperCase()
-                    .replace(/[\s-]+/g, '_');
+  return (
+    <DashboardLayout>
+      <div style={{ padding: '0 4px', width: '100%' }}>
+        {/* Page Header */}
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px' }}>
+            Student Requests {branchFilter ? `• ${branchFilter}` : ''}
+          </h1>
+          <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 13, fontWeight: 500 }}>
+            View and manage all student requests under your department
+          </p>
+        </div>
 
-                return type !== 'LIBRARY';
-            };
-
-            setRequests(Array.isArray(data) ? data.filter(isHODVisibleRequest) : []);
-        } catch (err) {
-            console.error('HOD student requests error:', err);
-            setError(
-                err?.response?.data?.message ||
-                'Unable to load student requests.'
+        {/* Status Tabs */}
+        <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #e2e8f0', marginBottom: 20, overflowX: 'auto' }}>
+          {STATUS_TABS.map((tab) => {
+            const active = activeStatus === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setActiveStatus(tab.key);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  border: 'none',
+                  borderBottom: active ? '3px solid #10b981' : '3px solid transparent',
+                  background: active ? '#ecfdf5' : 'transparent',
+                  color: active ? '#047857' : '#64748b',
+                  padding: '10px 18px',
+                  borderRadius: '8px 8px 0 0',
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {tab.label} ({counts[tab.key] ?? 0})
+              </button>
             );
-            setRequests([]);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
+          })}
+        </div>
 
-    useEffect(() => {
-        fetchRequests();
-
-        const interval = setInterval(() => fetchRequests(true), 6000);
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        const status = String(searchParams.get('status') || 'ALL').toUpperCase();
-        setActiveStatus(
-            STATUS_TABS.some(t => t.key === status) ? status : 'ALL'
-        );
-        setCurrentPage(1);
-    }, [searchParams]);
-
-    const counts = useMemo(() => {
-        return requests.reduce((acc, r) => {
-            const status = statusOf(r);
-            acc.all += 1;
-
-            if (isApproved(status)) acc.approved += 1;
-            else if (isPending(status)) acc.pending += 1;
-            else if (isRejected(status)) acc.rejected += 1;
-
-            return acc;
-        }, { all: 0, approved: 0, pending: 0, rejected: 0 });
-    }, [requests]);
-
-    const filteredRequests = useMemo(() => {
-        const q = search.trim().toLowerCase();
-
-        return requests.filter(r => {
-            const status = statusOf(r);
-
-            // When opened from a branch card, show only that branch.
-            // Supports both populated branch objects and direct branch fields.
-            const requestBranch = String(
-                r?.branchId?.code ||
-                r?.branch?.code ||
-                r?.branchCode ||
-                r?.branchId?.name ||
-                r?.branch?.name ||
-                r?.branchName ||
-                ''
-            ).trim().toUpperCase();
-
-            if (
-                branchFilter &&
-                requestBranch !== branchFilter
-            ) {
-                return false;
-            }
-
-            if (activeStatus === 'APPROVED' && !isApproved(status)) return false;
-            if (activeStatus === 'PENDING' && !isPending(status)) return false;
-            if (activeStatus === 'REJECTED' && !isRejected(status)) return false;
-
-            if (typeFilter !== 'ALL') {
-                const type = String(
-                    r?.requestType || r?.permissionType || r?.type || ''
-                ).toUpperCase();
-
-                if (type !== typeFilter) return false;
-            }
-
-            if (q) {
-                const name = String(studentName(r)).toLowerCase();
-                const roll = String(rollNo(r)).toLowerCase();
-
-                if (!name.includes(q) && !roll.includes(q)) return false;
-            }
-
-            const value = dateValue(r);
-
-            if (fromDate && value) {
-                if (new Date(value) < new Date(`${fromDate}T00:00:00`)) return false;
-            }
-
-            if (toDate && value) {
-                if (new Date(value) > new Date(`${toDate}T23:59:59`)) return false;
-            }
-
-            return true;
-        });
-    }, [
-        requests,
-        activeStatus,
-        typeFilter,
-        search,
-        fromDate,
-        toDate,
-        branchFilter,
-    ]);
-
-    const totalPages = Math.max(
-        1,
-        Math.ceil(filteredRequests.length / PAGE_SIZE)
-    );
-
-    const pageRequests = useMemo(() => {
-        const start = (currentPage - 1) * PAGE_SIZE;
-        return filteredRequests.slice(start, start + PAGE_SIZE);
-    }, [filteredRequests, currentPage]);
-
-    useEffect(() => {
-        if (currentPage > totalPages) setCurrentPage(totalPages);
-    }, [currentPage, totalPages]);
-
-    const changeStatus = status => {
-        // Pending tab redirects to the dedicated Pending Approvals page.
-        if (status === 'PENDING') {
-            navigate('/hod/approvals');
-            return;
-        }
-
-        setCurrentPage(1);
-
-        const params = {};
-
-        if (branchFilter) {
-            params.branch = branchFilter;
-        }
-
-        if (status !== 'ALL') {
-            params.status = status;
-        }
-
-        setSearchParams(params);
-    };
-
-    const clearFilters = () => {
-        setSearch('');
-        setTypeFilter('ALL');
-        setFromDate('');
-        setToDate('');
-        setCurrentPage(1);
-    };
-
-    const countFor = key => {
-        if (loading) return '—';
-        if (key === 'ALL') return counts.all;
-        if (key === 'APPROVED') return counts.approved;
-        if (key === 'PENDING') return counts.pending;
-        return counts.rejected;
-    };
-
-    return (
-        <DashboardLayout>
-            <div style={{ minHeight: '100%', paddingBottom: 32 }}>
-
-                <div className="page-header" style={{ marginBottom: 22 }}>
-                    <div>
-                        <h1 className="page-title">Student Requests</h1>
-                        <p className="page-subtitle">
-                            View and manage all student requests under your department
-                        </p>
-                    </div>
-
-                </div>
-
-                {/* STATUS TABS */}
-                <div
-                    style={{
-                        display: 'flex',
-                        gap: 8,
-                        borderBottom: '1px solid #e2e8f0',
-                        marginBottom: 18,
-                        overflowX: 'auto'
-                    }}
-                >
-                    {STATUS_TABS.map(tab => {
-                        const active = activeStatus === tab.key;
-
-                        return (
-                            <button
-                                key={tab.key}
-                                type="button"
-                                onClick={() => changeStatus(tab.key)}
-                                style={{
-                                    border: 'none',
-                                    borderBottom: active
-                                        ? '3px solid #10b981'
-                                        : '3px solid transparent',
-                                    background: active ? '#ecfdf5' : 'transparent',
-                                    color: active ? '#10b981' : '#64748b',
-                                    padding: '12px 18px',
-                                    borderRadius: '8px 8px 0 0',
-                                    fontSize: 13,
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                {tab.label}
-                                <span style={{ marginLeft: 7 }}>
-                                    ({countFor(tab.key)})
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* FILTERS - no branch filter */}
-                <div className="card" style={{ marginBottom: 18, padding: 16 }}>
-                    <div
-                        className="student-request-filter-grid"
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns:
-                                'minmax(240px, 1fr) 170px 150px 150px auto',
-                            gap: 10,
-                            alignItems: 'center'
-                        }}
-                    >
-                        <div style={{ position: 'relative' }}>
-                            <Search
-                                size={16}
-                                style={{
-                                    position: 'absolute',
-                                    left: 12,
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    color: '#94a3b8'
-                                }}
-                            />
-                            <input
-                                value={search}
-                                onChange={e => {
-                                    setSearch(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                placeholder="Search by name or roll number..."
-                                style={{
-                                    width: '100%',
-                                    height: 40,
-                                    padding: '0 12px 0 36px',
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: 8,
-                                    outline: 'none',
-                                    fontSize: 12,
-                                    boxSizing: 'border-box'
-                                }}
-                            />
-                        </div>
-
-                        <div style={{ position: 'relative' }}>
-                            <select
-                                value={typeFilter}
-                                onChange={e => {
-                                    setTypeFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    height: 40,
-                                    padding: '0 34px 0 12px',
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: 8,
-                                    outline: 'none',
-                                    fontSize: 12,
-                                    color: '#475569',
-                                    background: '#fff',
-                                    appearance: 'none'
-                                }}
-                            >
-                                <option value="ALL">All Types</option>
-                                <option value="OUTPASS">Out-Pass</option>
-                                <option value="MESS_FEE">Mess Fee</option>
-                                <option value="INTERNSHIP">Internship</option>
-                                <option value="LIBRARY">Library</option>
-                            </select>
-                            <ChevronDown
-                                size={15}
-                                style={{
-                                    position: 'absolute',
-                                    right: 11,
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    pointerEvents: 'none',
-                                    color: '#64748b'
-                                }}
-                            />
-                        </div>
-
-                        <DateInput
-                            value={fromDate}
-                            onChange={value => {
-                                setFromDate(value);
-                                setCurrentPage(1);
-                            }}
-                        />
-
-                        <DateInput
-                            value={toDate}
-                            onChange={value => {
-                                setToDate(value);
-                                setCurrentPage(1);
-                            }}
-                        />
-
-                        <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={clearFilters}
-                            style={{ height: 40 }}
-                        >
-                            Clear
-                        </button>
-                    </div>
-                </div>
-
-                {error && (
-                    <div
-                        style={{
-                            marginBottom: 16,
-                            padding: '12px 14px',
-                            borderRadius: 8,
-                            background: '#fef2f2',
-                            color: '#b91c1c',
-                            border: '1px solid #fecaca',
-                            fontSize: 12
-                        }}
-                    >
-                        {error}
-                    </div>
-                )}
-
-                {/* TABLE */}
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                    <div
-                        style={{
-                            padding: '16px 18px',
-                            borderBottom: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 9
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 8,
-                                background: '#ecfdf5',
-                                color: '#10b981',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            <ClipboardList size={16} />
-                        </div>
-
-                        <div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: '#172554' }}>
-                                {STATUS_TABS.find(t => t.key === activeStatus)?.label}
-                            </div>
-                            <div style={{ marginTop: 2, fontSize: 11, color: '#64748b' }}>
-                                {loading
-                                    ? 'Loading requests...'
-                                    : `${filteredRequests.length} request${filteredRequests.length === 1 ? '' : 's'}`}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ width: '100%', overflowX: 'auto' }}>
-                        <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ background: '#f8fafc' }}>
-                                    {['#', 'Student Name', 'Roll No', 'Branch', 'Type', 'Date', 'Status', 'Action']
-                                        .map(h => (
-                                            <th
-                                                key={h}
-                                                style={{
-                                                    padding: '11px 12px',
-                                                    textAlign: 'left',
-                                                    fontSize: 10,
-                                                    fontWeight: 800,
-                                                    color: '#64748b',
-                                                    textTransform: 'uppercase',
-                                                    whiteSpace: 'nowrap',
-                                                    borderBottom: '1px solid #e2e8f0'
-                                                }}
-                                            >
-                                                {h}
-                                            </th>
-                                        ))}
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>
-                                            Loading student requests...
-                                        </td>
-                                    </tr>
-                                ) : pageRequests.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={9} style={{ padding: 52, textAlign: 'center', color: '#64748b', fontSize: 12 }}>
-                                            No student requests found for the selected filters.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    pageRequests.map((request, index) => {
-                                        const status = statusOf(request);
-
-                                        return (
-                                            <tr
-                                                key={request?._id || request?.id || `${index}-${rollNo(request)}`}
-                                                style={{ borderBottom: '1px solid #f1f5f9' }}
-                                            >
-                                                <Cell>{(currentPage - 1) * PAGE_SIZE + index + 1}</Cell>
-                                                <Cell bold>{studentName(request)}</Cell>
-                                                <Cell>{rollNo(request)}</Cell>
-                                                <Cell>{branchName(request)}</Cell>
-                                                <Cell>{requestType(request)}</Cell>
-                                                <Cell>{formatDate(request)}</Cell>
-
-                                                <td style={{ padding: 12 }}>
-                                                    <span
-                                                        style={{
-                                                            ...statusStyle(status),
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            padding: '5px 9px',
-                                                            borderRadius: 999,
-                                                            fontSize: 10,
-                                                            fontWeight: 800,
-                                                            whiteSpace: 'nowrap'
-                                                        }}
-                                                    >
-                                                        {statusLabel(status)}
-                                                    </span>
-                                                </td>
-
-                                                <td style={{ padding: 12 }}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigate(`/outpass/${request?._id}`)}
-                                                        style={{
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            gap: 5,
-                                                            padding: '5px 14px',
-                                                            borderRadius: '50px',
-                                                            fontSize: '12.5px',
-                                                            fontWeight: 600,
-                                                            color: '#10b981',
-                                                            background: 'rgba(209, 250, 229, 0.92)',
-                                                            border: '1px solid #a7f3d0',
-                                                            cursor: 'pointer',
-                                                            transition: 'all 0.15s',
-                                                            fontFamily: 'inherit',
-                                                            whiteSpace: 'nowrap'
-                                                        }}
-                                                    >
-                                                        <Eye size={14} />
-                                                        Review
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {!loading && filteredRequests.length > 0 && (
-                        <div
-                            style={{
-                                padding: '13px 16px',
-                                borderTop: '1px solid #e2e8f0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: 12,
-                                flexWrap: 'wrap'
-                            }}
-                        >
-                            <div style={{ fontSize: 11, color: '#64748b' }}>
-                                Showing <strong>{(currentPage - 1) * PAGE_SIZE + 1}</strong> to{' '}
-                                <strong>{Math.min(currentPage * PAGE_SIZE, filteredRequests.length)}</strong>{' '}
-                                of <strong>{filteredRequests.length}</strong> requests
-                            </div>
-
-                            <div style={{ display: 'flex', gap: 5 }}>
-                                <PageButton
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                >
-                                    <ChevronLeft size={15} />
-                                </PageButton>
-
-                                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map(page => (
-                                    <PageButton
-                                        key={page}
-                                        active={page === currentPage}
-                                        onClick={() => setCurrentPage(page)}
-                                    >
-                                        {page}
-                                    </PageButton>
-                                ))}
-
-                                <PageButton
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                >
-                                    <ChevronRight size={15} />
-                                </PageButton>
-                            </div>
-                        </div>
-                    )}
-                </div>
+        {/* Search & Filters Bar */}
+        <div className="card" style={{ marginBottom: 20, padding: 16 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: '1 1 260px' }}>
+              <Search
+                size={16}
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#94a3b8'
+                }}
+              />
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search by name or roll number..."
+                style={{
+                  width: '100%',
+                  height: 40,
+                  padding: '0 12px 0 36px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
             </div>
 
-            <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-                .student-request-filter-grid input,
-                .student-request-filter-grid select {
-                    height: 44px !important;
-                    box-sizing: border-box;
-                    line-height: 1.2;
-                }
-
-                .student-request-filter-grid input {
-                    padding-top: 0 !important;
-                    padding-bottom: 0 !important;
-                }
-
-                .student-request-filter-grid select {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 0 34px 0 12px !important;
-                    appearance: none !important;
-                }
-
-        @media (max-width: 1100px) {
-          .student-request-filter-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .student-request-filter-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
-        </DashboardLayout>
-    );
-}
-
-function DateInput({ value, onChange }) {
-    return (
-        <div style={{ position: 'relative' }}>
-            <CalendarDays
-                size={15}
-                style={{
-                    position: 'absolute',
-                    left: 11,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#94a3b8',
-                    pointerEvents: 'none'
-                }}
+            <FilterDropdown
+              value={typeFilter}
+              onChange={(val) => {
+                setTypeFilter(val);
+                setCurrentPage(1);
+              }}
+              options={HOD_PERMISSION_OPTIONS}
+              style={{ flex: '0 0 160px' }}
             />
-            <input
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
                 type="date"
-                value={value}
-                onChange={e => onChange(e.target.value)}
-                style={{
-                    width: '100%',
-                    height: 40,
-                    padding: '0 10px 0 34px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: 8,
-                    outline: 'none',
-                    fontSize: 11,
-                    color: '#475569',
-                    background: '#fff',
-                    boxSizing: 'border-box'
+                value={fromDate}
+                min="2000-01-01"
+                max="2030-12-31"
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setCurrentPage(1);
                 }}
-            />
+                style={{
+                  height: 40,
+                  padding: '0 10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  outline: 'none',
+                  color: '#334155'
+                }}
+              />
+              <span style={{ color: '#94a3b8', fontSize: 12 }}>to</span>
+              <input
+                type="date"
+                value={toDate}
+                min="2000-01-01"
+                max="2030-12-31"
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  height: 40,
+                  padding: '0 10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  outline: 'none',
+                  color: '#334155'
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={clearFilters}
+              style={{
+                height: 40,
+                padding: '0 16px',
+                border: '1px solid #e2e8f0',
+                background: '#f8fafc',
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: '#64748b',
+                cursor: 'pointer'
+              }}
+            >
+              Clear
+            </button>
+          </div>
         </div>
-    );
-}
 
-function Cell({ children, bold = false }) {
-    return (
-        <td
+        {/* Requests Table Card matching Reference */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {/* Card Header inside Table */}
+          <div
             style={{
-                padding: 12,
-                fontSize: 12,
-                color: bold ? '#172554' : '#475569',
-                fontWeight: bold ? 700 : 400,
-                whiteSpace: 'nowrap'
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '16px 20px',
+              borderBottom: '1px solid #f1f5f9'
             }}
-        >
-            {children}
-        </td>
-    );
-}
-
-function PageButton({ children, active = false, disabled = false, onClick }) {
-    return (
-        <button
-            type="button"
-            disabled={disabled}
-            onClick={onClick}
-            style={{
-                minWidth: 32,
-                height: 32,
-                padding: '0 8px',
-                border: active ? '1px solid #10b981' : '1px solid #e2e8f0',
-                borderRadius: 7,
-                background: active ? '#10b981' : '#fff',
-                color: active ? '#fff' : disabled ? '#cbd5e1' : '#475569',
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: disabled ? 'not-allowed' : 'pointer',
+          >
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 8,
+                background: '#ecfdf5',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
-            }}
-        >
-            {children}
-        </button>
-    );
+                justifyContent: 'center',
+                color: '#059669'
+              }}
+            >
+              <ClipboardList size={18} />
+            </div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                {currentTabLabel}
+              </h2>
+              <p style={{ margin: '1px 0 0', fontSize: 12, color: '#64748b' }}>
+                {displayedRequests.length} requests
+              </p>
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: 850, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  {['#', 'STUDENT NAME', 'ROLL NO', 'BRANCH', 'TYPE', 'DATE', 'STATUS', 'ACTION'].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: h === 'ACTION' ? 'center' : 'left',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                      Loading requests...
+                    </td>
+                  </tr>
+                ) : pageRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: 48, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
+                      No requests found matching the selected filters.
+                    </td>
+                  </tr>
+                ) : (
+                  pageRequests.map((r, idx) => {
+                    const statusCategory = getHODStatusCategory(r.status);
+                    const isAppr = statusCategory === 'Approved';
+                    const isRej = statusCategory === 'Rejected';
+
+                    return (
+                      <tr
+                        key={r._id}
+                        style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s ease' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#64748b' }}>
+                          {(currentPage - 1) * PAGE_SIZE + idx + 1}
+                        </td>
+                        <td
+                          style={{
+                            padding: '14px 16px',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: '#1e293b',
+                            textTransform: 'uppercase'
+                          }}
+                        >
+                          {r.studentId?.name || '—'}
+                        </td>
+                        <td
+                          style={{
+                            padding: '14px 16px',
+                            fontSize: 13,
+                            color: '#475569',
+                            fontFamily: 'monospace'
+                          }}
+                        >
+                          {r.studentId?.rollNo || '—'}
+                        </td>
+                        <td
+                          style={{
+                            padding: '14px 16px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: '#334155'
+                          }}
+                        >
+                          {r.branchId?.name || r.branchId?.code || '—'}
+                        </td>
+                        <td
+                          style={{
+                            padding: '14px 16px',
+                            fontSize: 13,
+                            color: '#334155',
+                            fontWeight: 500
+                          }}
+                        >
+                          {getTypeLabel(r.requestType)}
+                        </td>
+                        <td
+                          style={{
+                            padding: '14px 16px',
+                            fontSize: 13,
+                            color: '#475569',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {formatMediumDate(r.createdAt)}
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '3px 10px',
+                              borderRadius: 999,
+                              fontSize: 11.5,
+                              fontWeight: 600,
+                              background: isAppr ? '#ecfdf5' : isRej ? '#fef2f2' : '#fff7ed',
+                              color: isAppr ? '#047857' : isRej ? '#b91c1c' : '#c2410c',
+                              border: `1px solid ${isAppr ? '#a7f3d0' : isRej ? '#fecaca' : '#fed7aa'}`
+                            }}
+                          >
+                            {statusCategory}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/outpass/${r._id}`)}
+                            style={{
+                              height: 30,
+                              padding: '0 14px',
+                              border: '1px solid #a7f3d0',
+                              borderRadius: 50,
+                              background: '#ecfdf5',
+                              color: '#059669',
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#d1fae5';
+                              e.currentTarget.style.borderColor = '#6ee7b7';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#ecfdf5';
+                              e.currentTarget.style.borderColor = '#a7f3d0';
+                            }}
+                          >
+                            <Eye size={14} />
+                            <span>Review</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderTop: '1px solid #e2e8f0'
+              }}
+            >
+              <span style={{ fontSize: 12, color: '#64748b' }}>
+                Showing {(currentPage - 1) * PAGE_SIZE + 1} -{' '}
+                {Math.min(currentPage * PAGE_SIZE, displayedRequests.length)} of {displayedRequests.length}
+              </span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  style={{
+                    padding: '6px 10px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 6,
+                    background: '#fff',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                    color: currentPage === 1 ? '#cbd5e1' : '#334155'
+                  }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  style={{
+                    padding: '6px 10px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 6,
+                    background: '#fff',
+                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                    color: currentPage === totalPages ? '#cbd5e1' : '#334155'
+                  }}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
 }

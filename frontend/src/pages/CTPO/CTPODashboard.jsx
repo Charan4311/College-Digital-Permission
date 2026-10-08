@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../components/DashboardLayout";
-import CTPOMobileNav from "../../components/CTPOMobileNav";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 
@@ -817,13 +816,12 @@ const CTPODashboard = () => {
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <CTPOMobileNav />
               <div>
                 <div style={{ color: '#475569', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
                   Welcome back,
                 </div>
                 <h1 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  CTPO <span style={{ color: '#64748b', fontWeight: 400 }}>|</span> <span style={{ color: '#10b981' }}>{branchName || 'All Branches'}</span>
+                  CTPO <span style={{ color: '#64748b', fontWeight: 400 }}>|</span> <span style={{ color: '#059669' }}>{branchName || 'All Branches'}</span>
                 </h1>
                 <p style={{ margin: "6px 0 0 0", fontSize: "16px", fontWeight: 600, color: "#64748b" }}>
                   {yearLabel ? yearLabel : 'All Years'}

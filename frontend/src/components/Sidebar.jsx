@@ -41,6 +41,8 @@ const NAV_CONFIG = {
   ],
   HOSTEL_INCHARGE: [
     { label: 'Overview', icon: LayoutDashboard, path: '/hostel/dashboard' },
+    { label: 'Pending Requests', icon: Clock, path: '/hostel/pending' },
+    { label: 'Review History', icon: ClipboardList, path: '/hostel/history' },
   ],
   PLACEMENT_OFFICER: [
     { label: 'Overview', icon: LayoutDashboard, path: '/placement/dashboard' },
@@ -76,6 +78,9 @@ export default function Sidebar({ isOpen = false, onClose }) {
   const navItems = NAV_CONFIG[user?.role] || [];
 
   const getCTPODisplayName = (userObj) => {
+    if (userObj?.role === 'HOSTEL_INCHARGE') {
+      return userObj?.name || 'Hostel Chief Warden';
+    }
     if (userObj?.role !== 'CTPO') return userObj?.name || 'User';
     
     // Extract branch
@@ -140,9 +145,11 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
   const displayName = getCTPODisplayName(user);
 
-  const initials = displayName
-    ? displayName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    : 'U';
+  const initials = user?.role === 'HOSTEL_INCHARGE'
+    ? 'HC'
+    : (displayName
+      ? displayName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+      : 'U');
 
   const handleNavClick = (path) => {
     navigate(path);

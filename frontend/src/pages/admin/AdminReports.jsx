@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import api from '../../lib/api';
 import {
@@ -59,7 +59,7 @@ export default function AdminReports() {
       const res = await api.get(`/admin/reports/export?range=${range}`, {
         responseType: 'blob'
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -76,16 +76,6 @@ export default function AdminReports() {
     }
   };
 
-  if (loading && !data) {
-    return (
-      <DashboardLayout>
-        <div className="loading-screen" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-          <div className="spinner spinner-lg" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   const summary = data?.summary || {
     totalRequests: { count: 0, trend: '0%' },
     approved: { count: 0, percentage: 0, trend: '0%' },
@@ -97,6 +87,51 @@ export default function AdminReports() {
   const typeDistribution = data?.typeDistribution || [];
   const statusAnalysis = data?.statusAnalysis || [];
   const requestsByTypeChart = data?.requestsByTypeChart || [];
+
+  const displayRequestsTrend = useMemo(() => {
+    return requestsTrend.map((item) => {
+      const rawTotal = Number(item.Total ?? item.total ?? 0);
+      const rawApproved = Number(item.Approved ?? item.approved ?? 0);
+      const rawPending = Number(item.Pending ?? item.pending ?? 0);
+      const rawRejected = Number(item.Rejected ?? item.rejected ?? 0);
+
+      let displayTotal = rawTotal;
+      let displayApproved = rawApproved;
+      let displayPending = rawPending;
+      let displayRejected = rawRejected;
+
+      if (rawTotal > 0) {
+        if (rawTotal === rawApproved || rawTotal === rawPending || rawTotal === rawRejected) {
+          displayTotal = rawTotal + 0.08;
+        }
+      }
+
+      if (rawApproved > 0 && rawPending > 0 && rawApproved === rawPending) {
+        displayApproved = rawApproved + 0.04;
+        displayPending = rawPending - 0.04;
+      }
+      if (rawApproved > 0 && rawRejected > 0 && rawApproved === rawRejected) {
+        displayApproved = rawApproved + 0.04;
+        displayRejected = rawRejected - 0.04;
+      }
+      if (rawPending > 0 && rawRejected > 0 && rawPending === rawRejected) {
+        displayPending = rawPending + 0.04;
+        displayRejected = rawRejected - 0.04;
+      }
+
+      return {
+        ...item,
+        Total: rawTotal,
+        Approved: rawApproved,
+        Pending: rawPending,
+        Rejected: rawRejected,
+        displayTotal,
+        displayApproved,
+        displayPending,
+        displayRejected,
+      };
+    });
+  }, [requestsTrend]);
 
   const totalRequestsCount = summary.totalRequests.count || 0;
 
@@ -534,7 +569,7 @@ export default function AdminReports() {
 
           {/* Area / Line Chart */}
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={requestsTrend} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={displayRequestsTrend} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
@@ -546,21 +581,13 @@ export default function AdminReports() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-              <XAxis dataKey="date" tick={{ fill: '#64748B', fontSize: 11 }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '10px',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
-                  padding: '12px 16px'
-                }}
-              />
-              <Area type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTotal)" />
-              <Area type="monotone" dataKey="Approved" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorApproved)" />
-              <Line type="monotone" dataKey="Pending" stroke="#F59E0B" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Rejected" stroke="#EF4444" strokeWidth={2} dot={false} />
+              <XAxis dataKey="date" tick={{ fill: '#64748B', fontSize: 11 }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} interval={range === '30days' ? 2 : 0} />
+              <YAxis tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip content={<CustomTrendTooltip />} />
+              <Area type="monotone" dataKey="displayTotal" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTotal)" />
+              <Area type="monotone" dataKey="displayApproved" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorApproved)" />
+              <Line type="monotone" dataKey="displayPending" stroke="#F59E0B" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="displayRejected" stroke="#EF4444" strokeWidth={2} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
 
@@ -858,3 +885,46 @@ export default function AdminReports() {
   );
 }
 
+function CustomTrendTooltip({ active, payload, label }) {
+  if (active && payload && payload.length) {
+    const item = payload[0]?.payload || {};
+    const total = item.Total ?? item.total ?? 0;
+    const approved = item.Approved ?? item.approved ?? 0;
+    const pending = item.Pending ?? item.pending ?? 0;
+    const rejected = item.Rejected ?? item.rejected ?? 0;
+    const dateLabel = label || item.date || item.label || '';
+
+    return (
+      <div
+        style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          boxShadow: '0 4px 16px rgba(15, 23, 42, 0.08)',
+          padding: '10px 14px',
+          fontSize: '13px',
+          color: '#334155',
+          minWidth: '125px',
+        }}
+      >
+        <div
+          style={{
+            fontWeight: 700,
+            color: '#0f172a',
+            marginBottom: '6px',
+            fontSize: '13px',
+          }}
+        >
+          {dateLabel}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div>Total : {total}</div>
+          <div>Approved : {approved}</div>
+          <div>Pending : {pending}</div>
+          <div>Rejected : {rejected}</div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}

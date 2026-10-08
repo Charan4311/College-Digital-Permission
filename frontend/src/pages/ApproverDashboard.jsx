@@ -1,216 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
-import StatusBadge from '../components/StatusBadge';
 import api from '../lib/api';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
+  formatDate,
+  formatDateTime,
+  getOrdinalYear,
+  getResidenceTypeLabel,
+  mapStatusToSimple
+} from '../lib/utils';
 import {
-  Clock,
-  ClipboardList,
-  CheckCircle2,
-  XCircle,
-  Check,
-  X,
-  Eye,
-  AlertCircle,
-  Building,
-  User,
   Calendar,
-  Sparkles,
-  ShieldAlert,
-  ArrowRight,
-  Receipt,
+  Eye,
+  Car,
   Briefcase,
+  Receipt,
   BookOpen,
   GraduationCap,
-  Paperclip,
-  ExternalLink
+  FileSpreadsheet,
+  CheckCircle2,
+  Clock,
+  ClipboardList,
+  XCircle
 } from 'lucide-react';
-import { FaClipboardList, FaClock, FaCircleCheck, FaCircleXmark } from 'react-icons/fa6';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const ROLE_LABELS = {
-  CTPO: { name: 'CTPO Approval Console', pendingStatus: 'PENDING_CTPO', color: '#10b981', desc: 'Department-level review for out-pass, mess, internship & library requests' },
-  HOD: { name: 'HOD Approval Console', pendingStatus: 'PENDING_HOD', color: '#10b981', desc: 'Head of Department authorization for permissions & clearances' },
-  HOSTEL_INCHARGE: { name: 'Hostel Incharge Dashboard', pendingStatus: 'PENDING_HOSTEL', color: '#10b981', desc: 'Final gate permission clearance for hostel students' },
-  PLACEMENT_OFFICER: { name: 'Placement Officer Console', pendingStatus: 'PENDING_PLACEMENT_OFFICER', color: '#10b981', desc: 'Final institutional authorization for student internships' },
-};
-
-export default function ApproverDashboard() {
+export default function ApproverDashboard({ defaultTab }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const role = user?.role;
-  const cfg = ROLE_LABELS[role] || ROLE_LABELS.CTPO;
-  const isHostelIncharge = role === 'HOSTEL_INCHARGE';
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-  const [pending, setPending] = useState([]);
-  const [stats, setStats] = useState(null);
+  // Determine active tab: 'overview' | 'pending' | 'history'
+  const tab = useMemo(() => {
+    if (location.pathname.includes('/hostel/pending')) return 'pending';
+    if (location.pathname.includes('/hostel/history')) return 'history';
+    const view = searchParams.get('view');
+    if (view === 'pending') return 'pending';
+    if (view === 'history') return 'history';
+    if (defaultTab) return defaultTab;
+    return 'overview';
+  }, [location.pathname, searchParams, defaultTab]);
+
+  const [pendingList, setPendingList] = useState([]);
+  const [allList, setAllList] = useState([]);
+  const [statsData, setStatsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(() => searchParams.get('view') || 'overview');
-  const [typeFilter, setTypeFilter] = useState('ALL');
-  const [history, setHistory] = useState([]);
+  const [typeFilter, setTypeFilter] = useState('ALL'); // Default 'All Types'
   const [kpiFilter, setKpiFilter] = useState('TOTAL');
 
-  const [rejectModal, setRejectModal] = useState(null); // { id, remarks, requestType }
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionMsg, setActionMsg] = useState('');
-
-  const fetchAll = async () => {
-    try {
-      const [pendingRes, statsRes] = await Promise.all([
-        api.get('/outpass/pending/for-me'),
-        api.get('/outpass/dashboard-stats')
-      ]);
-
-      const pendingData = pendingRes.data.data || [];
-      setPending(
-        isHostelIncharge
-          ? pendingData.filter((request) => isPendingHostelStatus(request?.status) && String(request?.requestType || '').toUpperCase() !== 'LIBRARY')
-          : pendingData
-      );
-      setStats(statsRes.data.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchHistory = async () => {
-    try {
-      const res = await api.get('/outpass/all/for-me');
-      const historyData = res.data.data || [];
-      setHistory(
-        isHostelIncharge
-          ? historyData.filter((request) => isHostelRelevantRequest(request))
-          : historyData
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  useEffect(() => {
-    fetchAll();
-    if (role === 'HOSTEL_INCHARGE') {
-      fetchHistory();
-    }
-    const interval = setInterval(fetchAll, 6000);
-    return () => clearInterval(interval);
-  }, [role]);
-
-  useEffect(() => {
-    const requestedView = searchParams.get('view');
-
-    if (isHostelIncharge) {
-      if (requestedView === 'pending') {
-        setTab('pending');
-        setKpiFilter('PENDING');
-      } else if (requestedView === 'history') {
-        setTab('history');
-        setKpiFilter('TOTAL');
-      } else if (requestedView === 'overview') {
-        setTab('overview');
-        // Preserve the selected KPI filter while staying on Overview.
-      } else {
-        setTab('overview');
-        setKpiFilter('TOTAL');
-      }
-    }
-  }, [searchParams, isHostelIncharge]);
-
-  useEffect(() => {
-    if (tab === 'history') fetchHistory();
-  }, [tab]);
-
-  const handleApprove = async (id) => {
-    setActionLoading(true);
-    setActionMsg('');
-    try {
-      await api.post(`/outpass/${id}/approve`, { remarks: 'Approved' });
-      setActionMsg('Request approved successfully!');
-      fetchAll();
-    } catch (e) {
-      setActionMsg(e.response?.data?.message || 'Error approving request');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (!rejectModal?.remarks?.trim()) return;
-    setActionLoading(true);
-    setActionMsg('');
-    try {
-      await api.post(`/outpass/${rejectModal.id}/reject`, { remarks: rejectModal.remarks });
-      setRejectModal(null);
-      setActionMsg('Request rejected with reason.');
-      fetchAll();
-    } catch (e) {
-      setActionMsg(e.response?.data?.message || 'Error rejecting request');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Build continuous 7-day Recharts data from approvedPerDay
-  const chartData = [];
-  const byDate = {};
-  if (stats?.approvedPerDay) {
-    stats.approvedPerDay.forEach(({ _id, count }) => {
-      if (!byDate[_id.date]) byDate[_id.date] = { Approved: 0, Rejected: 0 };
-      byDate[_id.date][_id.decision === 'APPROVED' ? 'Approved' : 'Rejected'] = count;
-    });
-  }
-
-  // Generate continuous 7 days ending today
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateKey = d.toISOString().split('T')[0];
-    const displayLabel = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-    chartData.push({
-      date: displayLabel,
-      Approved: byDate[dateKey]?.Approved || 0,
-      Rejected: byDate[dateKey]?.Rejected || 0
-    });
-  }
-
-  const hasActivity = chartData.some(d => d.Approved > 0 || d.Rejected > 0);
-
-  const getBadgeTypeIcon = (type) => {
-    switch (type) {
-      case 'MESS_FEE': return <Receipt size={12} />;
-      case 'INTERNSHIP': return <Briefcase size={12} />;
-      case 'LIBRARY': return <BookOpen size={12} />;
-      default: return <GraduationCap size={12} />;
-    }
-  };
-
-  const getBadgeTypeLabel = (type) => {
-    switch (type) {
-      case 'MESS_FEE': return 'Mess Fee';
-      case 'INTERNSHIP': return 'Internship';
-      case 'LIBRARY': return 'Library';
-      default: return 'Out-Pass';
-    }
-  };
-
-  const getBadgeTypeColor = (type) => {
-    switch (type) {
-      case 'MESS_FEE': return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
-      case 'INTERNSHIP': return { bg: '#ecfdf5', text: '#10b981', border: '#bfdbfe' };
-      case 'LIBRARY': return { bg: '#fef3c7', text: '#d97706', border: '#fde68a' };
-      default: return { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' };
-    }
-  };
-
-  const filteredPending = pending.filter(r => {
-    if (typeFilter === 'ALL') return true;
-    return (r.requestType || 'OUTPASS') === typeFilter;
+  const [summaryStats, setSummaryStats] = useState({
+    week: { total: 0, approved: 0, pending: 0, rejected: 0 },
+    month: { total: 0, approved: 0, pending: 0, rejected: 0 }
   });
 
   const isPendingHostelStatus = (status) => {
@@ -218,701 +62,596 @@ export default function ApproverDashboard() {
     return normalized === 'PENDING_HOSTEL' || normalized === 'PENDING_HOSTEL_INCHARGE';
   };
 
-  const isRejectedHostelStatus = (status) => {
+  const isRejectedHostelStatus = (status, rejectedByRole) => {
     const normalized = String(status || '').toUpperCase();
-    return (
-      normalized === 'REJECTED_HOSTEL' ||
-      normalized === 'REJECTED_HOSTEL_INCHARGE' ||
-      normalized === 'REJECTED_HOSTEL_INCHARGE_APPROVAL'
-    );
+    if (normalized === 'REJECTED_HOSTEL' || normalized === 'REJECTED_HOSTEL_INCHARGE') return true;
+    if (normalized === 'REJECTED' || normalized === 'CANCELLED') {
+      if (!rejectedByRole) return true;
+      const roleNorm = String(rejectedByRole).toUpperCase();
+      return roleNorm.includes('HOSTEL');
+    }
+    return false;
   };
-
-  const isGatePassUsed = (status) =>
-    String(status || '').toUpperCase() === 'GATE_PASS_USED';
-
-  const isGatePassIssued = (status) =>
-    String(status || '').toUpperCase() === 'GATE_PASS_ISSUED';
 
   const isApprovedHostelStatus = (status) => {
     const normalized = String(status || '').toUpperCase();
-    return normalized === 'APPROVED' || isGatePassIssued(normalized) || isGatePassUsed(normalized);
-  };
-
-  const isHostelRelevantRequest = (request) => {
-    if (String(request?.requestType || '').toUpperCase() === 'LIBRARY') return false;
-    const status = String(request?.status || '').toUpperCase();
     return (
-      isPendingHostelStatus(status) ||
-      isRejectedHostelStatus(status) ||
-      isApprovedHostelStatus(status)
+      normalized === 'APPROVED' ||
+      normalized === 'GATE_PASS_ISSUED' ||
+      normalized === 'GATE_PASS_USED' ||
+      normalized === 'ISSUED' ||
+      normalized === 'CLEARED' ||
+      normalized === 'USED'
     );
   };
 
-  const filteredHistory = history.filter(r => {
-    if (isHostelIncharge && isPendingHostelStatus(r.status)) return false;
-    if (typeFilter === 'ALL') return true;
-    return (r.requestType || 'OUTPASS') === typeFilter;
-  });
+  const isHostelRelevantRequest = (request) => {
+    const residence = request?.studentId?.residenceType || request?.student?.residenceType;
+    const isHosteler = residence && ['hosteler', 'HOSTELER'].includes(String(residence));
+    const reqType = (request?.requestType || 'OUTPASS').toUpperCase();
+    return Boolean(isHosteler && reqType === 'OUTPASS');
+  };
 
-  // Hostel In-charge specific derivations.
-  const hostelAllRequests = Array.from(
-    new Map(
-      [...pending, ...history]
-        .filter((request) => request?._id && isHostelRelevantRequest(request))
-        .map((request) => [String(request._id), request])
-    ).values()
-  );
+  // Fetch data
+  const fetchData = async () => {
+    try {
+      const [pendingRes, allRes, statsRes, summaryRes] = await Promise.all([
+        api.get('/outpass/pending/for-me').catch(() => ({ data: { data: [] } })),
+        api.get('/outpass/all/for-me').catch(() => ({ data: { data: [] } })),
+        api.get('/outpass/dashboard-stats').catch(() => ({ data: { data: null } })),
+        api.get('/reports/hostel-summary').catch(() => api.get('/hostel/summary').catch(() => ({ data: { data: null } })))
+      ]);
 
-  const getHostelDisplayStatus = (request) => {
-    const status = String(request?.status || '').toUpperCase();
+      const rawPending = pendingRes.data?.data || [];
+      const rawAll = allRes.data?.data || [];
 
-    // Hostel pending requests should be displayed simply as "Pending".
-    // The workflow-specific status is still kept in the backend.
-    if (isPendingHostelStatus(status)) {
-      return 'PENDING';
-    }
+      const filteredPending = rawPending.filter((r) => isPendingHostelStatus(r?.status) && isHostelRelevantRequest(r));
+      const filteredAll = rawAll.filter((r) => isHostelRelevantRequest(r));
 
-    // Hostel rejection should be displayed simply as "Rejected".
-    // The workflow-specific status is still kept in the backend.
-    if (isRejectedHostelStatus(status)) {
-      return 'REJECTED';
-    }
+      setPendingList(filteredPending);
+      setAllList(filteredAll);
 
-    // Out-Pass approval results in a gate pass. It is not shown as
-    // generic "Approved" on the Hostel In-charge dashboard.
-    if (request?.requestType === 'OUTPASS' || !request?.requestType) {
-      if (isGatePassUsed(status)) return 'GATE_PASS_USED';
-      if (isGatePassIssued(status) || status === 'APPROVED') {
-        return 'GATE_PASS_ISSUED';
+      if (statsRes.data?.data) {
+        setStatsData(statsRes.data.data);
       }
-    }
 
-    return request?.status || '';
+      if (summaryRes.data?.data) {
+        setSummaryStats(summaryRes.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching hostel dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const hostelPendingRequests = hostelAllRequests.filter(r =>
-    isPendingHostelStatus(r.status)
-  );
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const hostelReviewedRequests = hostelAllRequests.filter(r =>
-    !isPendingHostelStatus(r.status)
-  );
+  // Combined unique requests
+  const combinedRequests = useMemo(() => {
+    const map = new Map();
+    [...pendingList, ...allList].forEach((req) => {
+      if (req && req._id && isHostelRelevantRequest(req)) {
+        map.set(String(req._id), req);
+      }
+    });
+    return Array.from(map.values());
+  }, [pendingList, allList]);
 
-  // Hostel Overview contains only requests that have already been reviewed
-  // by the Hostel In-charge. Pending requests are shown exclusively in the
-  // Pending Requests view.
-  const hostelPending = hostelPendingRequests.length;
-  const hostelApproved = hostelReviewedRequests.filter(r =>
-    isApprovedHostelStatus(r.status)
-  ).length;
-  const hostelRejected = hostelReviewedRequests.filter(r =>
-    isRejectedHostelStatus(r.status)
-  ).length;
+  // Derived counts
+  const totalApproved = useMemo(() => {
+    return combinedRequests.filter((r) => isApprovedHostelStatus(r.status)).length;
+  }, [combinedRequests]);
 
-  // Total Requests on the Hostel dashboard means reviewed requests
-  // (Approved + Rejected). Pending requests have their own KPI and view.
-  const hostelTotal = hostelAllRequests.length;
+  const totalPending = useMemo(() => {
+    return pendingList.length;
+  }, [pendingList]);
 
-  let hostelBaseData = hostelAllRequests;
+  const totalRejected = useMemo(() => {
+    return combinedRequests.filter((r) => isRejectedHostelStatus(r.status, r.rejectedByRole)).length;
+  }, [combinedRequests]);
 
-  if (isHostelIncharge) {
-    if (kpiFilter === 'APPROVED') {
-      hostelBaseData = hostelReviewedRequests.filter(r =>
-        isApprovedHostelStatus(r.status)
-      );
-    } else if (kpiFilter === 'REJECTED') {
-      hostelBaseData = hostelReviewedRequests.filter(r =>
-        isRejectedHostelStatus(r.status)
-      );
-    } else if (kpiFilter === 'PENDING') {
-      // Pending KPI navigates to the dedicated Pending Requests view.
-      hostelBaseData = hostelPendingRequests;
+  const totalAll = useMemo(() => {
+    return totalApproved + totalPending + totalRejected;
+  }, [totalApproved, totalPending, totalRejected]);
+
+  const statsCount = useMemo(() => {
+    if (statsData && typeof statsData.total === 'number') {
+      const pending = statsData.pending ?? 0;
+      const approved = statsData.approved ?? 0;
+      const rejected = statsData.rejected ?? 0;
+      return {
+        total: statsData.total ?? (approved + pending + rejected),
+        approved,
+        pending,
+        rejected
+      };
+    }
+    return {
+      total: totalAll,
+      approved: totalApproved,
+      pending: totalPending,
+      rejected: totalRejected
+    };
+  }, [statsData, totalAll, totalApproved, totalPending, totalRejected]);
+
+  // Filter requests based on tab & type filter and sort newest first
+  const displayedRequests = useMemo(() => {
+    let list = [];
+    if (tab === 'pending') {
+      list = pendingList;
+    } else if (tab === 'history') {
+      list = combinedRequests.filter((r) => !isPendingHostelStatus(r.status));
     } else {
-      // Total: all relevant requests.
-      hostelBaseData = hostelAllRequests;
-    }
-  }
-
-  const normalizeHostelRequestType = (request) => {
-    const type = String(request?.requestType || request?.type || 'OUTPASS')
-      .trim()
-      .toUpperCase()
-      .replace(/[\s-]+/g, '_');
-
-    if (type === 'MESS') return 'MESS_FEE';
-    if (type === 'OUT_PASS') return 'OUTPASS';
-    return type;
-  };
-
-  const filteredHostelData = hostelBaseData.filter(r => {
-    if (typeFilter === 'ALL') return true;
-    return normalizeHostelRequestType(r) === typeFilter;
-  });
-
-  const changeHostelView = (view) => {
-    setTab(view);
-    setSearchParams(view === 'overview' ? {} : { view });
-  };
-
-  const handleHostelKpi = (filter) => {
-    setKpiFilter(filter);
-
-    if (filter === 'PENDING') {
-      changeHostelView('pending');
-      return;
+      // Overview
+      list = combinedRequests;
     }
 
-    changeHostelView('overview');
+    if (typeFilter !== 'ALL') {
+      list = list.filter((r) => {
+        const t = (r.requestType || 'OUTPASS').toUpperCase();
+        return t === typeFilter;
+      });
+    }
+
+    // Sort strictly newest first (createdAt descending)
+    return list.sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.outDate || a.startDate || 0).getTime();
+      const dateB = new Date(b.createdAt || b.outDate || b.startDate || 0).getTime();
+      return dateB - dateA;
+    });
+  }, [tab, pendingList, combinedRequests, typeFilter]);
+
+  // Helper date formatters
+  const formatSlashDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+  };
+
+  const formatPeriodTime = (req) => {
+    const reqType = (req.requestType || 'OUTPASS').toUpperCase();
+    if (reqType === 'OUTPASS') {
+      if (req.outTime && (req.inTime || req.expectedInTime)) {
+        return `${req.outTime} to ${req.inTime || req.expectedInTime}`;
+      }
+      if (req.outTime) return req.outTime;
+      return '';
+    }
+    if (reqType === 'INTERNSHIP' || reqType === 'MESS_FEE') {
+      if (req.startDate && req.endDate) {
+        return `${formatSlashDate(req.startDate)} to ${formatSlashDate(req.endDate)}`;
+      }
+      return '';
+    }
+    return '';
+  };
+
+  const getStudentBranch = (req) => {
+    return (
+      req.branchId?.code ||
+      req.studentId?.branchId?.code ||
+      req.studentId?.branch?.code ||
+      req.studentId?.branch ||
+      req.branchCode ||
+      req.studentId?.branchCode ||
+      'CAI'
+    );
+  };
+
+  // Export handlers
+  const exportReport = () => {
+    const rows = displayedRequests.map((req, idx) => ({
+      '#': idx + 1,
+      'Reference ID': req.referenceId || req._id?.toString().slice(-6) || '—',
+      'Student Name': req.studentId?.name || '—',
+      'Roll Number': req.studentId?.rollNo || '—',
+      'Branch': getStudentBranch(req),
+      'Year': getOrdinalYear(req.studentId?.year),
+      'Permission Type': req.requestType || 'OUTPASS',
+      'Date': formatSlashDate(req.outDate || req.startDate || req.requestDate || req.createdAt),
+      'Time / Period': formatPeriodTime(req) || '—',
+      'Reason': req.reason || '—',
+      'Status': mapStatusToSimple(req.status)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ Note: 'No requests found' }]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Hostel Requests');
+    XLSX.writeFile(wb, `Hostel_Requests_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const today = new Date();
+  const weekday = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const formattedHeaderDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Status renderer
+  const renderStatusBadge = (status) => {
+    const norm = String(status || '').toUpperCase();
+    if (isPendingHostelStatus(norm) || norm.includes('PENDING')) {
+      return (
+        <span
+          style={{
+            background: '#fef3c7',
+            color: '#d97706',
+            border: '1px solid #fde68a',
+            padding: '3px 12px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.3px',
+            display: 'inline-block'
+          }}
+        >
+          PENDING
+        </span>
+      );
+    }
+    if (isRejectedHostelStatus(norm)) {
+      return (
+        <span
+          style={{
+            background: '#fee2e2',
+            color: '#dc2626',
+            border: '1px solid #fecaca',
+            padding: '3px 12px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.3px',
+            display: 'inline-block'
+          }}
+        >
+          REJECTED
+        </span>
+      );
+    }
+    if (norm === 'GATE_PASS_ISSUED' || norm === 'GATE PASS ISSUED' || norm === 'APPROVED' || norm === 'ISSUED' || norm === 'CLEARED' || norm === 'USED') {
+      return (
+        <span
+          style={{
+            color: '#0f172a',
+            fontSize: '11.5px',
+            fontWeight: 800,
+            letterSpacing: '0.2px',
+            display: 'inline-block'
+          }}
+        >
+          GATE PASS ISSUED
+        </span>
+      );
+    }
+    return (
+      <span
+        style={{
+          color: '#0f172a',
+          fontSize: '11.5px',
+          fontWeight: 800,
+          letterSpacing: '0.2px',
+          display: 'inline-block'
+        }}
+      >
+        {mapStatusToSimple(status)}
+      </span>
+    );
   };
 
   return (
     <DashboardLayout>
-      {isHostelIncharge ? (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <div style={{ color: '#475569', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
-                Welcome back,
-              </div>
-              <h1 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.5px' }}>
-                Hostel <span style={{ color: '#10b981' }}>In-charge</span>
-              </h1>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Top Header */}
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ color: '#475569', fontSize: '14px', fontWeight: 500, marginBottom: '2px' }}>
+              Welcome back,
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                <Calendar size={18} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
-                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </div>
-              </div>
+            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+              Hostel <span style={{ color: '#059669' }}>In-charge</span>
+            </h1>
+          </div>
+
+          {/* Date Widget */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              background: '#ffffff',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+            }}
+          >
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: '#ecfdf5',
+                border: '1px solid #d1fae5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#059669'
+              }}
+            >
+              <Calendar size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{weekday}</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{formattedHeaderDate}</div>
             </div>
           </div>
         </div>
-      ) : (
-        <div className="page-header" style={{ marginBottom: '24px' }}>
-          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Building size={26} color={cfg.color} />
-            <span>{cfg.name}</span>
-          </h1>
-          <p className="page-subtitle">
-            {cfg.desc} Â· Logged in as <strong>{user?.name}</strong>
-          </p>
-        </div>
-      )}
 
-      {actionMsg && (
+        {/* 4 Stats Cards */}
         <div
-          className={`alert ${actionMsg.includes('approved') ? 'alert-success' : 'alert-error'}`}
-          style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: '8px' }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: '16px',
+            marginBottom: '24px'
+          }}
         >
-          {actionMsg.includes('approved') ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          <span>{actionMsg}</span>
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      {isHostelIncharge ? (
-        <div className="stats-grid placement-kpi-grid" style={{ marginBottom: '24px', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
           {[
-            { key: 'TOTAL', label: 'TOTAL REQUESTS', value: hostelTotal, iconBg: '#f1f5f9', iconColor: '#3b82f6', valueColor: '#1e293b', icon: FaClipboardList },
-            { key: 'APPROVED', label: 'APPROVED', value: hostelApproved, iconBg: '#ecfdf5', iconColor: '#10b981', valueColor: '#059669', icon: FaCircleCheck },
-            { key: 'PENDING', label: 'PENDING', value: hostelPending, iconBg: '#fff7ed', iconColor: '#f59e0b', valueColor: '#d97706', icon: FaClock },
-            { key: 'REJECTED', label: 'REJECTED', value: hostelRejected, iconBg: '#fef2f2', iconColor: '#ef4444', valueColor: '#dc2626', icon: FaCircleXmark },
+            { key: 'TOTAL', label: 'TOTAL REQUESTS', value: statsCount.total, iconBg: '#f0f9ff', iconColor: '#3b82f6', valueColor: '#0f172a', icon: ClipboardList },
+            { key: 'APPROVED', label: 'APPROVED', value: statsCount.approved, iconBg: '#ecfdf5', iconColor: '#10b981', valueColor: '#059669', icon: CheckCircle2 },
+            { key: 'PENDING', label: 'PENDING', value: statsCount.pending, iconBg: '#fff7ed', iconColor: '#f59e0b', valueColor: '#d97706', icon: Clock },
+            { key: 'REJECTED', label: 'REJECTED', value: statsCount.rejected, iconBg: '#fef2f2', iconColor: '#ef4444', valueColor: '#dc2626', icon: XCircle },
           ].map((card) => {
             const Icon = card.icon;
-            const isActive = kpiFilter === card.key;
             return (
               <div
                 key={card.key}
-                className="card stat-card-hover"
-                onClick={() => handleHostelKpi(card.key)}
+                onClick={() => {
+                  setKpiFilter(card.key);
+                  if (card.key === 'PENDING' && tab !== 'pending') navigate('/hostel/pending');
+                  else if (card.key === 'TOTAL' && tab !== 'overview') navigate('/hostel/dashboard');
+                }}
                 style={{
                   background: '#ffffff',
                   border: '1px solid #e2e8f0',
-                  borderRadius: 12,
-                  padding: '20px 24px',
-                  minHeight: 100,
-                  boxShadow: isActive ? '0 4px 12px rgba(16, 185, 129, 0.1)' : '0 1px 2px rgba(15,23,42,0.04)',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
                   cursor: 'pointer',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 16,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
-                  e.currentTarget.style.borderColor = '#bfdbfe';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = isActive ? '0 4px 12px rgba(16, 185, 129, 0.1)' : '0 1px 2px rgba(15,23,42,0.04)';
-                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  gap: '14px',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                 }}
               >
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: card.iconBg, color: card.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={20} />
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    background: card.iconBg,
+                    color: card.iconColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <Icon size={18} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#64748b' }}>{card.label}</div>
-                  <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: card.valueColor }}>{card.value}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.4px' }}>
+                    {card.label}
+                  </div>
+                  <div style={{ fontSize: '26px', lineHeight: 1, fontWeight: 800, color: card.valueColor }}>
+                    {card.value}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-      ) : (
-        <div className="stats-grid" style={{ marginBottom: '24px' }}>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ color: 'var(--yellow)' }}>
-              <Clock size={22} />
-            </div>
-            <div className="stat-label">Pending Queue</div>
-            <div className="stat-value" style={{ color: 'var(--yellow)' }}>{stats?.pendingCount ?? pending.length}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ color: 'var(--accent)' }}>
-              <ClipboardList size={22} />
-            </div>
-            <div className="stat-label">Total Requests</div>
-            <div className="stat-value">{stats?.totalRequests ?? 0}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ color: 'var(--green)' }}>
-              <CheckCircle2 size={22} />
-            </div>
-            <div className="stat-label">7-Day Decisions</div>
-            <div className="stat-value" style={{ color: 'var(--green)' }}>
-              {chartData.reduce((acc, curr) => acc + curr.Approved + curr.Rejected, 0)}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* 7-day Activity Chart */}
-      {!isHostelIncharge && (
-        <div className="card" style={{ marginBottom: '24px' }}>
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div className="card-title">Approval Activity (Last 7 Days)</div>
-              <div className="card-subtitle">Approved vs Rejected decisions recorded</div>
-            </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Daily Volume</span>
-          </div>
-          {hasActivity ? (
-            <div style={{ height: 220, width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} allowDecimals={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                      color: '#0f172a'
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-                  <Bar dataKey="Approved" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={32} />
-                  <Bar dataKey="Rejected" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={32} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div style={{
-              height: 120,
+        {/* Details Heading */}
+        <div style={{ marginBottom: tab === 'history' ? '14px' : '18px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+            Details
+          </h2>
+        </div>
+
+        {/* Review History Summary Bar */}
+        {tab === 'history' && (
+          <div
+            style={{
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              gap: '8px',
-              color: 'var(--text-muted)',
-              fontSize: '13px'
-            }}>
-              <Sparkles size={20} color="var(--text-muted)" />
-              <span>No approvals or rejections recorded in the last 7 days yet.</span>
+              marginBottom: '16px'
+            }}
+          >
+            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+              This week: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{summaryStats?.week?.total ?? 0}</strong>
+              &nbsp;&nbsp;&nbsp;&nbsp;
+              This month: <strong style={{ color: '#0f172a', fontWeight: 700 }}>{summaryStats?.month?.total ?? 0}</strong>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Main Tabs (Pending vs History) & Feature Filter Pills */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-        {!isHostelIncharge && (
-          <div className="tabs" style={{ marginBottom: 0 }}>
             <button
-              className={`tab ${isHostelIncharge ? (tab === 'overview' ? 'active' : '') : (tab === 'pending' ? 'active' : '')}`}
-              onClick={() => {
-                if (isHostelIncharge) {
-                  setKpiFilter('TOTAL');
-                  changeHostelView('overview');
-                } else {
-                  setTab('pending');
-                }
+              type="button"
+              onClick={exportReport}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                background: '#059669',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(5,150,105,0.2)',
+                transition: 'background 0.15s ease'
               }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <Clock size={14} />
-              <span>{isHostelIncharge ? 'Overview' : `Pending Queue (${pending.length})`}</span>
-            </button>
-            {isHostelIncharge && (
-              <button
-                className={`tab ${tab === 'pending' ? 'active' : ''}`}
-                onClick={() => {
-                  setKpiFilter('PENDING');
-                  changeHostelView('pending');
-                }}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Clock size={14} />
-                <span>Pending Requests ({hostelPending})</span>
-              </button>
-            )}
-
-            <button
-              className={`tab ${tab === 'history' ? 'active' : ''}`}
-              onClick={() => {
-                if (isHostelIncharge) {
-                  setKpiFilter('TOTAL');
-                  changeHostelView('history');
-                } else {
-                  setTab('history');
-                }
-              }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <ClipboardList size={14} />
-              <span>Review History</span>
+              <FileSpreadsheet size={16} />
+              <span>Export report</span>
             </button>
           </div>
         )}
 
-        {/* Feature Filter Pills */}
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {(isHostelIncharge
-            ? ['ALL', 'OUTPASS', 'MESS_FEE', 'INTERNSHIP']
-            : ['ALL', 'OUTPASS', 'MESS_FEE', 'INTERNSHIP', 'LIBRARY']
-          ).map(f => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setTypeFilter(f)}
-              style={{
-                fontSize: '11px',
-                padding: '4px 10px',
-                borderRadius: '14px',
-                border: typeFilter === f ? '1px solid var(--accent)' : '1px solid var(--border)',
-                background: typeFilter === f ? 'var(--accent)' : '#ffffff',
-                color: typeFilter === f ? '#ffffff' : 'var(--text-secondary)',
-                fontWeight: typeFilter === f ? 600 : 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {f === 'ALL' && 'All Types'}
-              {f === 'OUTPASS' && 'Out-Pass'}
-              {f === 'MESS_FEE' && 'Mess Fee'}
-              {f === 'INTERNSHIP' && 'Internship'}
-              {f === 'LIBRARY' && 'Library'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Hostel Overview / Pending Queue / Approver Pending Queue */}
-      {((isHostelIncharge && (tab === 'overview' || tab === 'pending')) || (!isHostelIncharge && tab === 'pending')) && (
-        <div className="card">
+        {/* Table Container */}
+        <div
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}
+        >
           {loading ? (
-            <div className="loading-screen"><div className="spinner spinner-lg" /></div>
-          ) : (isHostelIncharge ? filteredHostelData.length === 0 : filteredPending.length === 0) ? (
-            <div className="empty-state">
-              <div className="empty-state-icon" style={{ color: 'var(--green)' }}>
-                <CheckCircle2 size={48} />
+            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b' }}>
+              <div className="spinner" style={{ margin: '0 auto 12px' }} />
+              <div>Loading requests...</div>
+            </div>
+          ) : displayedRequests.length === 0 ? (
+            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+              <div style={{ color: '#059669', marginBottom: '12px' }}>
+                <CheckCircle2 size={40} style={{ margin: '0 auto' }} />
               </div>
-              <div className="empty-state-title">All caught up!</div>
-              <div className="empty-state-desc">
-                {isHostelIncharge && tab === 'overview'
-                  ? 'No permission requests found.'
-                  : typeFilter === 'ALL'
-                    ? 'No permission requests currently waiting in your queue.'
-                    : `No ${typeFilter.replace('_', ' ')} requests pending in your queue.`}
+              <div style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                {tab === 'pending' ? 'No pending requests' : 'No requests found'}
+              </div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                {tab === 'pending'
+                  ? 'There are no pending requests waiting for your clearance.'
+                  : 'No hosteller out-pass requests found matching the current filter.'}
               </div>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Student</th>
-                    <th>{isHostelIncharge ? 'Reason / Details' : 'Request Details'}</th>
-                    <th>{isHostelIncharge ? 'Date / Period' : 'Period / Schedule'}</th>
-                    {!isHostelIncharge && <th>Attachment</th>}
-                    {isHostelIncharge ? <th>Status</th> : <th>Actions</th>}
-                    {isHostelIncharge && tab === 'pending' && <th>Action</th>}
+                  <tr style={{ background: '#f4faf7', borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ padding: '14px 20px', fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      TYPE
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      STUDENT
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      REASON / DETAILS
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      DATE / PERIOD
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      STATUS
+                    </th>
+                    {tab !== 'overview' && (
+                      <th style={{ padding: '14px 20px', fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', textAlign: 'right' }}>
+                        ACTION
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {(isHostelIncharge ? filteredHostelData : filteredPending).map(req => {
-                    const reqType = req.requestType || 'OUTPASS';
-                    const tag = getBadgeTypeColor(reqType);
+                  {displayedRequests.map((req) => {
                     return (
-                      <tr key={req._id}>
-                        <td>
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '3px 8px',
-                            borderRadius: '12px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            background: tag.bg,
-                            color: tag.text,
-                            border: `1px solid ${tag.border}`
-                          }}>
-                            {getBadgeTypeIcon(reqType)}
-                            <span>{getBadgeTypeLabel(reqType)}</span>
+                      <tr
+                        key={req._id}
+                        style={{
+                          borderBottom: '1px solid #f1f5f9',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {/* TYPE */}
+                        <td style={{ padding: '16px 20px', verticalAlign: 'middle' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '4px 12px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              background: '#f8fafc',
+                              color: '#334155',
+                              border: '1px solid #cbd5e1'
+                            }}
+                          >
+                            <Car size={13} style={{ color: '#475569' }} />
+                            <span>Out-Pass</span>
                           </span>
                         </td>
-                        <td>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.studentId?.name}</div>
-                          <div className="td-muted" style={{ fontSize: 12 }}>
-                            <code>{req.studentId?.rollNo}</code> | {req.branchId?.name || 'CSM'}
-                          </div>
-                        </td>
-                        <td style={{ maxWidth: 220 }}>
-                          <div style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                            {req.reason}
-                          </div>
-                          {reqType === 'MESS_FEE' && (
-                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              Amount: <strong>INR {req.messAmount?.toLocaleString('en-IN')}</strong> |{' '}
-                              <span style={{ color: req.paidStatus === 'Paid' ? 'var(--green)' : 'var(--yellow)', fontWeight: 600 }}>
-                                {req.paidStatus}
-                              </span>
-                            </div>
-                          )}
-                          {reqType === 'INTERNSHIP' && (
-                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              <strong>{req.companyName}</strong> ({req.role}) | {req.internshipMode}
-                            </div>
-                          )}
-                        </td>
-                        <td className="td-muted">
-                          {reqType === 'OUTPASS' && (
-                            <>
-                              <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
-                                {new Date(req.outDate).toLocaleDateString('en-IN')}
-                              </div>
-                              <div style={{ fontSize: 11 }}>{req.outTime} to {req.expectedReturnTime}</div>
-                            </>
-                          )}
-                          {(reqType === 'MESS_FEE' || reqType === 'INTERNSHIP') && (
-                            <>
-                              <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>
-                                {new Date(req.startDate).toLocaleDateString('en-IN')} to
-                              </div>
-                              <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>
-                                {new Date(req.endDate).toLocaleDateString('en-IN')}
-                              </div>
-                            </>
-                          )}
-                          {reqType === 'LIBRARY' && (
-                            <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
-                              {new Date(req.requestDate || req.createdAt).toLocaleDateString('en-IN')}
-                            </div>
-                          )}
-                        </td>
-                        {!isHostelIncharge && (
-                          <td>
-                            {req.documentUrl ? (
-                              <a
-                                href={req.documentUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  fontSize: '11px',
-                                  color: 'var(--accent)',
-                                  textDecoration: 'none',
-                                  background: 'var(--accent-dim)',
-                                  padding: '3px 8px',
-                                  borderRadius: '6px'
-                                }}
-                              >
-                                <Paperclip size={12} />
-                                <span>View Doc</span>
-                              </a>
-                            ) : (
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>None</span>
-                            )}
-                          </td>
-                        )}
-                        {isHostelIncharge ? (
-                          <>
-                            <td>
-                              <StatusBadge status={getHostelDisplayStatus(req) || cfg.pendingStatus} showIcon={!isHostelIncharge} />
-                            </td>
-                            {tab === 'pending' && (
-                              <td>
-                                <button
-                                  className="btn btn-sm"
-                                  onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    padding: '5px 14px',
-                                    background: 'rgba(209, 250, 229, 0.92)',
-                                    color: '#10b981',
-                                    border: '1px solid #a7f3d0',
-                                    borderRadius: '50px',
-                                    fontSize: '12.5px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s',
-                                    fontFamily: 'inherit'
-                                  }}
-                                >
-                                  <Eye size={14} />
-                                  <span>View</span>
-                                </button>
-                              </td>
-                            )}
-                          </>
-                        ) : (
-                          <td>
-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                              <button
-                                className="btn btn-success btn-sm"
-                                disabled={actionLoading}
-                                onClick={() => handleApprove(req._id)}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
-                              >
-                                <Check size={14} />
-                                <span>Approve</span>
-                              </button>
-                              <button
-                                className="btn btn-danger btn-sm"
-                                disabled={actionLoading}
-                                onClick={() => setRejectModal({ id: req._id, remarks: '', requestType: reqType })}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
-                              >
-                                <X size={14} />
-                                <span>Reject</span>
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                onClick={() => navigate(`/outpass/${req._id}?mode=approval`)}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
-                              >
-                                <Eye size={14} />
-                                <span>View</span>
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* History Tab */}
-      {tab === 'history' && (
-        <div className="card">
-          {filteredHistory.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}>
-                <ClipboardList size={40} />
-              </div>
-              <div className="empty-state-title">No historical requests found</div>
-              <div className="empty-state-desc">Reviewed requests will appear here once processed.</div>
-            </div>
-          ) : (
-            <div className="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Student</th>
-                    <th>Reason / Details</th>
-                    <th>Date / Period</th>
-                    <th>Status</th>
-                    {isHostelIncharge && <th>Action</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredHistory.map(req => {
-                    const reqType = req.requestType || 'OUTPASS';
-                    const tag = getBadgeTypeColor(reqType);
-                    return (
-                      <tr key={req._id} style={{ cursor: isHostelIncharge ? 'default' : 'pointer' }} onClick={() => !isHostelIncharge && navigate(`/outpass/${req._id}`)}>
-                        <td>
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '3px 8px',
-                            borderRadius: '12px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            background: tag.bg,
-                            color: tag.text,
-                            border: `1px solid ${tag.border}`
-                          }}>
-                            {getBadgeTypeIcon(reqType)}
-                            <span>{getBadgeTypeLabel(reqType)}</span>
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.studentId?.name}</div>
-                          <div className="td-muted" style={{ fontSize: 12 }}><code>{req.studentId?.rollNo}</code></div>
-                        </td>
-                        <td style={{ maxWidth: 220 }}>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200, color: 'var(--text-primary)' }}>
-                            {req.reason}
+                        {/* STUDENT */}
+                        <td style={{ padding: '16px 20px', verticalAlign: 'middle' }}>
+                          <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a', textTransform: 'uppercase' }}>
+                            {req.studentId?.name || '—'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                            {req.studentId?.rollNo || '—'} | {getStudentBranch(req)}
                           </div>
                         </td>
-                        <td className="td-muted">
-                          {reqType === 'OUTPASS' && (new Date(req.outDate).toLocaleDateString('en-IN'))}
-                          {reqType === 'MESS_FEE' && (`${new Date(req.startDate).toLocaleDateString('en-IN')} - ${new Date(req.endDate).toLocaleDateString('en-IN')}`)}
-                          {reqType === 'INTERNSHIP' && (`${new Date(req.startDate).toLocaleDateString('en-IN')} - ${new Date(req.endDate).toLocaleDateString('en-IN')}`)}
-                          {reqType === 'LIBRARY' && (new Date(req.requestDate || req.createdAt).toLocaleDateString('en-IN'))}
+
+                        {/* REASON / DETAILS */}
+                        <td style={{ padding: '16px 20px', verticalAlign: 'middle', maxWidth: '240px' }}>
+                          <div style={{ fontSize: '13px', color: '#334155', fontWeight: 500 }}>
+                            {req.reason || '—'}
+                          </div>
                         </td>
-                        <td><StatusBadge status={isHostelIncharge ? getHostelDisplayStatus(req) : req.status} showIcon={!isHostelIncharge} /></td>
-                        {isHostelIncharge && (
-                          <td>
+
+                        {/* DATE / PERIOD */}
+                        <td style={{ padding: '16px 20px', verticalAlign: 'middle' }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
+                            {formatSlashDate(req.outDate || req.requestDate || req.createdAt)}
+                          </div>
+                          {formatPeriodTime(req) && (
+                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                              {formatPeriodTime(req)}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* STATUS */}
+                        <td style={{ padding: '16px 20px', verticalAlign: 'middle' }}>
+                          {renderStatusBadge(req.status)}
+                        </td>
+
+                        {/* ACTION */}
+                        {tab !== 'overview' && (
+                          <td style={{ padding: '16px 20px', verticalAlign: 'middle', textAlign: 'right' }}>
                             <button
-                              className="btn btn-sm"
+                              type="button"
                               onClick={() => navigate(`/outpass/${req._id}`)}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '5px',
+                                gap: '6px',
                                 padding: '5px 14px',
-                                background: 'rgba(209, 250, 229, 0.92)',
-                                color: '#10b981',
-                                border: '1px solid #a7f3d0',
-                                borderRadius: '50px',
-                                fontSize: '12.5px',
-                                fontWeight: 600,
+                                background: '#dcfce7',
+                                color: '#059669',
+                                border: '1px solid #bbf7d0',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                fontWeight: 700,
                                 cursor: 'pointer',
-                                transition: 'all 0.15s',
-                                fontFamily: 'inherit'
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#bbf7d0';
+                                e.currentTarget.style.borderColor = '#86efac';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = '#dcfce7';
+                                e.currentTarget.style.borderColor = '#bbf7d0';
                               }}
                             >
                               <Eye size={14} />
@@ -928,69 +667,7 @@ export default function ApproverDashboard() {
             </div>
           )}
         </div>
-      )}
-
-      {/* Reject Modal */}
-      {rejectModal && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setRejectModal(null)}>
-          <div className="modal">
-            <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--red)' }}>
-              <ShieldAlert size={20} />
-              <span>Reject {getBadgeTypeLabel(rejectModal.requestType)} Request</span>
-            </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>
-              Specify the official reason for rejection. This remark will be recorded and visible to the student for corrections and resubmission.
-            </p>
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label">Rejection Remarks (Mandatory)</label>
-              <textarea
-                rows={3}
-                className="form-input"
-                placeholder="e.g. Incomplete documentation, unpaid arrears, signature mismatch..."
-                value={rejectModal.remarks}
-                onChange={e => setRejectModal(m => ({ ...m, remarks: e.target.value }))}
-              />
-            </div>
-            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button className="btn btn-ghost" onClick={() => setRejectModal(null)}>Cancel</button>
-              <button
-                className="btn btn-danger"
-                disabled={!rejectModal.remarks.trim() || actionLoading}
-                onClick={handleReject}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                {actionLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <X size={14} />}
-                <span>Confirm Rejection</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .hostel-ctpo-kpi-grid .hostel-ctpo-kpi-card {
-          flex-direction: row !important;
-          align-items: center !important;
-        }
-
-        .hostel-ctpo-kpi-grid .hostel-ctpo-kpi-icon {
-          flex: 0 0 48px !important;
-        }
-
-        @media (max-width: 900px) {
-          .hostel-ctpo-kpi-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          }
-        }
-
-        @media (max-width: 560px) {
-          .hostel-ctpo-kpi-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
-
+      </div>
     </DashboardLayout>
   );
 }
-

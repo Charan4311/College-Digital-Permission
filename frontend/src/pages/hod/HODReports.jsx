@@ -1624,18 +1624,28 @@ export default function HODReports() {
                 ]);
 
 
-            summarySheet['!cols'] = [
-                {
-                    width: 28,
-                },
-                {
-                    width: 35,
-                },
-                {
-                    width: 18,
-                },
-            ];
+            const autoFitAoa = (aoa, minW = 16) => {
+                if (!aoa || !aoa.length) return [];
+                const colCount = Math.max(...aoa.map(row => row.length));
+                const colWidths = [];
+                for (let c = 0; c < colCount; c++) {
+                    let max = 0;
+                    aoa.forEach(row => {
+                        const val = row[c] !== undefined && row[c] !== null ? String(row[c]) : '';
+                        if (val.length > max) max = val.length;
+                    });
+                    colWidths.push({ wch: Math.max(max + 6, minW) });
+                }
+                return colWidths;
+            };
 
+            summarySheet['!cols'] = autoFitAoa([
+                ['Metric', 'Count', 'Percentage'],
+                ['Total Requests', summary.total, '100%'],
+                ['Approved', summary.approved, `${getPercentage(summary.approved, summary.total)}%`],
+                ['Pending', summary.pending, `${getPercentage(summary.pending, summary.total)}%`],
+                ['Rejected', summary.rejected, `${getPercentage(summary.rejected, summary.total)}%`],
+            ], 20);
 
             XLSX.utils.book_append_sheet(
                 workbook,
@@ -1643,22 +1653,12 @@ export default function HODReports() {
                 'Summary'
             );
 
-
-            const branchSheet =
-                XLSX.utils.aoa_to_sheet([
-                    [
-                        'Branch',
-                        'Requests',
-                    ],
-
-                    ...branchData.map(
-                        (item) => [
-                            item.branch,
-                            item.requests,
-                        ]
-                    ),
-                ]);
-
+            const branchAoa = [
+                ['Branch', 'Requests'],
+                ...branchData.map((item) => [item.branch, item.requests]),
+            ];
+            const branchSheet = XLSX.utils.aoa_to_sheet(branchAoa);
+            branchSheet['!cols'] = autoFitAoa(branchAoa, 18);
 
             XLSX.utils.book_append_sheet(
                 workbook,
@@ -1666,22 +1666,12 @@ export default function HODReports() {
                 'Branch Analysis'
             );
 
-
-            const typeSheet =
-                XLSX.utils.aoa_to_sheet([
-                    [
-                        'Permission Type',
-                        'Requests',
-                    ],
-
-                    ...requestTypeData.map(
-                        (item) => [
-                            item.type,
-                            item.requests,
-                        ]
-                    ),
-                ]);
-
+            const typeAoa = [
+                ['Permission Type', 'Requests'],
+                ...requestTypeData.map((item) => [item.type, item.requests]),
+            ];
+            const typeSheet = XLSX.utils.aoa_to_sheet(typeAoa);
+            typeSheet['!cols'] = autoFitAoa(typeAoa, 20);
 
             XLSX.utils.book_append_sheet(
                 workbook,
@@ -1689,27 +1679,16 @@ export default function HODReports() {
                 'Permission Types'
             );
 
-
-            const studentSheet =
-                XLSX.utils.aoa_to_sheet([
-                    [
-                        'Student Type',
-                        'Requests',
-                        'Percentage',
-                    ],
-
-                    ...studentTypeData.map(
-                        (item) => [
-                            item.name,
-                            item.value,
-                            `${getPercentage(
-                                item.value,
-                                summary.total
-                            )}%`,
-                        ]
-                    ),
-                ]);
-
+            const studentAoa = [
+                ['Student Type', 'Requests', 'Percentage'],
+                ...studentTypeData.map((item) => [
+                    item.name,
+                    item.value,
+                    `${getPercentage(item.value, summary.total)}%`,
+                ]),
+            ];
+            const studentSheet = XLSX.utils.aoa_to_sheet(studentAoa);
+            studentSheet['!cols'] = autoFitAoa(studentAoa, 18);
 
             XLSX.utils.book_append_sheet(
                 workbook,
@@ -1717,73 +1696,36 @@ export default function HODReports() {
                 'Student Type'
             );
 
-
-            const detailSheet =
-                XLSX.utils.aoa_to_sheet([
-                    [
-                        '#',
-                        'Ref ID',
-                        'Student Name',
-                        'Roll Number',
-                        'Branch',
-                        'Year',
-                        'Student Type',
-                        'Permission Type',
-                        'Status',
-                        'Date',
-                    ],
-
-                    ...filteredRequests.map(
-                        (
-                            request,
-                            index
-                        ) => [
-                                index + 1,
-                                request.referenceId || 'N/A',
-                                getStudentName(
-                                    request
-                                ),
-                                getRollNumber(
-                                    request
-                                ),
-                                getBranchName(
-                                    request
-                                ),
-                                getYear(
-                                    request
-                                ),
-                                getStudentType(
-                                    request
-                                ),
-                                requestTypeLabel(
-                                    request?.requestType
-                                ),
-                                getStatusCategory(
-                                    request
-                                ),
-                                formatDate(
-                                    getRequestDate(
-                                        request
-                                    )
-                                ),
-                            ]
-                    ),
-                ]);
-
-
-            detailSheet['!cols'] = [
-                { width: 6 },
-                { width: 15 }, // Ref ID
-                { width: 28 },
-                { width: 18 },
-                { width: 12 },
-                { width: 10 },
-                { width: 18 },
-                { width: 20 },
-                { width: 14 },
-                { width: 18 },
+            const detailAoa = [
+                [
+                    '#',
+                    'Ref ID',
+                    'Student Name',
+                    'Roll Number',
+                    'Branch',
+                    'Year',
+                    'Student Type',
+                    'Permission Type',
+                    'Status',
+                    'Date',
+                ],
+                ...filteredRequests.map(
+                    (request, index) => [
+                        index + 1,
+                        request.referenceId || 'N/A',
+                        getStudentName(request),
+                        getRollNumber(request),
+                        getBranchName(request),
+                        getYear(request),
+                        getStudentType(request),
+                        requestTypeLabel(request?.requestType),
+                        getStatusCategory(request),
+                        formatDate(getRequestDate(request)),
+                    ]
+                ),
             ];
-
+            const detailSheet = XLSX.utils.aoa_to_sheet(detailAoa);
+            detailSheet['!cols'] = autoFitAoa(detailAoa, 16);
 
             XLSX.utils.book_append_sheet(
                 workbook,
@@ -3152,13 +3094,50 @@ function KpiCard({
 // ============================================================
 
 function DynamicTrendChart({ data }) {
-    const chartData = (data || []).map((item) => ({
-        ...item,
-        total:
-            (Number(item.approved) || 0) +
-            (Number(item.pending) || 0) +
-            (Number(item.rejected) || 0),
-    }));
+    const chartData = (data || []).map((item) => {
+        const rawApproved = Number(item.approved) || 0;
+        const rawPending = Number(item.pending) || 0;
+        const rawRejected = Number(item.rejected) || 0;
+        const rawTotal = (item.total !== undefined && item.total !== null)
+            ? Number(item.total)
+            : rawApproved + rawPending + rawRejected;
+
+        let displayTotal = rawTotal;
+        let displayApproved = rawApproved;
+        let displayPending = rawPending;
+        let displayRejected = rawRejected;
+
+        if (rawTotal > 0) {
+            if (rawTotal === rawApproved || rawTotal === rawPending || rawTotal === rawRejected) {
+                displayTotal = rawTotal + 0.08;
+            }
+        }
+
+        if (rawApproved > 0 && rawPending > 0 && rawApproved === rawPending) {
+            displayApproved = rawApproved + 0.04;
+            displayPending = rawPending - 0.04;
+        }
+        if (rawApproved > 0 && rawRejected > 0 && rawApproved === rawRejected) {
+            displayApproved = rawApproved + 0.04;
+            displayRejected = rawRejected - 0.04;
+        }
+        if (rawPending > 0 && rawRejected > 0 && rawPending === rawRejected) {
+            displayPending = rawPending + 0.04;
+            displayRejected = rawRejected - 0.04;
+        }
+
+        return {
+            ...item,
+            total: rawTotal,
+            approved: rawApproved,
+            pending: rawPending,
+            rejected: rawRejected,
+            displayTotal,
+            displayApproved,
+            displayPending,
+            displayRejected,
+        };
+    });
 
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -3193,20 +3172,21 @@ function DynamicTrendChart({ data }) {
                         <XAxis
                             dataKey="label"
                             tick={{
-                                fontSize: 8,
+                                fontSize: 9,
                                 fill: '#667085',
                             }}
                             axisLine={{
                                 stroke: '#e5e7ef',
                             }}
                             tickLine={false}
+                            interval={chartData.length >= 25 ? 2 : 0}
                         />
 
                         <YAxis
                             domain={[0, 'auto']}
                             allowDecimals={false}
                             tick={{
-                                fontSize: 8,
+                                fontSize: 9,
                                 fill: '#667085',
                             }}
                             axisLine={false}
@@ -3214,31 +3194,54 @@ function DynamicTrendChart({ data }) {
                         />
 
                         <Tooltip
-                            contentStyle={{
-                                background: '#ffffff',
-                                borderRadius: 10,
-                                border: '1px solid #E2E8F0',
-                                boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
-                                padding: '10px 14px',
-                                fontSize: 13,
-                                color: '#0F172A'
+                            content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                    const item = payload[0]?.payload || {};
+                                    const total = item.total ?? 0;
+                                    const approved = item.approved ?? 0;
+                                    const pending = item.pending ?? 0;
+                                    const rejected = item.rejected ?? 0;
+                                    const dateLabel = label || item.label || item.date || "";
+
+                                    return (
+                                        <div
+                                            style={{
+                                                background: "#ffffff",
+                                                border: "1px solid #e2e8f0",
+                                                borderRadius: "12px",
+                                                boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)",
+                                                padding: "10px 14px",
+                                                fontSize: "13px",
+                                                color: "#334155",
+                                                minWidth: "125px",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    fontWeight: 700,
+                                                    color: "#0f172a",
+                                                    marginBottom: "6px",
+                                                    fontSize: "13px",
+                                                }}
+                                            >
+                                                {dateLabel}
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                                                <div>Total : {total}</div>
+                                                <div>Approved : {approved}</div>
+                                                <div>Pending : {pending}</div>
+                                                <div>Rejected : {rejected}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
                             }}
-                            labelStyle={{
-                                fontWeight: 600,
-                                marginBottom: 4,
-                                color: '#475569'
-                            }}
-                            formatter={(value, name) => [
-                                value,
-                                name === 'total'
-                                    ? 'Total'
-                                    : name.charAt(0).toUpperCase() + name.slice(1),
-                            ]}
                         />
 
                         <Area
                             type="monotone"
-                            dataKey="total"
+                            dataKey="displayTotal"
                             name="total"
                             stroke="#3b82f6"
                             strokeWidth={2.5}
@@ -3249,7 +3252,7 @@ function DynamicTrendChart({ data }) {
 
                         <Area
                             type="monotone"
-                            dataKey="approved"
+                            dataKey="displayApproved"
                             name="approved"
                             stroke="#10B981"
                             strokeWidth={2.5}
@@ -3260,7 +3263,7 @@ function DynamicTrendChart({ data }) {
 
                         <Line
                             type="monotone"
-                            dataKey="pending"
+                            dataKey="displayPending"
                             name="pending"
                             stroke="#F59E0B"
                             strokeWidth={2}
@@ -3270,7 +3273,7 @@ function DynamicTrendChart({ data }) {
 
                         <Line
                             type="monotone"
-                            dataKey="rejected"
+                            dataKey="displayRejected"
                             name="rejected"
                             stroke="#EF4444"
                             strokeWidth={2}
@@ -3292,10 +3295,10 @@ function DynamicTrendChart({ data }) {
                 }}
             >
                 {[
+                    { key: 'total', label: 'Total', color: '#3b82f6' },
                     { key: 'approved', label: 'Approved', color: '#10B981' },
                     { key: 'pending', label: 'Pending', color: '#F59E0B' },
                     { key: 'rejected', label: 'Rejected', color: '#EF4444' },
-                    { key: 'total', label: 'Total', color: '#3b82f6' },
                 ].map((item) => (
                     <div
                         key={item.key}
@@ -3303,8 +3306,9 @@ function DynamicTrendChart({ data }) {
                             display: 'flex',
                             alignItems: 'center',
                             gap: 6,
-                            fontSize: 9,
-                            color: 'var(--text-muted)',
+                            fontSize: 11,
+                            color: '#475569',
+                            fontWeight: 600,
                         }}
                     >
                         <div

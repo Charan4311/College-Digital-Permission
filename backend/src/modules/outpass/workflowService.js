@@ -1,4 +1,4 @@
-const resolveNextStage = (request, decision) => {
+const resolveNextStage = (request, decision, isHosteler = false) => {
   const type = request.requestType || 'OUTPASS';
 
   // 1. OUTPASS WORKFLOW
@@ -10,7 +10,7 @@ const resolveNextStage = (request, decision) => {
     if (request.status === 'PENDING_HOD') {
       if (decision === 'REJECTED') return 'REJECTED_HOD';
       if (decision === 'APPROVED') {
-        return 'ISSUED';
+        return isHosteler ? 'PENDING_HOSTEL_INCHARGE' : 'ISSUED';
       }
     }
     if (request.status === 'PENDING_HOSTEL_INCHARGE') {

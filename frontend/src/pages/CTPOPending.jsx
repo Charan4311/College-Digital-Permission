@@ -9,7 +9,6 @@ import {
 } from 'react-icons/fi';
 
 import DashboardLayout from '../components/DashboardLayout';
-import CTPOMobileNav from '../components/CTPOMobileNav';
 import api from '../lib/api';
 
 export default function CTPOPending() {
@@ -462,14 +461,13 @@ export default function CTPOPending() {
         <div className="ctpo-page-header">
 
           <div className="ctpo-pending-title-row">
-            <CTPOMobileNav />
             <div>
-              <h1>
-                Pending Requests
+              <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>
+                Pending Approvals
               </h1>
 
-              <p>
-                Requests waiting for your approval
+              <p style={{ color: '#64748b', fontSize: '13px', margin: '4px 0 0' }}>
+                Requests waiting for your verification
               </p>
             </div>
           </div>

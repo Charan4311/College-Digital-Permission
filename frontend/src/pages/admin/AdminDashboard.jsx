@@ -168,8 +168,8 @@ export default function AdminDashboard() {
 
         {/* Card 2: 2nd Year Students */}
         <div style={{
-          background: '#F0FDF4',
-          border: '1px solid #DCFCE7',
+          background: '#EFF6FF',
+          border: '1px solid #DBEAFE',
           borderRadius: '16px',
           padding: '22px 24px',
           display: 'flex',
@@ -181,26 +181,26 @@ export default function AdminDashboard() {
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-2px)';
           e.currentTarget.style.boxShadow = '0 6px 18px rgba(15,23,42,0.08)';
-          e.currentTarget.style.borderColor = '#bfdbfe';
+          e.currentTarget.style.borderColor = '#93C5FD';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.borderColor = '#DCFCE7';
+          e.currentTarget.style.borderColor = '#DBEAFE';
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: '#DCFCE7',
+              backgroundColor: '#DBEAFE',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <GraduationCap size={20} color="#10B981" />
+              <GraduationCap size={20} color="#3B82F6" />
             </div>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#166534' }}>2nd Year Students</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#1D4ED8' }}>2nd Year Students</span>
           </div>
           <div style={{ marginTop: '12px' }}>
             <div style={{ fontSize: '32px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
@@ -335,7 +335,7 @@ export default function AdminDashboard() {
             {/* Custom Legend */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', fontWeight: 600, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#3B82F6' }} />
                 <span>2nd Year</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569' }}>
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
                   name === 'year2' ? '2nd Year' : name === 'year3' ? '3rd Year' : '4th Year'
                 ]}
               />
-              <Bar dataKey="year2" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={32}>
+              <Bar dataKey="year2" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={32}>
                 {isDesktop && <LabelList className="chart-bar-label" dataKey="year2" position="top" style={{ fontSize: '11px', fontWeight: 700, fill: '#475569' }} />}
               </Bar>
               <Bar dataKey="year3" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32}>

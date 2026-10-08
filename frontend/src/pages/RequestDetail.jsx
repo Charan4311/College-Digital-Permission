@@ -3,8 +3,18 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import StatusBadge from '../components/StatusBadge';
+import DocumentViewer from '../components/DocumentViewer';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import {
+  formatDate,
+  formatDateTime,
+  formatTime,
+  formatDuration,
+  formatCurrency,
+  getOrdinalYear,
+  getResidenceTypeLabel
+} from '../lib/utils';
 import {
   ArrowLeft,
   QrCode,
@@ -50,105 +60,166 @@ function getWorkflowChain(request) {
   if (type === 'MESS_FEE') return ['CTPO', 'HOD'];
   if (type === 'INTERNSHIP') return ['CTPO', 'HOD', 'PLACEMENT_OFFICER'];
   if (type === 'LIBRARY') return ['CTPO'];
-  // OUTPASS:
   return ['CTPO', 'HOD'];
 }
-
-
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   ATTACHED DOCUMENT URL
-   Uploaded files are served by the backend, not the Vite frontend.
-   This converts a relative file URL such as /uploads/file.jpg
-   into the backend URL such as http://localhost:5000/uploads/file.jpg.
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const getDocumentUrl = (documentUrl) => {
-  if (!documentUrl) return '';
-
-  // If the backend already returned a complete URL, use it directly.
-  if (/^https?:\/\//i.test(documentUrl)) {
-    return documentUrl;
-  }
-
-  // Use the Axios backend URL when available.
-  // If it ends in /api, remove that suffix because uploaded files
-  // are served from the backend root (/uploads/...).
-  let backendBaseUrl = api?.defaults?.baseURL || '';
-
-  if (backendBaseUrl) {
-    backendBaseUrl = backendBaseUrl.replace(/\/api\/?$/, '');
-  }
-
-  // Fallback for the current local development setup.
-  if (!backendBaseUrl) {
-    backendBaseUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
-  }
-
-  const path = documentUrl.startsWith('/')
-    ? documentUrl
-    : `/${documentUrl}`;
-
-  return `${backendBaseUrl}${path}`;
-};
 
 function Timeline({ steps, status, request }) {
   const chain = getWorkflowChain(request);
 
   return (
-    <div className="timeline">
+    <div className="timeline" style={{ width: '100%' }}>
       {chain.map((role, i) => {
         const step = steps.find(s => s.role === role);
         const pendingStatus = `PENDING_${role}`;
-        const isPending = status === pendingStatus;
+        const isPending = status === pendingStatus || (role === 'HOD' && status === 'PENDING_HOD_APPROVAL');
         const isWaiting = !step && !isPending;
         const dotClass = step
           ? (step.decision === 'APPROVED' ? 'approved' : 'rejected')
           : isPending ? 'pending' : 'waiting';
 
+        const defaultApproverName =
+          role === 'CTPO'
+            ? 'CTPO Approver'
+            : role === 'HOD'
+            ? 'Head of Department'
+            : role === 'HOSTEL_INCHARGE'
+            ? 'Hostel Warden'
+            : role === 'PLACEMENT_OFFICER'
+            ? 'Placement Officer'
+            : 'Authorized Staff';
+
+        const approverName = step?.approverUserId?.name || defaultApproverName;
+
         return (
-          <div className="timeline-item" key={role}>
-            <div className="timeline-line">
-              <div className={`timeline-dot ${dotClass}`} />
-              {i < chain.length - 1 && <div className="timeline-connector" />}
+          <div
+            className="timeline-item"
+            key={role}
+            style={{
+              paddingBottom: i === chain.length - 1 ? 0 : '24px',
+              display: 'flex',
+              gap: '16px',
+              position: 'relative'
+            }}
+          >
+            <div className="timeline-line" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div
+                className={`timeline-dot ${dotClass}`}
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '50%',
+                  marginTop: '4px',
+                  flexShrink: 0
+                }}
+              />
+              {i < chain.length - 1 && (
+                <div
+                  className="timeline-connector"
+                  style={{
+                    width: '2px',
+                    flex: 1,
+                    background: '#e2e8f0',
+                    marginTop: '6px',
+                    minHeight: '36px'
+                  }}
+                />
+              )}
             </div>
-            <div className="timeline-content">
-              <div className="timeline-role" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="timeline-content" style={{ flex: 1, paddingLeft: '4px' }}>
+              <div
+                className="timeline-role"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  color: '#0f172a'
+                }}
+              >
                 <span>{ROLE_STEP_LABELS[role]}</span>
                 {isPending && (
-                  <span style={{
-                    fontSize: 11,
-                    color: 'var(--yellow)',
-                    background: 'var(--yellow-dim)',
-                    padding: '2px 8px',
-                    borderRadius: '20px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      color: '#b45309',
+                      background: '#fef3c7',
+                      border: '1px solid #fde68a',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontWeight: 600
+                    }}
+                  >
                     <Clock size={11} /> Awaiting Decision
                   </span>
                 )}
                 {isWaiting && !step && (
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Waiting in queue</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Waiting in queue</span>
                 )}
               </div>
+
               {step && (
-                <div style={{ marginTop: '4px' }}>
-                  <div className="timeline-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                <div style={{ marginTop: '6px' }}>
+                  <div
+                    className="timeline-meta"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '13px',
+                      color: '#475569',
+                      flexWrap: 'wrap'
+                    }}
+                  >
                     {step.decision === 'APPROVED' ? (
-                      <span style={{ color: 'var(--green)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                        <CheckCircle2 size={13} /> Approved
+                      <span
+                        style={{
+                          color: '#059669',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontWeight: 700
+                        }}
+                      >
+                        <CheckCircle2 size={15} /> Approved
                       </span>
                     ) : (
-                      <span style={{ color: 'var(--red)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                        <XCircle size={13} /> Rejected
+                      <span
+                        style={{
+                          color: '#dc2626',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontWeight: 700
+                        }}
+                      >
+                        <XCircle size={15} /> Rejected
                       </span>
                     )}
-                    <span>by <strong>{step.approverUserId?.name || 'Authorized Staff'}</strong></span>
-                    <span>Â·</span>
-                    <span>{new Date(step.decidedAt).toLocaleString('en-IN')}</span>
+                    <span>
+                      by <strong>{approverName}</strong>
+                    </span>
+                    <span>•</span>
+                    <span>{formatDateTime(step.decidedAt)}</span>
                   </div>
                   {step.remarks && (
-                    <div className="timeline-remarks" style={{ marginTop: '6px', fontStyle: 'italic', background: '#f8fafc', padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <div
+                      className="timeline-remarks"
+                      style={{
+                        marginTop: '10px',
+                        fontStyle: 'italic',
+                        background: '#f8fafc',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        color: '#334155',
+                        fontSize: '13px',
+                        lineHeight: '1.5'
+                      }}
+                    >
                       "{step.remarks}"
                     </div>
                   )}
@@ -183,7 +254,6 @@ export default function RequestDetail() {
   const [resubmitForm, setResubmitForm] = useState({});
   const [resubmitting, setResubmitting] = useState(false);
   const [resubmitError, setResubmitError] = useState('');
-  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // Document View Modal State
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
@@ -204,6 +274,8 @@ export default function RequestDetail() {
   }, [id]);
 
   const fetchQR = useCallback(async () => {
+    // Only student or security can fetch QR
+    if (user?.role !== 'STUDENT' && user?.role !== 'SECURITY') return;
     setQrLoading(true);
     try {
       const res = await api.get(`/outpass/${id}/qr`);
@@ -213,131 +285,84 @@ export default function RequestDetail() {
     } finally {
       setQrLoading(false);
     }
-  }, [id]);
+  }, [id, user?.role]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   useEffect(() => {
-    if (data?.request?.status === 'ISSUED' && !qrImage) {
+    if (data?.request?.status === 'ISSUED' && !qrImage && (user?.role === 'STUDENT' || user?.role === 'SECURITY')) {
       fetchQR();
     }
-  }, [data?.request?.status, qrImage, fetchQR]);
+  }, [data?.request?.status, qrImage, fetchQR, user?.role]);
 
   const handleOpenResubmit = () => {
     const req = data.request;
     setResubmitForm({
       reason: req.reason || '',
       outDate: req.outDate ? new Date(req.outDate).toISOString().split('T')[0] : '',
-      outTime: req.outTime || '17:00',
+      outTime: req.outTime || '09:00 AM',
       expectedReturnDate: req.expectedReturnDate ? new Date(req.expectedReturnDate).toISOString().split('T')[0] : '',
-      expectedReturnTime: req.expectedReturnTime || '20:00',
       emergencyContact: req.emergencyContact || '',
       startDate: req.startDate ? new Date(req.startDate).toISOString().split('T')[0] : '',
       endDate: req.endDate ? new Date(req.endDate).toISOString().split('T')[0] : '',
       messAmount: req.messAmount ?? '',
-      paidStatus: req.paidStatus || 'Paid',
       companyName: req.companyName || '',
       companyLocation: req.companyLocation || '',
       role: req.role || '',
       internshipMode: req.internshipMode || 'Offline',
-      requestDate: req.requestDate ? new Date(req.requestDate).toISOString().split('T')[0] : '',
       documentUrl: req.documentUrl || '',
-      documentName: req.documentName || '',
-      resubmitRemarks: ''
+      documentName: req.documentName || ''
     });
     setResubmitError('');
     setResubmitModalOpen(true);
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    setUploadingDoc(true);
-    try {
-      const res = await api.post('/outpass/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setResubmitForm(f => ({
-        ...f,
-        documentUrl: res.data.data.fileUrl,
-        documentName: res.data.data.fileName
-      }));
-    } catch (err) {
-      setResubmitError(err.response?.data?.message || 'File upload failed');
-    } finally {
-      setUploadingDoc(false);
-    }
-  };
-
   const handleResubmitSubmit = async (e) => {
     e.preventDefault();
-    setResubmitError('');
     setResubmitting(true);
+    setResubmitError('');
     try {
       await api.post(`/outpass/${id}/resubmit`, resubmitForm);
+      toast.success('Request updated and resubmitted for verification!');
       setResubmitModalOpen(false);
       fetchData();
     } catch (err) {
-      setResubmitError(err.response?.data?.message || 'Failed to resubmit request');
+      setResubmitError(err?.response?.data?.message || 'Failed to resubmit request.');
     } finally {
       setResubmitting(false);
     }
   };
 
-  // Approver Approve
   const handleApproverApprove = async () => {
-    setApproverActionError('');
     setApproverActionLoading(true);
-
+    setApproverActionError('');
     try {
-      await api.post(`/outpass/${id}/approve`, {
-        remarks: 'Approved'
-      });
-
-      await fetchData();
-      setApproverRemarks('');
-      setRejectModalOpen(false);
-      toast.success('Request approved successfully');
+      await api.post(`/outpass/${id}/approve`, { remarks: approverRemarks });
+      toast.success('Permission request approved successfully!');
+      fetchData();
     } catch (err) {
-      setApproverActionError(
-        err.response?.data?.message || 'Failed to approve request'
-      );
+      setApproverActionError(err?.response?.data?.message || 'Failed to approve request.');
     } finally {
       setApproverActionLoading(false);
     }
   };
 
-  // Approver Reject
   const handleApproverReject = async () => {
-    const remarks = approverRemarks.trim();
-
-    if (!remarks) {
-      setApproverActionError(
-        'Please enter remarks before rejecting the request.'
-      );
+    if (!approverRemarks.trim()) {
+      setApproverActionError('Please provide a reason for rejecting this request.');
       return;
     }
-
-    setApproverActionError('');
     setApproverActionLoading(true);
-
+    setApproverActionError('');
     try {
-      await api.post(`/outpass/${id}/reject`, {
-        remarks
-      });
-
-      await fetchData();
-      setApproverRemarks('');
+      await api.post(`/outpass/${id}/reject`, { remarks: approverRemarks });
+      toast.success('Request rejected.');
       setRejectModalOpen(false);
-      toast.success('Request rejected successfully');
+      fetchData();
     } catch (err) {
-      setApproverActionError(
-        err.response?.data?.message || 'Failed to reject request'
-      );
+      setApproverActionError(err?.response?.data?.message || 'Failed to reject request.');
     } finally {
       setApproverActionLoading(false);
     }
@@ -347,1125 +372,641 @@ export default function RequestDetail() {
     window.print();
   };
 
-  if (loading) return (
-    <DashboardLayout>
-      <div className="loading-screen"><div className="spinner spinner-lg" /></div>
-    </DashboardLayout>
-  );
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="loading-screen"><div className="spinner spinner-lg" /></div>
+      </DashboardLayout>
+    );
+  }
 
-  if (!data) return (
-    <DashboardLayout>
-      <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <AlertTriangle size={16} />
-        <span>Request not found</span>
-      </div>
-    </DashboardLayout>
-  );
+  if (!data?.request) {
+    return (
+      <DashboardLayout>
+        <div className="empty-state">
+          <div className="empty-title">Request Not Found</div>
+          <div className="empty-subtitle">The requested permission could not be located.</div>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)} style={{ marginTop: 16 }}>
+            <ArrowLeft size={16} /> Go Back
+          </button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const { request, approvalSteps } = data;
+  const isOwner = user?.role === 'STUDENT' && request.studentId?._id === user?.id;
+  const isStudent = user?.role === 'STUDENT';
+  const isSecurity = user?.role === 'SECURITY';
+
+  // Check if current user is the active approver
+  let showApproverApprovalActions = false;
+  let approverTitle = 'Review & Action';
+
+  if (user?.role === 'CTPO' && request.status === 'PENDING_CTPO') {
+    showApproverApprovalActions = true;
+    approverTitle = 'CTPO Verification Action';
+  } else if (user?.role === 'HOD' && (request.status === 'PENDING_HOD' || request.status === 'PENDING_HOD_APPROVAL')) {
+    showApproverApprovalActions = true;
+    approverTitle = 'HOD Authorization Action';
+  } else if (user?.role === 'HOSTEL_INCHARGE' && request.status === 'PENDING_HOSTEL_INCHARGE') {
+    showApproverApprovalActions = true;
+    approverTitle = 'Hostel Warden Clearance Action';
+  } else if (user?.role === 'PLACEMENT_OFFICER' && request.status === 'PENDING_PLACEMENT_OFFICER') {
+    showApproverApprovalActions = true;
+    approverTitle = 'Placement Officer Authorization Action';
+  }
+
   const reqType = request.requestType || 'OUTPASS';
-  const student = request?.student || request?.studentDetails || request?.studentId || request?.user || request?.applicant || {};
-  const studentName = request?.studentName || student?.name || student?.fullName || student?.studentName || 'Unknown Student';
-  const rollNo = request?.rollNo || request?.rollNumber || student?.rollNo || student?.rollNumber || '-';
-  const branchName = request?.branchName || request?.branchId?.name || student?.branchName || student?.branch?.name || 'CSM';
-  const isOwner = user?.role === 'STUDENT' && (request.studentId?._id === user?.id || request.studentId === user?.id || student?._id === user?.id);
-  const reasonDisplay = user?.role === 'HOSTEL_INCHARGE'
-    ? String(request.reason || '').replace(/(?:\s*[-,;|:]\s*)?\bA\+/g, '').replace(/\s+/g, ' ').trim()
-    : request.reason;
-  const isApprovedOrIssued = request.status === 'APPROVED' || request.status === 'ISSUED' || request.status === 'USED';
+  const studentName = request.studentId?.name || 'Student';
+  const rollNo = request.studentId?.rollNo || 'N/A';
+  const branchName = request.branchId?.name || request.branchId?.code || 'Engineering';
+  const residence = getResidenceTypeLabel(request.studentId?.residenceType);
+  const refId = request.referenceId || `KDP-${new Date(request.createdAt).getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}`;
 
-  const isApproverPending =
-    (user?.role === 'CTPO' && (request.status === 'PENDING_CTPO' || request.status === 'PENDING CTPO' || request.status === 'PENDING_CTPO_APPROVAL')) ||
-    (user?.role === 'HOD' &&
-      (request.status === 'PENDING_HOD' ||
-        request.status === 'PENDING_HOD_APPROVAL')) ||
-    (user?.role === 'HOSTEL_INCHARGE' &&
-      request.status === 'PENDING_HOSTEL_INCHARGE') ||
-    (user?.role === 'PLACEMENT_OFFICER' &&
-      request.requestType === 'INTERNSHIP' &&
-      request.status === 'PENDING_PLACEMENT_OFFICER');
-
-  // Approval actions are shown only when the request was opened
-  // from a Pending Requests / approval queue using ?mode=approval.
-  // Review/history/overview pages remain read-only.
-  const isApprovalMode = searchParams.get('mode') === 'approval';
-  const showApproverApprovalActions =
-    isApproverPending && isApprovalMode;
-
-  const approverTitle =
-    user?.role === 'PLACEMENT_OFFICER'
-      ? 'Placement Officer Approval'
-      : user?.role === 'HOSTEL_INCHARGE'
-        ? 'Hostel In-charge Approval'
-        : user?.role === 'CTPO'
-          ? 'CTPO Approval'
-          : 'HOD Approval';
-
-  // Compute clean Reference ID
-  const refId = (request.referenceId || `KDP-${new Date(request.createdAt).getFullYear()}-${request._id.toString().slice(-6).toUpperCase()}`).replace(/^PERM-/i, 'KDP-');
-
-  // Permission type label
-  const getPermissionTypeLabel = () => {
-    if (reqType === 'OUTPASS') return 'Out-Pass';
-    if (reqType === 'MESS_FEE') return 'Mess Fee Clearance';
-    if (reqType === 'INTERNSHIP') return 'Internship Permission';
-    if (reqType === 'LIBRARY') return 'Library Permission';
-    return 'Digital Permission';
-  };
+  const pageHeadingTitle =
+    reqType === 'OUTPASS'
+      ? 'Out-Pass Details'
+      : reqType === 'MESS_FEE'
+      ? 'Mess Fee Clearance Details'
+      : reqType === 'INTERNSHIP'
+      ? 'Internship Permission Details'
+      : 'Library Clearance Details';
 
   return (
     <DashboardLayout>
-      {/* Top Navigation Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => navigate(-1)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back</span>
-          </button>
-          <div className="page-title" style={{ margin: 0 }}>
-            {getPermissionTypeLabel()} Details
-          </div>
-          <StatusBadge status={request.status} />
-        </div>
-
-        {/* Action Button: View Official Slip Modal (Available whenever Approved or Issued) */}
-        {isApprovedOrIssued && user?.role !== 'HOD' && (
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setPrintModalOpen(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Printer size={15} />
-            <span>View Official Permission Document</span>
-          </button>
-        )}
-      </div>
-
-      {/* Rejection Alert Banner with Edit & Resubmit Button */}
-      {request.status.startsWith('REJECTED') && (
-        <div style={{
-          background: '#fef2f2',
-          border: '1px solid #fca5a5',
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginBottom: '24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#ef4444',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <XCircle size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: '#991b1b' }}>
-                Request Rejected by {request.rejectedByRole || 'Approver'}
-              </div>
-              <div style={{ fontSize: '13px', color: '#b91c1c', marginTop: '2px' }}>
-                <strong>Remarks:</strong> {request.rejectionReason || 'Please review required documentation and correct details.'}
-              </div>
-            </div>
-          </div>
-
-          {isOwner && (
+      <div style={{ width: '100%', paddingBottom: '40px' }}>
+        {/* Top Header matching reference design */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '24px',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}
+        >
+          {/* Left: Back button + Title + Status Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <button
-              className="btn btn-primary btn-sm"
-              onClick={handleOpenResubmit}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#dc2626', borderColor: '#b91c1c' }}
-            >
-              <Edit3 size={14} />
-              <span>Edit & Resubmit Request</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        {/* Left Column: Permission Details & Attachments */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="card">
-            <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '16px', justifyContent: 'flex-start' }}>
-              {reqType === 'OUTPASS' && <FileText size={18} color="var(--accent)" />}
-              {reqType === 'MESS_FEE' && <Receipt size={18} color="var(--green)" />}
-              {reqType === 'INTERNSHIP' && <Briefcase size={18} color="#10b981" />}
-              {reqType === 'LIBRARY' && <BookOpen size={18} color="var(--yellow)" />}
-              <div className="card-title" style={{ margin: 0 }}>Permission Details</div>
-            </div>
-
-            <div style={{ display: 'grid', gap: '14px' }}>
-              <Row icon={Sparkles} label="Reference ID" value={<code>{refId}</code>} />
-              <Row icon={User} label="Student Name" value={`${studentName} (${rollNo})`} />
-              <Row icon={Building} label="Department" value={branchName} />
-              <Row icon={Calendar} label="Academic Year" value={`Year ${request.year || 4}`} />
-              <Row icon={FileText} label="Reason / Purpose" value={reasonDisplay} />
-
-              {/* OUTPASS specifics */}
-              {reqType === 'OUTPASS' && (
-                <>
-                  <Row icon={Calendar} label="Out Date & Time" value={`${new Date(request.outDate).toLocaleDateString('en-IN')} at ${request.outTime}`} />
-                  <Row icon={Clock} label="Return Date & Time" value={`${new Date(request.expectedReturnDate).toLocaleDateString('en-IN')} at ${request.expectedReturnTime}`} />
-                  {request.emergencyContact && (
-                    <Row icon={Phone} label="Emergency Contact" value={request.emergencyContact} />
-                  )}
-                </>
-              )}
-
-              {/* MESS_FEE specifics */}
-              {reqType === 'MESS_FEE' && (
-                <>
-                  <Row icon={IndianRupee} label="Mess Amount" value={`₹${request.messAmount?.toLocaleString('en-IN') || 0}`} />
-                  <Row icon={CheckCircle2} label="Payment Status" value={request.paidStatus} />
-                  <Row icon={Calendar} label="Period Range" value={`${new Date(request.startDate).toLocaleDateString('en-IN')} to ${new Date(request.endDate).toLocaleDateString('en-IN')}`} />
-                </>
-              )}
-
-              {/* INTERNSHIP specifics */}
-              {reqType === 'INTERNSHIP' && (
-                <>
-                  <Row icon={Building} label="Company Name" value={request.companyName} />
-                  <Row icon={MapPin} label="Company Location" value={request.companyLocation} />
-                  <Row icon={Briefcase} label="Internship Role" value={request.role} />
-                  <Row icon={Laptop} label="Work Mode" value={request.internshipMode} />
-                  <Row icon={Calendar} label="Duration" value={`${new Date(request.startDate).toLocaleDateString('en-IN')} to ${new Date(request.endDate).toLocaleDateString('en-IN')}`} />
-                </>
-              )}
-
-              {/* LIBRARY specifics */}
-              {reqType === 'LIBRARY' && (
-                <Row icon={Calendar} label="Access Date" value={new Date(request.requestDate || request.createdAt).toLocaleDateString('en-IN')} />
-              )}
-
-              {/* Attached Document Row */}
-              {request.documentUrl && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
-                  <span style={{ minWidth: 150, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Paperclip size={14} color="var(--accent)" />
-                    <span>Attached Document</span>
-                  </span>
-                  <button
-                    onClick={() => setDocumentModalOpen(true)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      color: 'var(--accent)',
-                      background: 'var(--accent-dim)',
-                      border: 'none',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      cursor: 'pointer'
-                    }}
-                    title="Open attached document"
-                  >
-                    <span>{request.documentName || 'View Document'}</span>
-                  </button>
-                </div>
-              )}
-
-              <Row icon={Clock} label="Submitted On" value={new Date(request.createdAt).toLocaleString('en-IN')} />
-              {request.resubmitCount > 0 && (
-                <Row icon={Sparkles} label="Resubmission Cycle" value={`Cycle #${request.resubmitCount}`} />
-              )}
-            </div>
-          </div>
-
-          {/* QR Code Pass Card for Outpass */}
-          {reqType === 'OUTPASS' && request.status === 'ISSUED' && user?.role !== 'CTPO' && (
-            <div className="card" style={{ textAlign: 'center', border: '1px solid var(--green)' }}>
-              <div className="card-title" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--green)' }}>
-                <QrCode size={20} />
-                <span>Authorized Out-Pass QR Code</span>
-              </div>
-              <div className="alert alert-info" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <ShieldCheck size={16} />
-                <span>Show this QR code to the security gate guard upon exit. Only outpass requires security verification.</span>
-              </div>
-              {qrLoading ? (
-                <div className="loading-screen"><div className="spinner spinner-lg" /></div>
-              ) : qrImage ? (
-                <div className="qr-container" style={{ background: '#fff', padding: '16px', borderRadius: '12px', display: 'inline-block', margin: '0 auto 12px auto' }}>
-                  <img src={qrImage.qrImage} alt="Out-pass QR" className="qr-image" style={{ width: 220, height: 220, display: 'block' }} />
-                  <div style={{ fontSize: '12px', color: '#1f2937', marginTop: '8px', fontWeight: 600 }}>
-                    Token: <code>{qrImage.token.slice(0, 18)}...</code>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
-                    Valid until {new Date(qrImage.expiresAt).toLocaleDateString('en-IN')} 23:59
-                  </div>
-                </div>
-              ) : (
-                <button className="btn btn-primary" onClick={fetchQR}>Generate / Load QR Code</button>
-              )}
-            </div>
-          )}
-
-          {reqType === 'OUTPASS' && request.status === 'USED' && (
-            <div className="card" style={{ border: '1px solid var(--green)' }}>
-              <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={18} />
-                <span>This out-pass has been verified and used at the campus security gate. Exit recorded.</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Approval Timeline */}
-        <div className="card">
-          <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '20px', justifyContent: 'flex-start' }}>
-            <ShieldCheck size={18} color="var(--purple)" />
-            <div className="card-title" style={{ margin: 0 }}>Approval Workflow Status</div>
-          </div>
-          <Timeline
-            steps={approvalSteps || []}
-            status={request.status}
-            request={request}
-          />
-        </div>
-      </div>
-
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-          APPROVAL ACTIONS
-      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      {showApproverApprovalActions && (
-        <>
-          <div
-            className="card"
-            style={{
-              marginTop: '24px',
-              border: '1px solid var(--border)'
-            }}
-          >
-            <div
-              className="card-header"
+              onClick={() => navigate(-1)}
+              type="button"
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                marginBottom: '20px'
+                gap: '6px',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                background: '#ffffff',
+                color: '#334155',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease'
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#cbd5e1')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
             >
-              <ShieldCheck size={18} color="var(--purple)" />
-              <div className="card-title" style={{ margin: 0 }}>
-                {approverTitle}
-              </div>
-            </div>
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
 
-            {approverActionError && (
-              <div
-                className="alert alert-error"
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <h1
                 style={{
-                  marginBottom: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+                  margin: 0,
+                  fontSize: '22px',
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  letterSpacing: '-0.3px'
                 }}
               >
-                <AlertTriangle size={16} />
-                <span>{approverActionError}</span>
+                {pageHeadingTitle}
+              </h1>
+              <StatusBadge status={request.status} />
+            </div>
+          </div>
+
+          {/* Right: Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Official Institutional Document Button */}
+            {['APPROVED', 'ISSUED', 'CLEARED', 'USED'].includes(request.status) && (
+              <button
+                type="button"
+                onClick={() => setPrintModalOpen(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: '#059669',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(5, 150, 105, 0.25)',
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#047857')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#059669')}
+              >
+                <FileText size={16} />
+                <span>View Official Permission Document</span>
+              </button>
+            )}
+
+            {/* Resubmit button for student if rejected */}
+            {isOwner && String(request.status).startsWith('REJECT') && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleOpenResubmit}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Edit3 size={15} />
+                <span>Edit & Resubmit</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 2-Column Responsive Layout spanning full width */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+            gap: '24px',
+            alignItems: 'start',
+            width: '100%'
+          }}
+        >
+          {/* Left Column: Permission Details & Status/QR */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="card" style={{ padding: '24px 28px' }}>
+              <div
+                className="card-header"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '20px',
+                  borderBottom: '1px solid #f1f5f9',
+                  paddingBottom: '14px'
+                }}
+              >
+                {reqType === 'OUTPASS' && <FileText size={19} color="#059669" />}
+                {reqType === 'MESS_FEE' && <Receipt size={19} color="#059669" />}
+                {reqType === 'INTERNSHIP' && <Briefcase size={19} color="#059669" />}
+                {reqType === 'LIBRARY' && <BookOpen size={19} color="#059669" />}
+                <div className="card-title" style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+                  Permission Details
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gap: '16px' }}>
+                <Row icon={Sparkles} label="Reference ID" value={<code>{refId}</code>} />
+                <Row icon={User} label="Student Name" value={`${studentName} (${rollNo})`} />
+                <Row icon={Building} label="Department" value={branchName} />
+                <Row
+                  icon={Calendar}
+                  label="Academic Year"
+                  value={
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <span>{getOrdinalYear(request.year || request.studentId?.year)}</span>
+                      {residence !== 'Not set' && (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            background: residence === 'Hosteller' ? '#ede9fe' : '#ecfdf5',
+                            color: residence === 'Hosteller' ? '#6d28d9' : '#059669'
+                          }}
+                        >
+                          {residence}
+                        </span>
+                      )}
+                    </span>
+                  }
+                />
+                <Row icon={FileText} label="Reason / Purpose" value={request.reason} />
+
+                {/* OUTPASS specifics */}
+                {reqType === 'OUTPASS' && (
+                  <>
+                    <Row
+                      icon={Calendar}
+                      label="Out Date & Time"
+                      value={
+                        request.outTime
+                          ? `${formatDate(request.outDate)} at ${formatTime(request.outTime)}`
+                          : formatDate(request.outDate)
+                      }
+                    />
+                    <Row
+                      icon={Calendar}
+                      label="Return Date & Time"
+                      value={
+                        request.expectedReturnTime || request.returnTime
+                          ? `${formatDate(request.expectedReturnDate)} at ${formatTime(request.expectedReturnTime || request.returnTime)}`
+                          : formatDate(request.expectedReturnDate)
+                      }
+                    />
+                    {request.emergencyContact && (
+                      <Row icon={Phone} label="Emergency Contact" value={request.emergencyContact} />
+                    )}
+                  </>
+                )}
+
+                {/* MESS_FEE specifics */}
+                {reqType === 'MESS_FEE' && (
+                  <>
+                    <Row icon={IndianRupee} label="Mess Amount" value={formatCurrency(request.messAmount)} />
+                    <Row icon={CheckCircle2} label="Payment Status" value={request.paidStatus || 'Paid'} />
+                    <Row icon={Calendar} label="Period Range" value={formatDuration(request.startDate, request.endDate)} />
+                  </>
+                )}
+
+                {/* INTERNSHIP specifics */}
+                {reqType === 'INTERNSHIP' && (
+                  <>
+                    <Row icon={Building} label="Company Name" value={request.companyName || '-'} />
+                    <Row icon={MapPin} label="Company Location" value={request.companyLocation || '-'} />
+                    <Row icon={Briefcase} label="Internship Role" value={request.role || '-'} />
+                    <Row icon={Laptop} label="Work Mode" value={request.internshipMode || 'Offline'} />
+                    <Row icon={Calendar} label="Duration" value={formatDuration(request.startDate, request.endDate)} />
+                  </>
+                )}
+
+                {/* LIBRARY specifics */}
+                {reqType === 'LIBRARY' && (
+                  <Row icon={Calendar} label="Access Date" value={formatDate(request.requestDate || request.createdAt)} />
+                )}
+
+                {/* Attached Document */}
+                {request.documentUrl && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginTop: '6px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid #f1f5f9'
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 170,
+                        flexShrink: 0,
+                        fontSize: 13,
+                        color: '#64748b',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <Paperclip size={15} color="#059669" />
+                      <span>Attached Document</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDocumentModalOpen(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: '#059669',
+                        background: '#ecfdf5',
+                        border: '1px solid #a7f3d0',
+                        padding: '5px 12px',
+                        borderRadius: '6px',
+                        cursor: 'pointer'
+                      }}
+                      title="Open attached document"
+                    >
+                      <span>{request.documentName || 'View Document'}</span>
+                    </button>
+                  </div>
+                )}
+
+                <Row icon={Clock} label="Submitted On" value={formatDateTime(request.createdAt)} />
+                {request.resubmitCount > 0 && (
+                  <Row icon={Sparkles} label="Resubmission Cycle" value={`Cycle #${request.resubmitCount}`} />
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Status Banner for Used Passes */}
+            {reqType === 'OUTPASS' && request.status === 'USED' && (
+              <div
+                style={{
+                  padding: '16px 20px',
+                  background: '#f0fdf4',
+                  border: '1px solid #a7f3d0',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  color: '#047857',
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  boxShadow: '0 1px 3px rgba(16, 185, 129, 0.08)'
+                }}
+              >
+                <CheckCircle2 size={20} color="#059669" style={{ flexShrink: 0 }} />
+                <span>This out-pass has been verified and used at the campus security gate. Exit recorded.</span>
               </div>
             )}
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '12px',
-                width: '100%'
-              }}
-            >
-              {/* APPROVE BUTTON */}
-              <button
-                type="button"
-                className="btn"
-                onClick={handleApproverApprove}
-                disabled={approverActionLoading}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '7px',
-                  width: '154px',
-                  height: '44px',
-                  padding: '0',
-                  borderRadius: '8px',
-                  background: '#16a34a',
-                  color: '#fff',
-                  border: '1px solid #16a34a',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                  cursor: approverActionLoading ? 'not-allowed' : 'pointer',
-                  opacity: approverActionLoading ? 0.65 : 1
-                }}
-              >
-                {approverActionLoading ? 'Processing...' : 'Approve'}
-              </button>
-
-              {/* REJECT BUTTON */}
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setApproverRemarks('');
-                  setApproverActionError('');
-                  setRejectModalOpen(true);
-                }}
-                disabled={approverActionLoading}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '7px',
-                  width: '154px',
-                  height: '44px',
-                  padding: '0',
-                  borderRadius: '8px',
-                  background: '#dc2626',
-                  color: '#fff',
-                  border: '1px solid #dc2626',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                  cursor: approverActionLoading ? 'not-allowed' : 'pointer',
-                  opacity: approverActionLoading ? 0.65 : 1
-                }}
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-
-          {/* Reject Remarks Popup */}
-          {rejectModalOpen && (
-            <div
-              className="modal-overlay"
-              onClick={(e) => {
-                if (e.target === e.currentTarget && !approverActionLoading) {
-                  setRejectModalOpen(false);
-                  setApproverRemarks('');
-                  setApproverActionError('');
-                }
-              }}
-              style={{
-                zIndex: 1000,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <div
-                className="modal"
-                style={{
-                  width: 'min(520px, calc(100vw - 32px))',
-                  maxWidth: '520px',
-                  padding: '24px',
-                  borderRadius: '14px'
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '18px'
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px'
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '10px',
-                        background: '#fee2e2',
-                        color: '#dc2626',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <XCircle size={20} />
+            {/* QR Code Pass Card: ONLY visible to Student and Security */}
+            {reqType === 'OUTPASS' && (request.status === 'ISSUED' || request.status === 'APPROVED') && (isStudent || isSecurity) && (
+              <div className="card" style={{ textAlign: 'center', border: '1px solid #10b981', padding: '24px 28px' }}>
+                <div className="card-title" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#059669' }}>
+                  <QrCode size={20} />
+                  <span>Authorized Out-Pass QR Code</span>
+                </div>
+                <div className="alert alert-info" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px' }}>
+                  <ShieldCheck size={16} />
+                  <span>Present this QR code or short pass code to security upon exit.</span>
+                </div>
+                {qrLoading ? (
+                  <div className="loading-screen"><div className="spinner spinner-lg" /></div>
+                ) : qrImage ? (
+                  <div className="qr-container" style={{ background: '#fff', padding: '16px', borderRadius: '12px', display: 'inline-block', margin: '0 auto 8px auto', border: '1px solid #e2e8f0' }}>
+                    <img src={qrImage.qrImage} alt="Out-pass QR" className="qr-image" style={{ width: 200, height: 200, display: 'block', margin: '0 auto' }} />
+                    <div style={{ fontSize: '15px', color: '#059669', marginTop: '10px', fontWeight: 800, letterSpacing: '1px' }}>
+                      Pass Code: <code>{qrImage.shortCode || request.shortCode || qrImage.token?.slice(0, 8)?.toUpperCase()}</code>
                     </div>
-
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '16px',
-                          fontWeight: 700,
-                          color: 'var(--text-primary)'
-                        }}
-                      >
-                        Reject Request
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '12px',
-                          color: 'var(--text-muted)',
-                          marginTop: '2px'
-                        }}
-                      >
-                        Enter a reason before rejecting this request.
-                      </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                      Valid until {formatDate(qrImage.expiresAt || request.expectedReturnDate)} 11:59 PM
                     </div>
                   </div>
+                ) : (
+                  <button className="btn btn-primary" onClick={fetchQR}>Load Pass Code</button>
+                )}
+              </div>
+            )}
+          </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (approverActionLoading) return;
-                      setRejectModalOpen(false);
-                      setApproverRemarks('');
-                      setApproverActionError('');
-                    }}
-                    disabled={approverActionLoading}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: approverActionLoading ? 'not-allowed' : 'pointer',
-                      color: 'var(--text-muted)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '4px'
-                    }}
-                    aria-label="Close"
-                  >
-                    <X size={20} />
-                  </button>
+          {/* Right Column: Approval Timeline & Action Box */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="card" style={{ padding: '24px 28px' }}>
+              <div
+                className="card-header"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '20px',
+                  borderBottom: '1px solid #f1f5f9',
+                  paddingBottom: '14px'
+                }}
+              >
+                <ShieldCheck size={19} color="#6366f1" />
+                <div className="card-title" style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+                  Approval Workflow Status
+                </div>
+              </div>
+              <Timeline
+                steps={approvalSteps || []}
+                status={request.status}
+                request={request}
+              />
+            </div>
+
+            {/* Approver Action Card */}
+            {showApproverApprovalActions && (
+              <div className="card" style={{ border: '1px solid #10b981', padding: '24px 28px' }}>
+                <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <ShieldCheck size={18} color="#059669" />
+                  <div className="card-title" style={{ margin: 0, fontSize: '15px' }}>{approverTitle}</div>
                 </div>
 
                 {approverActionError && (
-                  <div
-                    className="alert alert-error"
-                    style={{
-                      marginBottom: '14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
+                  <div className="alert alert-error" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <AlertTriangle size={16} />
                     <span>{approverActionError}</span>
                   </div>
                 )}
 
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label className="form-label">
-                    Rejection Remarks <span style={{ color: '#dc2626' }}>*</span>
-                  </label>
-
-                  <textarea
+                <div style={{ marginBottom: 16 }}>
+                  <label className="form-label" style={{ fontSize: '12px' }}>Remarks / Comments (Optional for Approval)</label>
+                  <input
+                    type="text"
                     className="form-input"
-                    rows={5}
-                    autoFocus
-                    placeholder="Enter reason for rejecting this request..."
+                    placeholder="Enter any approval remarks..."
                     value={approverRemarks}
-                    onChange={(e) => {
-                      setApproverRemarks(e.target.value);
-                      setApproverActionError('');
-                    }}
-                    disabled={approverActionLoading}
-                    style={{
-                      resize: 'vertical',
-                      minHeight: '120px'
-                    }}
+                    onChange={(e) => setApproverRemarks(e.target.value)}
                   />
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: '10px'
-                  }}
-                >
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     type="button"
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      if (approverActionLoading) return;
-                      setRejectModalOpen(false);
-                      setApproverRemarks('');
-                      setApproverActionError('');
-                    }}
+                    className="btn btn-primary"
+                    onClick={handleApproverApprove}
                     disabled={approverActionLoading}
+                    style={{ flex: 1, height: '42px', fontWeight: 700 }}
                   >
-                    Cancel
+                    {approverActionLoading ? 'Processing...' : 'Approve Permission'}
                   </button>
 
                   <button
                     type="button"
                     className="btn"
-                    onClick={handleApproverReject}
+                    onClick={() => {
+                      setApproverRemarks('');
+                      setApproverActionError('');
+                      setRejectModalOpen(true);
+                    }}
                     disabled={approverActionLoading}
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      background: '#dc2626',
-                      color: '#fff',
-                      border: '1px solid #dc2626',
-                      minWidth: '135px'
+                      height: '42px',
+                      padding: '0 20px',
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                      border: '1px solid #fecaca',
+                      fontWeight: 700,
+                      borderRadius: '8px',
+                      cursor: 'pointer'
                     }}
                   >
-                    {approverActionLoading ? 'Rejecting...' : 'Confirm Reject'}
+                    Reject
                   </button>
                 </div>
               </div>
-            </div>
-          )}
-        </>
-      )}
-      {/* â”€â”€â”€ Edit & Resubmit Modal â”€â”€â”€ */}
-      {resubmitModalOpen && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setResubmitModalOpen(false)}>
-          <div className="modal" style={{ maxWidth: '540px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                <Edit3 size={18} color="var(--accent)" />
-                <span>Edit & Resubmit Request</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setResubmitModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {resubmitError && (
-              <div className="alert alert-error" style={{ marginBottom: '14px', fontSize: '13px' }}>
-                {resubmitError}
-              </div>
             )}
+          </div>
+        </div>
 
-            <form onSubmit={handleResubmitSubmit}>
-              {/* Feature 1: OUTPASS */}
-              {reqType === 'OUTPASS' && (
-                <>
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">Reason</label>
-                    <textarea
-                      required
-                      rows={2}
-                      className="form-input"
-                      value={resubmitForm.reason}
-                      onChange={e => setResubmitForm(f => ({ ...f, reason: e.target.value }))}
-                    />
-                  </div>
-                  <div className="form-grid" style={{ marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Out Date</label>
-                      <input
-                        type="date"
-                        required
-                        className="form-input"
-                        value={resubmitForm.outDate}
-                        onChange={e => setResubmitForm(f => ({ ...f, outDate: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Out Time</label>
-                      <input
-                        type="time"
-                        required
-                        className="form-input"
-                        value={resubmitForm.outTime}
-                        onChange={e => setResubmitForm(f => ({ ...f, outTime: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-grid" style={{ marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Return Date</label>
-                      <input
-                        type="date"
-                        required
-                        className="form-input"
-                        value={resubmitForm.expectedReturnDate}
-                        onChange={e => setResubmitForm(f => ({ ...f, expectedReturnDate: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Return Time</label>
-                      <input
-                        type="time"
-                        required
-                        className="form-input"
-                        value={resubmitForm.expectedReturnTime}
-                        onChange={e => setResubmitForm(f => ({ ...f, expectedReturnTime: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">Emergency Contact Number</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. 9392393340"
-                      value={resubmitForm.emergencyContact}
-                      onChange={e => setResubmitForm(f => ({ ...f, emergencyContact: e.target.value }))}
-                    />
-                  </div>
-                </>
+        {/* Reject Remarks Modal */}
+        {rejectModalOpen && (
+          <div
+            className="modal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !approverActionLoading) {
+                setRejectModalOpen(false);
+              }
+            }}
+            style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <div className="modal" style={{ width: 'min(480px, 95vw)', padding: '24px', borderRadius: '12px' }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: '16px', color: '#dc2626' }}>Reject Permission Request</h3>
+              <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
+                Please provide a clear reason for rejection so the student can rectify it.
+              </p>
+
+              {approverActionError && (
+                <div className="alert alert-error" style={{ marginBottom: 12 }}>{approverActionError}</div>
               )}
 
-              {/* Feature 2: MESS_FEE */}
-              {reqType === 'MESS_FEE' && (
-                <>
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">Clearance Reason</label>
-                    <textarea
-                      required
-                      rows={2}
-                      className="form-input"
-                      value={resubmitForm.reason}
-                      onChange={e => setResubmitForm(f => ({ ...f, reason: e.target.value }))}
-                    />
-                  </div>
-                  <div className="form-grid" style={{ marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Mess Amount (â‚¹)</label>
-                      <input
-                        type="number"
-                        required
-                        className="form-input"
-                        value={resubmitForm.messAmount}
-                        onChange={e => setResubmitForm(f => ({ ...f, messAmount: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Payment Status</label>
-                      <select
-                        className="form-input"
-                        value={resubmitForm.paidStatus}
-                        onChange={e => setResubmitForm(f => ({ ...f, paidStatus: e.target.value }))}
-                      >
-                        <option value="Paid">Paid</option>
-                        <option value="Partially Paid">Partially Paid</option>
-                        <option value="Not Paid">Not Paid</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-grid" style={{ marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Start Date</label>
-                      <input
-                        type="date"
-                        required
-                        className="form-input"
-                        value={resubmitForm.startDate}
-                        onChange={e => setResubmitForm(f => ({ ...f, startDate: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">End Date</label>
-                      <input
-                        type="date"
-                        required
-                        className="form-input"
-                        value={resubmitForm.endDate}
-                        onChange={e => setResubmitForm(f => ({ ...f, endDate: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Feature 3: INTERNSHIP */}
-              {reqType === 'INTERNSHIP' && (
-                <>
-                  <div className="form-grid" style={{ marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Company Name</label>
-                      <input
-                        type="text"
-                        required
-                        className="form-input"
-                        value={resubmitForm.companyName}
-                        onChange={e => setResubmitForm(f => ({ ...f, companyName: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Company Location</label>
-                      <input
-                        type="text"
-                        required
-                        className="form-input"
-                        value={resubmitForm.companyLocation}
-                        onChange={e => setResubmitForm(f => ({ ...f, companyLocation: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-grid" style={{ marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Role</label>
-                      <input
-                        type="text"
-                        required
-                        className="form-input"
-                        value={resubmitForm.role}
-                        onChange={e => setResubmitForm(f => ({ ...f, role: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Mode</label>
-                      <select
-                        className="form-input"
-                        value={resubmitForm.internshipMode}
-                        onChange={e => setResubmitForm(f => ({ ...f, internshipMode: e.target.value }))}
-                      >
-                        <option value="Offline">Offline</option>
-                        <option value="Online">Online</option>
-                        <option value="Hybrid">Hybrid</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-grid" style={{ marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Start Date</label>
-                      <input
-                        type="date"
-                        required
-                        className="form-input"
-                        value={resubmitForm.startDate}
-                        onChange={e => setResubmitForm(f => ({ ...f, startDate: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">End Date</label>
-                      <input
-                        type="date"
-                        required
-                        className="form-input"
-                        value={resubmitForm.endDate}
-                        onChange={e => setResubmitForm(f => ({ ...f, endDate: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Feature 4: LIBRARY */}
-              {reqType === 'LIBRARY' && (
-                <>
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">Purpose / Reason</label>
-                    <textarea
-                      required
-                      rows={2}
-                      className="form-input"
-                      value={resubmitForm.reason}
-                      onChange={e => setResubmitForm(f => ({ ...f, reason: e.target.value }))}
-                    />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label className="form-label">Access Date</label>
-                    <input
-                      type="date"
-                      required
-                      className="form-input"
-                      value={resubmitForm.requestDate}
-                      onChange={e => setResubmitForm(f => ({ ...f, requestDate: e.target.value }))}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Document upload during resubmission */}
-              <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label">Supporting Document (Optional)</label>
-                {resubmitForm.documentUrl ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '12px' }}>{resubmitForm.documentName || 'Document attached'}</span>
-                    <button type="button" onClick={() => setResubmitForm(f => ({ ...f, documentUrl: '', documentName: '' }))} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer' }}>
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ) : (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', borderRadius: '6px', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: '12px' }}>
-                    <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} />
-                    <UploadCloud size={16} />
-                    <span>{uploadingDoc ? 'Uploading...' : 'Attach updated proof / receipt'}</span>
-                  </label>
-                )}
-              </div>
-
-              {/* Resubmission Remarks */}
-              <div className="form-group" style={{ marginBottom: '18px' }}>
-                <label className="form-label">Note to Approver</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Attached receipt with correct dates and updated parent contact."
+              <div className="form-group" style={{ marginBottom: 20 }}>
+                <textarea
                   className="form-input"
-                  value={resubmitForm.resubmitRemarks}
-                  onChange={e => setResubmitForm(f => ({ ...f, resubmitRemarks: e.target.value }))}
+                  rows={4}
+                  placeholder="Enter rejection reason..."
+                  value={approverRemarks}
+                  onChange={(e) => setApproverRemarks(e.target.value)}
+                  autoFocus
                 />
               </div>
 
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setResubmitModalOpen(false)}>Cancel</button>
-                <button type="submit" disabled={resubmitting || uploadingDoc} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  {resubmitting ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Check size={14} />}
-                  <span>Resubmit to CTPO</span>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setRejectModalOpen(false)}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={handleApproverReject}
+                  disabled={approverActionLoading}
+                  style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '0 18px', fontWeight: 700, borderRadius: 8 }}
+                >
+                  {approverActionLoading ? 'Rejecting...' : 'Confirm Reject'}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* â”€â”€â”€ Official Digital Permission Document Modal (Exact Replica of Sample) â”€â”€â”€ */}
-      {printModalOpen && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setPrintModalOpen(false)}>
-          <div className="modal" style={{ maxWidth: '640px', padding: '24px', background: '#ffffff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Printer size={18} color="var(--accent)" />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Official Digital Permission Slip
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPrintModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-              >
-                <X size={20} />
-              </button>
             </div>
+          </div>
+        )}
 
-            {/* Printable Document Sheet matching user's exact uploaded sample */}
-            <div ref={printRef} className="official-permission-doc" style={{
-              background: '#ffffff',
-              border: '1.5px solid #0f172a',
-              borderRadius: '6px',
-              padding: '28px 32px',
-              color: '#0f172a',
-              fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
-            }}>
-              {/* Header Title */}
-              <div style={{ textAlign: 'center', marginBottom: '14px' }}>
-                <div style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase', lineHeight: 1.3 }}>
-                  COLLEGE DIGITAL PERMISSION<br />& APPROVAL PLATFORM
+        {/* Official Document Print Modal */}
+        {printModalOpen && (
+          <div
+            className="modal-overlay"
+            onClick={(e) => { if (e.target === e.currentTarget) setPrintModalOpen(false); }}
+            style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          >
+            <div className="modal" style={{ width: 'min(720px, 95vw)', maxHeight: '90vh', overflowY: 'auto', padding: '24px', borderRadius: '12px' }}>
+              <div id="printable-certificate" ref={printRef} style={{ border: '2px solid #0f172a', padding: '24px', background: '#fff' }}>
+                <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '16px', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 800, textTransform: 'uppercase' }}>K.I.E.T ENGINEERING COLLEGE</div>
+                  <div style={{ fontSize: '12px', color: '#475569' }}>Autonomous Institution • Digital Permission & Clearance Platform</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '8px', color: '#059669', textTransform: 'uppercase' }}>
+                    {reqType === 'OUTPASS' ? 'OFFICIAL CAMPUS OUT-PASS CERTIFICATE' : `${reqType.replace(/_/g, ' ')} CLEARANCE CERTIFICATE`}
+                  </div>
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginTop: '8px' }}>
-                  Reference ID: {refId}
-                </div>
-              </div>
 
-              <div style={{ borderBottom: '1.5px solid #0f172a', margin: '14px 0' }} />
-
-              {/* Student Information Section */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>
-                  STUDENT INFORMATION
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', fontSize: '13px', lineHeight: 1.5 }}>
-                  <div><strong>Name:</strong> {studentName}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px', marginBottom: '16px' }}>
+                  <div><strong>Reference ID:</strong> {refId}</div>
+                  <div><strong>Date Issued:</strong> {formatDate(request.createdAt)}</div>
+                  <div><strong>Student Name:</strong> {studentName}</div>
                   <div><strong>Roll Number:</strong> {rollNo}</div>
                   <div><strong>Department:</strong> {branchName}</div>
-                  <div><strong>Year:</strong> {request.year || 4}</div>
+                  <div><strong>Academic Year:</strong> {getOrdinalYear(request.year || request.studentId?.year)}</div>
+                  <div><strong>Student Type:</strong> {residence}</div>
+                  <div><strong>Status:</strong> Approved / Certified</div>
                 </div>
-              </div>
 
-              <div style={{ borderBottom: '1.5px solid #0f172a', margin: '14px 0' }} />
-
-              {/* Permission Information Section */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>
-                  PERMISSION INFORMATION
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', fontSize: '13px', lineHeight: 1.5 }}>
-                  <div><strong>Permission Type:</strong> {getPermissionTypeLabel()}</div>
-                  <div><strong>Reason:</strong> {request.reason}</div>
-
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', fontSize: '13px', marginBottom: '16px' }}>
+                  <div><strong>Purpose / Justification:</strong> {request.reason}</div>
                   {reqType === 'OUTPASS' && (
-                    <>
-                      <div><strong>Date:</strong> {new Date(request.outDate).toLocaleDateString('en-GB')} ({request.outTime} to {request.expectedReturnTime})</div>
-                      {request.emergencyContact && (
-                        <div><strong>Emergency Contact:</strong> {request.emergencyContact}</div>
-                      )}
-                    </>
+                    <div style={{ marginTop: '6px' }}>
+                      <strong>Out Time:</strong> {formatDate(request.outDate)} at {formatTime(request.outTime)} &nbsp;|&nbsp;
+                      <strong>Return Date:</strong> {formatDate(request.expectedReturnDate)}
+                    </div>
                   )}
-
                   {reqType === 'MESS_FEE' && (
-                    <>
-                      <div><strong>Date:</strong> {new Date(request.startDate).toLocaleDateString('en-GB')} to {new Date(request.endDate).toLocaleDateString('en-GB')}</div>
-                      <div><strong>Mess Amount:</strong> â‚¹{request.messAmount?.toLocaleString('en-IN')}</div>
-                      <div><strong>Payment Status:</strong> {request.paidStatus}</div>
-                    </>
+                    <div style={{ marginTop: '6px' }}>
+                      <strong>Mess Clearance Amount:</strong> {formatCurrency(request.messAmount)} &nbsp;|&nbsp;
+                      <strong>Payment Status:</strong> {request.paidStatus}
+                    </div>
                   )}
-
                   {reqType === 'INTERNSHIP' && (
-                    <>
-                      <div><strong>Company:</strong> {request.companyName} ({request.companyLocation})</div>
-                      <div><strong>Role & Mode:</strong> {request.role} ({request.internshipMode})</div>
-                      <div><strong>Duration:</strong> {new Date(request.startDate).toLocaleDateString('en-GB')} to {new Date(request.endDate).toLocaleDateString('en-GB')}</div>
-                    </>
-                  )}
-
-                  {reqType === 'LIBRARY' && (
-                    <div><strong>Date:</strong> {new Date(request.requestDate || request.createdAt).toLocaleDateString('en-GB')}</div>
+                    <div style={{ marginTop: '6px' }}>
+                      <strong>Company:</strong> {request.companyName} ({request.companyLocation}) &nbsp;|&nbsp;
+                      <strong>Duration:</strong> {formatDuration(request.startDate, request.endDate)}
+                    </div>
                   )}
                 </div>
-              </div>
 
-              <div style={{ borderBottom: '1.5px solid #0f172a', margin: '14px 0' }} />
-
-              {/* Approval History Section */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>
-                  APPROVAL HISTORY
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
-                  {approvalSteps && approvalSteps.length > 0 ? (
-                    approvalSteps.filter(s => s.role !== 'STUDENT').map((step, idx) => (
-                      <div key={idx} style={{ lineHeight: 1.4 }}>
-                        <div style={{ fontWeight: 700 }}>{step.role}</div>
-                        <div style={{ paddingLeft: '8px', color: '#1e293b' }}>
-                          <div>Approver: {step.approverUserId?.name || 'Authorized Faculty'}</div>
-                          <div>Status: {step.decision === 'APPROVED' ? 'Approved' : step.decision}</div>
-                          <div>Approved At: {new Date(step.decidedAt).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                        </div>
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Digitally Certified & Approved</div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#059669' }}>Verified on {formatDateTime(request.updatedAt)}</div>
+                  </div>
+                  {reqType === 'OUTPASS' && (qrImage?.shortCode || request.shortCode) && (
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>Security Gate Pass Code</div>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#059669', letterSpacing: '1px' }}>
+                        {qrImage?.shortCode || request.shortCode}
                       </div>
-                    ))
-                  ) : (
-                    <div style={{ color: '#64748b' }}>Approvals recorded digitally by college authority.</div>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div style={{ borderBottom: '1.5px solid #0f172a', margin: '14px 0' }} />
-
-              {/* Reference / QR Code Section */}
-              <div style={{ marginBottom: '12px' }}>
-                {reqType === 'OUTPASS' ? (
-                  <>
-                    <div style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>
-                      REFERENCE / QR CODE
-                    </div>
-                    <div style={{ fontSize: '12px', marginBottom: '10px' }}>
-                      Scan this QR code for security verification:
-                    </div>
-                    <div style={{ textAlign: 'center', margin: '8px 0' }}>
-                      {qrImage?.qrImage ? (
-                        <img
-                          src={qrImage.qrImage}
-                          alt="Out-pass Security QR"
-                          style={{ width: '160px', height: '160px', display: 'inline-block', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                        />
-                      ) : (
-                        <div style={{ padding: '20px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '4px', fontSize: '12px', color: '#64748b' }}>
-                          QR Code available upon gate checkout verification
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>
-                      REFERENCE / VERIFICATION
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.5 }}>
-                      Official Institutional Clearance Reference: <strong>{refId}</strong><br />
-                      This certificate validates institutional permission approved through the College Digital Permission & Approval Platform. No physical security gate checkout is required for this clearance type.
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Bottom Footer Generated Timestamp */}
-              <div style={{ textAlign: 'center', fontSize: '11px', color: '#64748b', marginTop: '16px' }}>
-                Document generated on {new Date().toLocaleString('en-GB')}
-              </div>
-            </div>
-
-            {/* Modal Controls */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
-              <button className="btn btn-ghost" onClick={() => setPrintModalOpen(false)}>Close</button>
-              <button className="btn btn-primary" onClick={handlePrint} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <Printer size={15} />
-                <span>Print / Save as PDF</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Document View Modal */}
-      {documentModalOpen && request.documentUrl && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) setDocumentModalOpen(false); }}
-          style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <div className="modal" style={{ width: 'min(900px, 95vw)', height: 'min(90vh, 800px)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FileText size={20} color="var(--accent)" />
-                <span>{request.documentName || 'Attached Document'}</span>
-              </div>
-              <button className="btn btn-ghost" onClick={() => setDocumentModalOpen(false)} style={{ padding: '6px' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ flex: 1, border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <img 
-                src={getDocumentUrl(request.documentUrl)} 
-                alt={request.documentName || 'Document'} 
-                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              <div style={{ display: 'none', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '40px' }}>
-                <FileText size={48} color="#94a3b8" />
-                <span style={{ color: '#64748b' }}>Cannot preview this file type.</span>
-                <a href={getDocumentUrl(request.documentUrl)} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginTop: '12px' }}>
-                  Download / Open in New Tab
-                </a>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setPrintModalOpen(false)}>Close</button>
+                <button type="button" className="btn btn-primary" onClick={handlePrint} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <Printer size={16} /> Print / Save PDF
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Document Viewer Modal */}
+        <DocumentViewer
+          isOpen={documentModalOpen}
+          onClose={() => setDocumentModalOpen(false)}
+          documentUrl={request.documentUrl}
+          documentName={request.documentName}
+          documentMime={request.documentMime}
+        />
+      </div>
     </DashboardLayout>
   );
 }
 
 function Row({ icon: Icon, label, value }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <span style={{ minWidth: 150, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-        {Icon && <Icon size={14} color="var(--accent)" />}
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px' }}>
+      <span
+        style={{
+          width: 165,
+          flexShrink: 0,
+          fontSize: 13,
+          color: '#64748b',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}
+      >
+        {Icon && <Icon size={15} color="#059669" />}
         <span>{label}</span>
       </span>
-      <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>{value || 'â€”'}</span>
+      <span style={{ fontSize: 13.5, color: '#0f172a', fontWeight: 600, flex: 1, wordBreak: 'break-word' }}>
+        {value || '—'}
+      </span>
     </div>
   );
 }
-

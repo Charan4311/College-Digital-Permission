@@ -248,6 +248,7 @@ async function seed4thYear() {
               year: 4,
               yearTier: 'TIER_4TH',
               studentType,
+              residenceType: studentType === 'HOSTELER' ? 'hosteler' : 'dayscholar',
               isActive: true
             }
           },

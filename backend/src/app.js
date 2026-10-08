@@ -75,6 +75,7 @@ app.use('/api/admin', require('./modules/admin/routes'));
 app.use('/api/outpass', require('./modules/outpass/routes'));
 app.use('/api/security', require('./modules/security/routes'));
 app.use('/api/reports', require('./modules/reports/routes'));
+app.use('/api/hostel', require('./modules/reports/routes'));
 
 // Global error handler
 app.use((err, req, res, next) => {

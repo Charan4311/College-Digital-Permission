@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
+import { BrowserQRCodeReader } from '@zxing/browser';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../lib/api';
+import {
+  formatDate,
+  formatDateTime,
+  getOrdinalYear,
+  getResidenceTypeLabel
+} from '../lib/utils';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -13,57 +20,66 @@ import {
   History,
   RefreshCw,
   Search,
-  Filter,
   Camera,
+  Upload,
   X,
-  ChevronDown,
-  CalendarDays,
   Calendar,
   Users,
-  CheckCircle2
+  CheckCircle2,
+  FileImage
 } from 'lucide-react';
 
 function ScanResult({ result, data, errorMsg }) {
   if (!result) return null;
-  const isValid = result === 'VALID';
+  const isAllowed = result === 'VALID' || result === 'ALLOWED';
 
   const config = {
     VALID: {
-      title: 'ENTRY ALLOWED â€” PASS VALID',
-      subtitle: 'Student authorized to leave/enter campus gate',
+      title: 'ENTRY ALLOWED • PASS VALID',
+      subtitle: 'Student is authorized to exit/enter campus gate',
       icon: ShieldCheck,
-      color: 'var(--green, #10b981)',
-      bg: 'rgba(16, 185, 129, 0.12)',
-      border: 'var(--green, #10b981)'
+      color: '#059669',
+      bg: 'rgba(5, 150, 105, 0.08)',
+      border: '#059669'
+    },
+    ALLOWED: {
+      title: 'ENTRY ALLOWED • PASS VALID',
+      subtitle: 'Student is authorized to exit/enter campus gate',
+      icon: ShieldCheck,
+      color: '#059669',
+      bg: 'rgba(5, 150, 105, 0.08)',
+      border: '#059669'
     },
     ALREADY_USED: {
-      title: 'ENTRY DENIED â€” ALREADY USED',
-      subtitle: 'This single-use QR pass has already been scanned at the gate',
+      title: 'ENTRY DENIED • ALREADY USED',
+      subtitle: 'This single-use QR / pass code has already been used at the gate',
       icon: ShieldAlert,
-      color: 'var(--red, #ef4444)',
-      bg: 'rgba(239, 68, 68, 0.12)',
-      border: 'var(--red, #ef4444)'
+      color: '#dc2626',
+      bg: 'rgba(220, 38, 38, 0.08)',
+      border: '#dc2626'
     },
     EXPIRED: {
-      title: 'ENTRY DENIED â€” PASS EXPIRED',
+      title: 'ENTRY DENIED • PASS EXPIRED',
       subtitle: 'The valid time window for this out-pass has expired',
       icon: Clock,
-      color: 'var(--yellow, #f59e0b)',
-      bg: 'rgba(245, 158, 11, 0.12)',
-      border: 'var(--yellow, #f59e0b)'
+      color: '#d97706',
+      bg: 'rgba(217, 119, 6, 0.08)',
+      border: '#d97706'
     },
     INVALID: {
-      title: 'ENTRY DENIED â€” INVALID PASS',
-      subtitle: errorMsg || 'Unrecognized QR token or forged digital pass',
+      title: 'ENTRY DENIED • INVALID PASS',
+      subtitle: errorMsg || 'Unrecognized pass code or invalid digital pass',
       icon: XCircle,
-      color: 'var(--red, #ef4444)',
-      bg: 'rgba(239, 68, 68, 0.12)',
-      border: 'var(--red, #ef4444)'
+      color: '#dc2626',
+      bg: 'rgba(220, 38, 38, 0.08)',
+      border: '#dc2626'
     }
   };
 
   const cfg = config[result] || config.INVALID;
   const Icon = cfg.icon;
+
+  const student = data?.studentId || data?.student;
 
   return (
     <div style={{
@@ -76,125 +92,127 @@ function ScanResult({ result, data, errorMsg }) {
       marginBottom: '20px'
     }}>
       <div style={{
-        width: '64px',
-        height: '64px',
+        width: '60px',
+        height: '60px',
         borderRadius: '50%',
         background: cfg.color,
         color: '#fff',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        margin: '0 auto 16px auto',
-        boxShadow: `0 8px 24px ${cfg.color}44`
+        margin: '0 auto 14px auto',
+        boxShadow: `0 6px 20px ${cfg.color}33`
       }}>
-        <Icon size={36} />
+        <Icon size={32} />
       </div>
 
-      <div style={{ fontSize: '20px', fontWeight: 800, color: cfg.color, letterSpacing: '-0.3px', marginBottom: '4px' }}>
+      <div style={{ fontSize: '19px', fontWeight: 800, color: cfg.color, letterSpacing: '-0.3px', marginBottom: '4px' }}>
         {cfg.title}
       </div>
-      <div style={{ fontSize: '13px', color: 'var(--text-secondary, #64748b)', marginBottom: '16px' }}>
+      <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
         {cfg.subtitle}
       </div>
 
-      {isValid && data && (
+      {data && (
         <div style={{
-          background: 'var(--bg-surface, #ffffff)',
-          border: '1px solid var(--border, #e2e8f0)',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
           borderRadius: '12px',
-          padding: '16px',
+          padding: '16px 20px',
           textAlign: 'left',
           display: 'grid',
           gap: '10px',
-          maxWidth: '400px',
-          margin: '0 auto'
+          maxWidth: '460px',
+          margin: '0 auto',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={15} color="var(--accent, #10b981)" />
-            <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary, #0f172a)' }}>
-              {data.studentId?.name || 'Unknown Student'}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <User size={16} color="#059669" />
+              <span style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+                {student?.name || 'Unknown Student'}
+              </span>
+            </div>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: '12px',
+              background: isAllowed ? '#ecfdf5' : '#fef2f2',
+              color: isAllowed ? '#059669' : '#dc2626',
+              border: `1px solid ${isAllowed ? '#a7f3d0' : '#fecaca'}`
+            }}>
+              {isAllowed ? 'ALLOWED' : 'REJECTED'}
             </span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-            <span style={{ color: 'var(--text-muted, #94a3b8)' }}>Roll Number:</span>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary, #0f172a)' }}><code>{data.studentId?.rollNo || 'N/A'}</code></span>
+            <span style={{ color: '#64748b' }}>Roll Number:</span>
+            <span style={{ fontWeight: 600, color: '#0f172a' }}><code>{student?.rollNo || 'N/A'}</code></span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-            <span style={{ color: 'var(--text-muted, #94a3b8)' }}>Out Date & Time:</span>
-            <span style={{ fontWeight: 500, color: 'var(--text-primary, #0f172a)' }}>
-              {data.outDate ? new Date(data.outDate).toLocaleDateString('en-IN') : 'N/A'} at {data.outTime || 'N/A'}
+            <span style={{ color: '#64748b' }}>Year & Residence:</span>
+            <span style={{ fontWeight: 600, color: '#0f172a' }}>
+              {getOrdinalYear(student?.year)} • {getResidenceTypeLabel(student?.residenceType)}
             </span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-            <span style={{ color: 'var(--text-muted, #94a3b8)' }}>Expected Return:</span>
-            <span style={{ fontWeight: 500, color: 'var(--text-primary, #0f172a)' }}>
-              {data.expectedReturnDate ? new Date(data.expectedReturnDate).toLocaleDateString('en-IN') : 'N/A'} at {data.expectedReturnTime || 'N/A'}
+            <span style={{ color: '#64748b' }}>Reason:</span>
+            <span style={{ fontWeight: 500, color: '#0f172a', textAlign: 'right', maxWidth: '240px' }}>
+              {data.reason || 'N/A'}
             </span>
           </div>
 
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+            <span style={{ color: '#64748b' }}>Out Date & Time:</span>
+            <span style={{ fontWeight: 600, color: '#0f172a' }}>
+              {formatDate(data.outDate)} at {data.outTime || 'N/A'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+            <span style={{ color: '#64748b' }}>Return Date:</span>
+            <span style={{ fontWeight: 600, color: '#0f172a' }}>
+              {formatDate(data.expectedReturnDate || data.returnDate || data.outDate)}
+            </span>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ZXing provides QR decoding in browsers without a native BarcodeDetector.
+// Robust ZXing QR Scanner with Live Webcam & Image File Decoder
 function NativeQRScanner({ onScan, onClose }) {
   const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [error, setError] = useState('');
+  const [isDecodingFile, setIsDecodingFile] = useState(false);
 
   useEffect(() => {
+    const codeReader = new BrowserQRCodeReader();
+    let controls = null;
     let active = true;
-    let controls;
 
     async function startCamera() {
       try {
-        if (!navigator.mediaDevices?.getUserMedia || !videoRef.current) {
-          setError('Camera access requires a supported browser and secure connection.');
-          return;
-        }
-
-        const [{ BrowserQRCodeReader }, { DecodeHintType }] = await Promise.all([
-          import('@zxing/browser'),
-          import('@zxing/library'),
-        ]);
-        if (!active) return;
-        const reader = new BrowserQRCodeReader(
-          new Map([[DecodeHintType.TRY_HARDER, true]]),
-          { delayBetweenScanAttempts: 200, delayBetweenScanSuccess: 1000 }
-        );
-        controls = await reader.decodeFromConstraints(
-          {
-            video: {
-              facingMode: { ideal: 'environment' },
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-            },
-          },
+        setError('');
+        controls = await codeReader.decodeFromVideoDevice(
+          undefined,
           videoRef.current,
           (result) => {
-            if (result) {
-              controls?.stop();
+            if (result && active) {
+              active = false;
+              if (controls) controls.stop();
               onScan(result.getText());
             }
           }
         );
-
-        if (!active) controls.stop();
       } catch (err) {
-        console.error('Camera error:', err);
-        if (active) {
-          setError(
-            err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
-              ? 'Camera permission denied. Allow camera access and try again.'
-              : err?.name === 'NotFoundError'
-                ? 'No camera was found on this device.'
-                : 'Camera access is unavailable. Check browser permissions and try again.'
-          );
-        }
+        console.error('QR camera start error:', err);
+        setError('Camera unavailable or permission denied. You can upload a QR image below or enter code manually.');
       }
     }
 
@@ -202,63 +220,133 @@ function NativeQRScanner({ onScan, onClose }) {
 
     return () => {
       active = false;
-      controls?.stop();
+      if (controls) {
+        try {
+          controls.stop();
+        } catch {
+          // ignore
+        }
+      }
     };
   }, [onScan]);
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsDecodingFile(true);
+    setError('');
+
+    try {
+      const codeReader = new BrowserQRCodeReader();
+      const imageUrl = URL.createObjectURL(file);
+      const result = await codeReader.decodeFromImageUrl(imageUrl);
+      if (result && result.getText()) {
+        onScan(result.getText());
+      } else {
+        setError('No QR code detected in the uploaded image. Please try a clearer screenshot.');
+      }
+    } catch (err) {
+      console.error('File QR decoding error:', err);
+      setError('Could not decode QR code from the image. Please enter the pass code manually.');
+    } finally {
+      setIsDecodingFile(false);
+    }
+  };
+
   return (
-    <div className="native-qr-scanner" style={{ position: 'relative', width: '100%', height: '300px', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{
+      position: 'relative',
+      background: '#0f172a',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      padding: '24px',
+      textAlign: 'center',
+      color: '#fff',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+      marginBottom: '20px'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <QrCode size={18} color="#10b981" />
+          <span style={{ fontSize: 14, fontWeight: 700 }}>Scan QR Code</span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <X size={18} />
+        </button>
+      </div>
+
       {error ? (
-        <div style={{ color: '#fff', textAlign: 'center', padding: '20px' }}>
-          <Camera size={48} style={{ opacity: 0.5, margin: '0 auto 10px auto' }} />
-          <div>{error}</div>
+        <div style={{ padding: '24px', color: '#f87171', fontSize: 13, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', marginBottom: '16px' }}>
+          {error}
         </div>
       ) : (
-        <video ref={videoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <div style={{ position: 'relative', width: '100%', maxWidth: '320px', margin: '0 auto 16px auto' }}>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{ width: '100%', borderRadius: 12, background: '#000', display: 'block', minHeight: '240px', objectFit: 'cover' }}
+          />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '180px',
+            height: '180px',
+            border: '2px solid #10b981',
+            borderRadius: '16px',
+            boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+            pointerEvents: 'none'
+          }} />
+        </div>
       )}
 
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '200px',
-        height: '200px',
-        border: '2px solid rgba(255,255,255,0.5)',
-        borderRadius: '12px',
-        boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)'
-      }}></div>
-
-      <button
-        type="button"
-        onClick={onClose}
-        style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          background: 'rgba(0,0,0,0.6)',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '50%',
-          width: '36px',
-          height: '36px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer'
-        }}
-      >
-        <X size={20} />
-      </button>
+      {/* Upload QR Image fallback */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleImageUpload}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isDecodingFile}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 600,
+            background: 'rgba(255,255,255,0.12)',
+            color: '#ffffff',
+            border: '1px solid rgba(255,255,255,0.2)',
+            cursor: 'pointer'
+          }}
+        >
+          <FileImage size={15} color="#10b981" />
+          <span>{isDecodingFile ? 'Scanning Image...' : 'Upload QR Image / Screenshot'}</span>
+        </button>
+      </div>
     </div>
   );
 }
 
 export default function SecurityScanner() {
-  // The sidebar controls the current view through ?view=history.
-  // Keep the view state URL-driven so there is only one sidebar.
   const [searchParams] = useSearchParams();
-  const activeView = window.location.pathname === '/security/history' || searchParams.get('view') === 'history' ? 'history' : 'scanner';
+  const location = useLocation();
+  const activeView = location.pathname === '/security/history' || searchParams.get('view') === 'history' ? 'history' : 'scanner';
+
   const [token, setToken] = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [scanData, setScanData] = useState(null);
@@ -267,10 +355,9 @@ export default function SecurityScanner() {
   const [recentScans, setRecentScans] = useState([]);
   const [activePasses, setActivePasses] = useState([]);
   const [loadingActive, setLoadingActive] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // QR Scanner specific
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-
 
   // Filters for Active Passes
   const [activeSearch, setActiveSearch] = useState('');
@@ -279,20 +366,23 @@ export default function SecurityScanner() {
 
   // Filters for History
   const [historySearch, setHistorySearch] = useState('');
-  const [historyDateFilter, setHistoryDateFilter] = useState('Today'); // 'Today', 'This Week', 'This Month'
+  const [historyDateFilter, setHistoryDateFilter] = useState('Today'); // 'Today', 'This Week', 'This Month', 'All'
   const [historySort, setHistorySort] = useState('Latest to Oldest');
 
   const fetchRecentScans = useCallback(async () => {
+    setLoadingHistory(true);
     try {
       const historyMode = activeView === 'history';
       const res = await api.get(
         historyMode
-          ? '/security/recent-scans?history=true'
+          ? '/security/recent-scans?history=true&allowedOnly=true'
           : '/security/recent-scans'
       );
       setRecentScans(res.data?.data || []);
     } catch (e) {
-      console.error(e);
+      console.error('Fetch recent scans error:', e);
+    } finally {
+      setLoadingHistory(false);
     }
   }, [activeView]);
 
@@ -302,7 +392,7 @@ export default function SecurityScanner() {
       const res = await api.get('/security/active-passes');
       setActivePasses(res.data?.data || []);
     } catch (e) {
-      console.error(e);
+      console.error('Fetch active passes error:', e);
     } finally {
       if (showLoading) setLoadingActive(false);
     }
@@ -328,14 +418,14 @@ export default function SecurityScanner() {
       const tokenMatch = scanUrl.pathname.match(/(?:^|\/)verify\/([^/]+)\/?$/i);
       if (tokenMatch) scanToken = decodeURIComponent(tokenMatch[1]);
     } catch {
-      // Keep directly entered tokens unchanged.
+      // Direct pass code or token
     }
 
     setScanning(true);
     setScanResult(null);
     setScanData(null);
     setErrorMsg('');
-    setIsCameraOpen(false); // Close camera on scan
+    setIsCameraOpen(false);
 
     try {
       const res = await api.post('/security/scan', { token: scanToken });
@@ -347,7 +437,7 @@ export default function SecurityScanner() {
       const errData = e.response?.data;
       setScanResult(errData?.scanResult || 'INVALID');
       setErrorMsg(errData?.message || 'Verification failed');
-      setScanData(null);
+      setScanData(errData?.data || null);
       fetchRecentScans();
     } finally {
       setScanning(false);
@@ -360,37 +450,8 @@ export default function SecurityScanner() {
     executeScan(token);
   };
 
-  // Helper to determine year from roll number (assuming format like 23B21A0501 -> 2023)
-  const getYearFromRoll = (rollNo) => {
-    if (!rollNo || typeof rollNo !== 'string') return 0;
-    const match = rollNo.match(/^(\d{2})/);
-    if (match) {
-      const yearPrefix = parseInt(match[1], 10);
-      const currentYear = new Date().getFullYear() % 100;
-      // if current year is 26, and prefix is 23, they are in 4th year
-      return Math.max(1, currentYear - yearPrefix + 1);
-    }
-    return 0;
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    let hours = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const seconds = date.getSeconds().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    const strHours = hours.toString().padStart(2, '0');
-    return `${strHours}:${minutes}:${seconds} ${ampm}`;
+  const handleInputChange = (e) => {
+    setToken(e.target.value.toUpperCase());
   };
 
   // Filter Active Passes
@@ -402,7 +463,7 @@ export default function SecurityScanner() {
       if (term && !name.includes(term) && !roll.includes(term)) return false;
 
       if (activeYearFilter !== 'All Years') {
-        const studentYear = getYearFromRoll(p.rollNo);
+        const studentYear = p.year || 0;
         if (activeYearFilter === '1st Year' && studentYear !== 1) return false;
         if (activeYearFilter === '2nd Year' && studentYear !== 2) return false;
         if (activeYearFilter === '3rd Year' && studentYear !== 3) return false;
@@ -412,26 +473,15 @@ export default function SecurityScanner() {
     });
 
     filtered.sort((a, b) => {
-      const getPassDateTime = pass => {
-        const date = new Date(pass.outDate);
-        if (Number.isNaN(date.getTime())) {
-          return new Date(pass.issuedAt || 0).getTime();
-        }
-
-        const time = String(pass.outTime || '00:00').match(/^(\d{1,2}):(\d{2})/);
-        if (time) date.setHours(Number(time[1]), Number(time[2]), 0, 0);
-        return date.getTime();
-      };
-
-      const dateA = getPassDateTime(a);
-      const dateB = getPassDateTime(b);
+      const dateA = new Date(a.outDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.outDate || b.createdAt || 0).getTime();
       return activeSort === 'Latest to Oldest' ? dateB - dateA : dateA - dateB;
     });
 
     return filtered;
   };
 
-  // Filter History
+  // Filter Permission History: Only show Allowed results
   const getFilteredHistory = () => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -439,12 +489,18 @@ export default function SecurityScanner() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
     let filtered = recentScans.filter(scan => {
-      const name = scan.requestId?.studentId?.name?.toLowerCase() || '';
-      const roll = scan.requestId?.studentId?.rollNo?.toLowerCase() || '';
-      const term = historySearch.toLowerCase();
-      if (term && !name.includes(term) && !roll.includes(term)) return false;
+      // Show ONLY allowed results in permission history
+      const isAllowed = scan.scanResult === 'VALID' || scan.scanResult === 'ALLOWED' || scan.result === 'allowed' || scan.scanResult === 'SUCCESS';
+      if (!isAllowed) return false;
 
-      const scanTime = new Date(scan.scannedAt).getTime();
+      const student = scan.requestId?.studentId || scan.studentId;
+      const name = student?.name?.toLowerCase() || '';
+      const roll = student?.rollNo?.toLowerCase() || '';
+      const code = (scan.passCode || scan.shortCode || scan.requestId?.shortCode || '').toLowerCase();
+      const term = historySearch.toLowerCase();
+      if (term && !name.includes(term) && !roll.includes(term) && !code.includes(term)) return false;
+
+      const scanTime = new Date(scan.scannedAt || scan.createdAt).getTime();
       if (historyDateFilter === 'Today' && scanTime < startOfToday) return false;
       if (historyDateFilter === 'This Week' && scanTime < startOfWeek) return false;
       if (historyDateFilter === 'This Month' && scanTime < startOfMonth) return false;
@@ -453,275 +509,20 @@ export default function SecurityScanner() {
     });
 
     filtered.sort((a, b) => {
-      const dateA = new Date(a.scannedAt).getTime();
-      const dateB = new Date(b.scannedAt).getTime();
+      const dateA = new Date(a.scannedAt || a.createdAt).getTime();
+      const dateB = new Date(b.scannedAt || b.createdAt).getTime();
       return historySort === 'Latest to Oldest' ? dateB - dateA : dateA - dateB;
     });
 
     return filtered;
   };
 
-  // Calculate stats for History
-  const getHistoryStats = () => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startOfWeek = startOfToday - (now.getDay() * 24 * 60 * 60 * 1000);
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-
-    let today = 0, week = 0, month = 0;
-    recentScans.forEach(scan => {
-      const time = new Date(scan.scannedAt).getTime();
-      if (time >= startOfToday) today++;
-      if (time >= startOfWeek) week++;
-      if (time >= startOfMonth) month++;
-    });
-    return { today, week, month };
-  };
-
   const filteredActivePasses = getFilteredActivePasses();
   const filteredHistory = getFilteredHistory();
-  const historyStats = getHistoryStats();
 
   return (
     <DashboardLayout>
-      <style>{`
-      /* Responsive layout for Security Scanner â€” desktop styles and functionality remain unchanged */
-      .security-dashboard-page {
-        min-width: 0;
-        max-width: 100%;
-        overflow-x: hidden;
-      }
-
-      .security-dashboard-page * {
-        box-sizing: border-box;
-      }
-
-      .security-dashboard-page .security-filters > div > input {
-        height: 44px !important;
-        box-sizing: border-box;
-        padding: 0 14px 0 36px !important;
-        line-height: 1.2;
-      }
-
-      .security-dashboard-page .security-filters > select {
-        display: inline-flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 44px !important;
-        box-sizing: border-box;
-        padding: 0 14px !important;
-        line-height: 1.2;
-      }
-
-      .security-dashboard-page .security-filters > select::picker-icon {
-        display: block;
-        margin-left: auto;
-        color: #64748b;
-        font-size: 10px;
-      }
-
-      @media (max-width: 900px) {
-        .security-header-row {
-          flex-wrap: wrap !important;
-          gap: 12px !important;
-        }
-
-        .security-header-row > div:first-child {
-          min-width: 0;
-          flex: 1 1 260px;
-        }
-
-        .security-header-row h1 {
-          font-size: 24px !important;
-          line-height: 1.2 !important;
-        }
-
-        .security-header-row p {
-          line-height: 1.45 !important;
-        }
-
-        .security-refresh-btn {
-          flex-shrink: 0;
-        }
-
-        .security-card {
-          width: 100%;
-          min-width: 0;
-        }
-
-        .security-filters {
-          align-items: stretch;
-        }
-
-        .security-filters > div {
-          min-width: 0 !important;
-          flex: 1 1 220px !important;
-        }
-
-        .security-filters > select {
-          flex: 1 1 180px;
-          min-width: 0;
-        }
-
-        .security-pass-row,
-        .security-history-row {
-          min-width: 0;
-        }
-
-        .security-pass-row > div:first-child,
-        .security-history-row > div:first-child {
-          min-width: 0;
-        }
-
-        .security-pass-row button {
-          flex-shrink: 0 !important;
-        }
-
-        .native-qr-scanner {
-          max-width: 100%;
-        }
-      }
-
-      @media (max-width: 600px) {
-        .security-header {
-          margin-bottom: 14px !important;
-        }
-
-        .security-header-row {
-          align-items: stretch !important;
-          flex-direction: column !important;
-        }
-
-        .security-header-row > div:first-child {
-          flex: none !important;
-          width: 100%;
-        }
-
-        .security-header-row h1 {
-          font-size: 21px !important;
-          gap: 7px !important;
-        }
-
-        .security-header-row h1 svg {
-          width: 23px;
-          height: 23px;
-          flex-shrink: 0;
-        }
-
-        .security-refresh-btn {
-          width: 100% !important;
-          justify-content: center !important;
-          min-height: 42px;
-        }
-
-        .security-card {
-          padding: 13px !important;
-          border-radius: 9px !important;
-        }
-
-        .security-card h2 {
-          font-size: 15px !important;
-          line-height: 1.3 !important;
-        }
-
-        .security-filters {
-          flex-direction: column !important;
-          gap: 9px !important;
-          margin-bottom: 14px !important;
-        }
-
-        .security-filters > div,
-        .security-filters > select {
-          width: 100% !important;
-          min-width: 0 !important;
-          flex: none !important;
-        }
-
-        .security-pass-row {
-          flex-direction: column !important;
-          align-items: stretch !important;
-          gap: 11px !important;
-          padding: 13px !important;
-        }
-
-        .security-pass-row button {
-          width: 100% !important;
-          justify-content: center !important;
-        }
-
-        .security-history-row {
-          flex-wrap: wrap !important;
-          align-items: flex-start !important;
-          gap: 11px !important;
-          padding: 13px !important;
-        }
-
-        .security-history-row > div:first-child {
-          width: 100%;
-          flex: none !important;
-        }
-
-        .security-history-row > div:nth-child(2) {
-          width: auto !important;
-          flex: 1 1 140px;
-          text-align: left !important;
-        }
-
-        .security-history-row > div:last-child {
-          margin-left: 0 !important;
-        }
-
-        .security-tabs {
-          gap: 20px !important;
-          overflow-x: auto;
-          scrollbar-width: none;
-          -webkit-overflow-scrolling: touch;
-          white-space: nowrap;
-        }
-
-        .security-tabs::-webkit-scrollbar {
-          display: none;
-        }
-
-        .security-tabs button {
-          flex: 0 0 auto;
-        }
-
-        .native-qr-scanner {
-          height: min(300px, 78vw) !important;
-          min-height: 240px;
-        }
-
-        .native-qr-scanner > div[style*="width: '200px'"] {
-          width: min(200px, 58vw) !important;
-          height: min(200px, 58vw) !important;
-        }
-      }
-
-      @media (max-width: 380px) {
-        .security-header-row h1 {
-          font-size: 19px !important;
-        }
-
-        .security-header-row p {
-          font-size: 12px !important;
-        }
-
-        .security-card {
-          padding: 11px !important;
-        }
-
-        .security-tabs {
-          gap: 16px !important;
-        }
-
-        .security-history-row > div:nth-child(2) {
-          flex-basis: 100%;
-        }
-      }
-      `}</style>
       <div className="security-dashboard-page" style={{ width: '100%', paddingBottom: 24 }}>
-
         {/* Header */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
@@ -730,17 +531,17 @@ export default function SecurityScanner() {
                 Welcome back,
               </div>
               <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                Campus Gate <span style={{ color: '#10b981' }}>Security</span>
+                Campus Gate <span style={{ color: '#059669' }}>Security</span>
               </h1>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
                 <Calendar size={18} />
               </div>
               <div>
                 <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
-                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {formatDate(new Date())}
                 </div>
               </div>
             </div>
@@ -748,17 +549,14 @@ export default function SecurityScanner() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Main Content Area */}
           <div style={{ flex: 1, minWidth: '0' }}>
-
             {activeView === 'scanner' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
                 {/* Scan / Verify Card */}
-                <div className="card security-card" style={{ padding: 16, borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: '#f1efff', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Scan size={19} />
+                <div className="card" style={{ padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Scan size={18} />
                     </div>
                     <div>
                       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Scan / Verify Out-Pass Token</h2>
@@ -766,23 +564,49 @@ export default function SecurityScanner() {
                   </div>
 
                   <form onSubmit={handleFormScan}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary, #64748b)', marginBottom: '8px' }}>
+                    <div style={{ marginBottom: '14px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>
                         <span>Enter or Scan QR Token</span>
                       </label>
                       <input
                         className="form-input"
-                        style={{ width: '100%', padding: '12px', fontSize: '16px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)' }}
+                        style={{
+                          width: '100%',
+                          padding: '12px 14px',
+                          fontSize: '14px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          letterSpacing: '0.5px',
+                          fontFamily: 'monospace',
+                          boxSizing: 'border-box'
+                        }}
                         placeholder="Paste QR pass token or scan with gate scanner..."
                         value={token}
-                        onChange={e => setToken(e.target.value)}
+                        onChange={handleInputChange}
+                        autoCapitalize="characters"
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={!token.trim() || scanning}
-                      style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--accent, #10b981)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: token.trim() && !scanning ? 'pointer' : 'not-allowed', opacity: token.trim() && !scanning ? 1 : 0.7 }}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        background: '#10B981',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14.5px',
+                        fontWeight: '600',
+                        cursor: token.trim() && !scanning ? 'pointer' : 'not-allowed',
+                        opacity: token.trim() && !scanning ? 1 : 0.7,
+                        transition: 'background-color 0.15s'
+                      }}
                     >
                       {scanning ? (
                         <>
@@ -799,72 +623,102 @@ export default function SecurityScanner() {
                   </form>
                 </div>
 
-                {scanResult && (
-                  <ScanResult result={scanResult} data={scanData} errorMsg={errorMsg} />
-                )}
-
-                {/* QR Scanner Camera Section */}
-                <div className="card security-card" style={{ padding: 16, borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: '#f1efff', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <QrCode size={19} />
+                {/* QR Scanner Card */}
+                <div className="card" style={{ padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <QrCode size={18} />
                     </div>
                     <div>
                       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>QR Scanner</h2>
                     </div>
                   </div>
 
-                  {isCameraOpen ? (
-                    <NativeQRScanner onScan={executeScan} onClose={() => setIsCameraOpen(false)} />
-                  ) : (
-                    <div style={{ background: 'var(--bg-elevated, #f8fafc)', border: '2px dashed var(--border, #e2e8f0)', borderRadius: '12px', padding: '40px 20px', textAlign: 'center' }}>
-                      <Camera size={40} color="var(--text-muted, #94a3b8)" style={{ margin: '0 auto 12px auto' }} />
-                      <div style={{ fontSize: '15px', color: 'var(--text-secondary, #64748b)', marginBottom: '16px' }}>
-                        Click "Scan Now" to start scanning
+                  {!isCameraOpen ? (
+                    <div style={{
+                      border: '1px dashed #cbd5e1',
+                      borderRadius: '12px',
+                      background: '#f8fafc',
+                      padding: '36px 20px',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px'
+                    }}>
+                      <div style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Camera size={38} strokeWidth={1.5} />
                       </div>
+                      <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b', fontWeight: 500 }}>
+                        Click &ldquo;Scan Now&rdquo; to start scanning
+                      </p>
                       <button
+                        type="button"
                         onClick={() => setIsCameraOpen(true)}
-                        style={{ padding: '10px 24px', background: 'var(--accent, #10b981)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                        style={{
+                          marginTop: '6px',
+                          padding: '10px 22px',
+                          background: '#10B981',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(16,185,129,0.2)'
+                        }}
                       >
                         <Scan size={16} />
-                        Scan Now
+                        <span>Scan Now</span>
                       </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <NativeQRScanner onScan={executeScan} onClose={() => setIsCameraOpen(false)} />
                     </div>
                   )}
                 </div>
 
-                {/* Active Issued Passes */}
-                <div className="card security-card" style={{ padding: 16, borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                {scanResult && (
+                  <ScanResult result={scanResult} data={scanData} errorMsg={errorMsg} />
+                )}
+
+                {/* Active Issued Passes (Today's Active Only) */}
+                <div className="card" style={{ padding: 18, borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 9, background: '#f1efff', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Users size={19} />
+                      <div style={{ width: 34, height: 34, borderRadius: 10, background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={18} />
                       </div>
                       <div>
-                        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Active Issued Passes at Gate</h2>
+                        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Today's Active Out-Passes</h2>
                       </div>
                     </div>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#10b981', background: '#ecfdf5', padding: '4px 10px', borderRadius: '12px' }}>
-                      {filteredActivePasses.length} ready to scan
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#059669', background: '#ecfdf5', padding: '4px 10px', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
+                      {filteredActivePasses.length} active today
                     </span>
                   </div>
 
                   {/* Filters */}
-                  <div className="security-filters" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
-                      <Search size={16} color="var(--text-muted, #94a3b8)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 200px', position: 'relative' }}>
+                      <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                       <input
                         type="text"
-                        placeholder="Search by student name or roll number..."
+                        placeholder="Search student or roll no..."
                         value={activeSearch}
                         onChange={e => setActiveSearch(e.target.value)}
-                        style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px' }}
+                        style={{ width: '100%', padding: '9px 10px 9px 36px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', boxSizing: 'border-box' }}
                       />
                     </div>
                     <select
                       value={activeYearFilter}
                       onChange={e => setActiveYearFilter(e.target.value)}
-                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px', background: '#fff', cursor: 'pointer' }}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#fff', cursor: 'pointer' }}
                     >
                       <option value="All Years">All Years</option>
                       <option value="1st Year">1st Year</option>
@@ -872,40 +726,32 @@ export default function SecurityScanner() {
                       <option value="3rd Year">3rd Year</option>
                       <option value="4th Year">4th Year</option>
                     </select>
-                    <select
-                      value={activeSort}
-                      onChange={e => setActiveSort(e.target.value)}
-                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px', background: '#fff', cursor: 'pointer' }}
-                    >
-                      <option value="Latest to Oldest">Latest to Oldest</option>
-                      <option value="Oldest to Latest">Oldest to Latest</option>
-                    </select>
                   </div>
 
                   {loadingActive ? (
-                    <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted, #94a3b8)' }}><RefreshCw size={24} className="spin" /></div>
+                    <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}><RefreshCw size={24} className="spin" /></div>
                   ) : filteredActivePasses.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted, #94a3b8)', background: 'var(--bg-elevated, #f8fafc)', borderRadius: '8px', border: '1px dashed var(--border, #e2e8f0)' }}>
-                      No active passes found.
+                    <div style={{ textAlign: 'center', padding: '30px 20px', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0' }}>
+                      No active out-passes for today.
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {filteredActivePasses.map(p => (
-                        <div key={p._id} className="security-pass-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', gap: '16px' }}>
+                        <div key={p._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', gap: '12px' }}>
                           <div>
-                            <div style={{ fontWeight: '700', fontSize: '15px', color: '#0f172a', marginBottom: '4px' }}>
-                              {p.studentName || 'Unknown Student'} ({p.rollNo || 'N/A'})
+                            <div style={{ fontWeight: '700', fontSize: '14.5px', color: '#0f172a', marginBottom: '2px' }}>
+                              {p.studentName || 'Student'} ({p.rollNo || 'N/A'})
                             </div>
-                            <div style={{ fontSize: '13px', color: '#64748b' }}>
-                              <strong style={{color: '#475569'}}>Ref ID:</strong> {(p.referenceId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'} &middot; Out: {p.outDate ? formatDate(p.outDate) : 'N/A'}, {p.outTime || 'N/A'}
+                            <div style={{ fontSize: '12.5px', color: '#64748b' }}>
+                              Pass Code: <strong style={{ color: '#059669', letterSpacing: '0.5px' }}>{p.shortCode || 'N/A'}</strong> • Out: {formatDate(p.outDate)} {p.outTime ? `(${p.outTime})` : ''}
                             </div>
                           </div>
                           <button
-                            onClick={() => setIsCameraOpen(true)}
-                            style={{ padding: '8px 16px', background: '#ecfdf5', color: '#10b981', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
+                            onClick={() => executeScan(p.shortCode || p.token)}
+                            style={{ padding: '6px 14px', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '6px', fontSize: '12.5px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
                           >
-                            <Scan size={14} />
-                            Scan Now
+                            <Scan size={13} />
+                            <span>Verify</span>
                           </button>
                         </div>
                       ))}
@@ -915,25 +761,25 @@ export default function SecurityScanner() {
               </div>
             )}
 
+            {/* VIEW: HISTORY (Scanned Logs Only - Allowed Results) */}
             {activeView === 'history' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div className="card security-card" style={{ padding: 16, borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
-
+                <div className="card" style={{ padding: 18, borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: '#f1efff', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <History size={19} />
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <History size={20} />
                     </div>
                     <div>
-                      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Permission History</h2>
-                      <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
-                        List of students who have successfully scanned and taken permission at the gate
+                      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Gate Permission History</h2>
+                      <p style={{ margin: '3px 0 0', fontSize: 12.5, color: '#64748b' }}>
+                        Audit trail of authorized students scanned and allowed exit through the security gate
                       </p>
                     </div>
                   </div>
 
                   {/* Filter Tabs */}
-                  <div className="security-tabs" style={{ display: 'flex', gap: '24px', borderBottom: '1px solid #e2e8f0', marginTop: '24px', marginBottom: '24px' }}>
-                    {['Today', 'This Week', 'This Month'].map(tab => {
+                  <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #e2e8f0', marginBottom: '18px' }}>
+                    {['Today', 'This Week', 'This Month', 'All'].map(tab => {
                       const isActive = historyDateFilter === tab;
                       return (
                         <button
@@ -942,12 +788,12 @@ export default function SecurityScanner() {
                           style={{
                             background: 'transparent',
                             border: 'none',
-                            padding: '0 0 12px 0',
+                            padding: '8px 14px',
                             cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: isActive ? 600 : 500,
-                            color: isActive ? '#10b981' : '#64748b',
-                            borderBottom: isActive ? '2px solid #10b981' : '2px solid transparent',
+                            fontSize: '13px',
+                            fontWeight: isActive ? 700 : 500,
+                            color: isActive ? '#059669' : '#64748b',
+                            borderBottom: isActive ? '2px solid #059669' : '2px solid transparent',
                             marginBottom: '-1px'
                           }}
                         >
@@ -957,65 +803,107 @@ export default function SecurityScanner() {
                     })}
                   </div>
 
-                  {/* History List Filters */}
-                  <div className="security-filters" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
-                      <Search size={16} color="var(--text-muted, #94a3b8)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  {/* Search Bar */}
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 200px', position: 'relative' }}>
+                      <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                       <input
                         type="text"
-                        placeholder="Search by student name or roll number..."
+                        placeholder="Search student name, roll no, or pass code..."
                         value={historySearch}
                         onChange={e => setHistorySearch(e.target.value)}
-                        style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px' }}
+                        style={{ width: '100%', padding: '9px 10px 9px 36px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', boxSizing: 'border-box' }}
                       />
                     </div>
-                    <select
-                      value={historySort}
-                      onChange={e => setHistorySort(e.target.value)}
-                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border, #e2e8f0)', fontSize: '14px', background: '#fff', cursor: 'pointer' }}
-                    >
-                      <option value="Latest to Oldest">Latest to Oldest</option>
-                      <option value="Oldest to Latest">Oldest to Latest</option>
-                    </select>
                   </div>
 
-                  {/* History Records */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {filteredHistory.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted, #94a3b8)', background: 'var(--bg-elevated, #f8fafc)', borderRadius: '8px', border: '1px dashed var(--border, #e2e8f0)' }}>
-                        No history records found for the selected filters.
-                      </div>
-                    ) : (
-                      filteredHistory.map(scan => (
-                        <div key={scan._id} className="security-history-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', gap: '16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <CheckCircle2 size={20} color="#059669" />
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: '700', fontSize: '15px', color: '#0f172a', marginBottom: '4px' }}>
-                                {scan.requestId?.studentId?.name || 'Unknown Student'}
-                              </div>
-                              <div style={{ fontSize: '13px', color: '#64748b' }}>
-                                <strong style={{color: '#475569'}}>Ref ID:</strong> {(scan.requestId?.referenceId || '').replace(/^PERM-/i, 'KDP-') || 'N/A'} &middot; Roll: {scan.requestId?.studentId?.rollNo || 'N/A'}
-                              </div>
-                            </div>
-                          </div>
-                          <div style={{ width: '130px', textAlign: 'center', flexShrink: 0 }}>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' }}>
-                              {scan.scannedAt ? formatDate(scan.scannedAt) : 'N/A'}
-                            </div>
-                            <div style={{ fontSize: '13px', color: '#64748b' }}>
-                              {scan.scannedAt ? formatTime(scan.scannedAt) : 'N/A'}
-                            </div>
-                          </div>
-                          <div style={{ padding: '6px 12px', background: '#ecfdf5', color: '#059669', borderRadius: '8px', fontSize: '12px', fontWeight: '700', flexShrink: 0, marginLeft: '16px' }}>
-                            Scanned
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  {/* History Records Table */}
+                  {loadingHistory ? (
+                    <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                      <RefreshCw size={24} className="spin" />
+                      <div style={{ marginTop: '8px', fontSize: '13px' }}>Loading permission history...</div>
+                    </div>
+                  ) : filteredHistory.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0' }}>
+                      No allowed permission records found for {historyDateFilter.toLowerCase()}.
+                    </div>
+                  ) : (
+                    <div className="table-wrapper">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Student</th>
+                            <th>Roll No</th>
+                            <th>Branch • Year</th>
+                            <th>Student Type</th>
+                            <th>Scan Time</th>
+                            <th>Scanned By</th>
+                            <th>Result</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredHistory.map(scan => {
+                            const student = scan.requestId?.studentId || scan.studentId;
+                            const isSuccess = scan.scanResult === 'VALID' || scan.scanResult === 'ALLOWED' || scan.result === 'allowed' || scan.scanResult === 'SUCCESS';
+                            return (
+                              <tr key={scan._id}>
+                                <td>
+                                  <div style={{ fontWeight: 600, color: '#0f172a' }}>{student?.name || 'Student'}</div>
+                                  <div style={{ fontSize: 11, color: '#64748b' }}>Pass Code: {scan.passCode || scan.shortCode || scan.requestId?.shortCode || '—'}</div>
+                                </td>
+                                <td>
+                                  <code style={{ fontSize: 12, background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>
+                                    {student?.rollNo || 'N/A'}
+                                  </code>
+                                </td>
+                                <td style={{ fontSize: 13, color: '#475569' }}>
+                                  {scan.requestId?.branchId?.code || 'CSM'} • {getOrdinalYear(student?.year || scan.requestId?.year)}
+                                </td>
+                                <td>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    padding: '2px 8px',
+                                    borderRadius: 12,
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    background: '#ecfdf5',
+                                    color: '#059669',
+                                    border: '1px solid #a7f3d0'
+                                  }}>
+                                    {getResidenceTypeLabel(student?.residenceType || scan.requestId?.studentId?.residenceType)}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: 12.5, color: '#0f172a' }}>
+                                  {formatDateTime(scan.scannedAt || scan.createdAt)}
+                                </td>
+                                <td style={{ fontSize: 12.5, color: '#64748b' }}>
+                                  {scan.scannedByUserId?.name || scan.scannedBy?.name || 'Security Gate'}
+                                </td>
+                                <td>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '3px 8px',
+                                    borderRadius: '12px',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    background: '#ecfdf5',
+                                    color: '#059669',
+                                    border: '1px solid #a7f3d0'
+                                  }}>
+                                    <CheckCircle2 size={12} />
+                                    <span>Allowed</span>
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1025,4 +913,3 @@ export default function SecurityScanner() {
     </DashboardLayout>
   );
 }
-

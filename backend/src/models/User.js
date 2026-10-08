@@ -20,6 +20,16 @@ const userSchema = new mongoose.Schema({
   year: { type: Number, default: 4 },
   yearTier: { type: String, default: 'TIER_4TH' },
   profileImage: { type: String, default: '' },
+  residenceType: { 
+    type: String, 
+    enum: ['hosteler', 'dayscholar', 'HOSTELER', 'DAYSCHOLAR'], 
+    default: undefined 
+  },
+  studentType: {
+    type: String,
+    enum: ['hosteler', 'dayscholar', 'HOSTELER', 'DAYSCHOLAR', 'DAY_SCHOLAR', 'Day Scholar', 'Hosteler'],
+    default: undefined
+  },
 
   // HOD authority scoping
   authorityScope: {
